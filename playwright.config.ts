@@ -36,7 +36,7 @@ function loadDotEnv(file: string) {
 loadDotEnv('.env');
 
 /**
- * Configuração de E2E (Playwright) para o admin-web.
+ * Configuração de E2E (Playwright) para o admin.
  *
  * Convenção herdada de `unum-people-sites/unum-people-site/playwright.config.ts`
  * (mesmo monorepo), adaptada para este app:
