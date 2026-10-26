@@ -10,6 +10,6 @@ describe('next config', () => {
     // Os testes rodam na raiz deste app. Confere
     // pelo package.json, não pelo nome da pasta, que muda em clones e worktrees.
     const pacote = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'))
-    expect(pacote.name).toBe('unum-people-services-admin-web')
+    expect(pacote.name).toBe('unum-people-services-admin')
   })
 })

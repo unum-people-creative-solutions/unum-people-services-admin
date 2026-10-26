@@ -36,7 +36,7 @@ function loadDotEnv(file: string) {
 loadDotEnv('.env');
 
 /**
- * Configuração de E2E real (Playwright) para o admin-web.
+ * Configuração de E2E real (Playwright) para o admin.
  *
  * Diferente da config padrão (`playwright.config.ts`), esta config:
  * - Realiza login real via UI do Playwright contra o Cognito

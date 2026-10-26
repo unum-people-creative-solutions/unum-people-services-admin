@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Bug em produção (19/10, fase 5): com uma sessão guardada no navegador, o
-// login do admin-web ficava em loop. O persist reidrata durante o create(),
+// login do admin ficava em loop. O persist reidrata durante o create(),
 // e o onRehydrateStorage chamava useAuthStore antes de ele existir; o erro era
 // engolido e hasHydrated nunca virava true. Este teste carrega o módulo como o
 // navegador carrega: com o localStorage já preenchido.
