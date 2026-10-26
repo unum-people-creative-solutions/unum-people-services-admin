@@ -38,7 +38,7 @@ loadDotEnv('.env');
 /**
  * Configuração de E2E (Playwright) para o admin.
  *
- * Convenção herdada de `unum-people-sites/unum-people-site/playwright.config.ts`
+ * Convenção herdada de `Codebase/unum-people-site/playwright.config.ts`
  * (mesmo monorepo), adaptada para este app:
  * - App Router do Next.js 16, servido via `npm run dev` (porta 3000).
  * - Autenticação real é via Cognito (ver `src/store/useAuthStore.ts` e
