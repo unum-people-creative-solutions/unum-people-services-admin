@@ -100,7 +100,9 @@ export function VisitasDoDia({
         ) : visitas.length === 0 ? (
           <p className="py-6 text-center text-sm text-slate-500">Nenhuma visita neste dia.</p>
         ) : (
-          <div className="overflow-x-auto">
+          // contain: inline-size: a largura da tabela não empurra o <main> do layout (flex-1 sem min-w-0);
+          // assim o overflow-x-auto rola só a tabela no celular.
+          <div className="overflow-x-auto [contain:inline-size]">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-100">

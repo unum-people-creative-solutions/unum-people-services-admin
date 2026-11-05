@@ -60,13 +60,17 @@ export function FunilVitrine({
               const sobreAnterior = i === 0 ? null : taxa(valor, valores[i - 1]);
               const largura = escala > 0 ? Math.min(100, (valor / escala) * 100) : 0;
               return (
-                <li key={rotulo} className="grid grid-cols-[minmax(9rem,12rem)_1fr_3.5rem_auto] items-center gap-3 text-sm">
+                // No celular a barra desce para uma linha própria; a ordem no DOM (rótulo, barra, número, taxa) não muda.
+                <li
+                  key={rotulo}
+                  className="grid grid-cols-[1fr_auto_auto] sm:grid-cols-[minmax(9rem,12rem)_1fr_3.5rem_auto] items-center gap-x-3 gap-y-1 text-sm"
+                >
                   <span className="text-slate-700">{rotulo}</span>
-                  <span aria-hidden="true" className="block h-3 rounded-full bg-primary-50 overflow-hidden">
+                  <span aria-hidden="true" className="order-last col-span-3 sm:order-none sm:col-span-1 block h-3 rounded-full bg-primary-50 overflow-hidden">
                     <span className="block h-full rounded-full bg-primary-500" style={{ width: `${largura}%` }} />
                   </span>
                   <span className="text-right font-semibold text-slate-900 tabular-nums">{valor}</span>
-                  <span className={`text-right tabular-nums text-slate-500 ${comAnterior ? 'min-w-[11rem]' : 'min-w-[3rem]'}`}>
+                  <span className={`text-right tabular-nums text-slate-500 ${comAnterior ? 'sm:min-w-[11rem]' : 'min-w-[3rem]'}`}>
                     {sobreVisitou !== null ? `${sobreVisitou}%` : null}
                     {comAnterior && sobreAnterior !== null ? ` · ${sobreAnterior}% da anterior` : null}
                   </span>
