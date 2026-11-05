@@ -24,6 +24,12 @@ A listagem (`(admin)/tenants`) e o detalhe do tenant mostram o selo **Teste** (n
 
 A página **Flags** (`/flags`, item no menu depois de Termos) lista o catálogo de feature flags da API com descrição, apps e a data da última mudança. Cada flag tem um seletor de três estados: **Desligada**, **Só teste** (vale para tenants de teste e para quem está em modo teste) e **Ligada** (para todos). Mudar para **Ligada** pede confirmação; os outros estados mudam direto. A mudança vale em até 1 minuto (cache da API). Flag nova não se cria pela tela: ela nasce no catálogo da API, junto com a funcionalidade que protege.
 
+## Jornada do visitante
+
+O **Dashboard** mostra a seção "Funil da vitrine · últimos 7 dias" (as 9 etapas, de Visitou a Pagou, com a taxa sobre Visitou) e o link **Ver a jornada →**. O cartão **Ativos (pagos)** conta só tenants `ATIVO`, sem bloqueio e sem teste (cálculo na API).
+
+A página **Jornada** (`/dashboard/jornada`, item no menu logo depois do Dashboard) tem o período (Hoje, 7 dias, 30 dias), os filtros de origem e aparelho (recalculados na tela a partir das linhas cruas de `GET /admin/dashboard/jornada/funil`), o uso do editor (menu "Editar" e o funil da IA) e as visitas por dia (`/visitas?dia&teste`), com o contratante em link para o tenant e a opção "Mostrar visitas de teste". Cada visita abre o caminho do visitante (`/dashboard/jornada/<visitante>`, `GET /visitantes/{id}`). Os horários aparecem em Brasília; os dias seguem o UTC dos dados. Spec: `unum-people-docs/spec/features/unum-people-services/jornada-do-visitante/spec-2-painel.md`.
+
 ## Modo teste do checkout
 
 Em **Configurações** (`/settings`), a seção "Modo teste do checkout" mostra se o modo está ativo e quando o token foi gerado. **Gerar token** / **Rotacionar token** (com confirmação) cria um token novo, e o anterior deixa de valer na hora. **Mostrar link** revela o link pronto `https://unumpeople.app/configurar?teste=<token>`, com **Copiar link**, e o comando do console do navegador `unumTeste.ativar('<token>')`, com **Copiar comando** (quem prefere ativar pelo console em `unumpeople.app`). **Desligar modo teste** (com confirmação) apaga o token: todo link de teste passa a ser recusado. A base do link vem de `NEXT_PUBLIC_CONFIGURADOR_URL` (padrão `https://unumpeople.app`).

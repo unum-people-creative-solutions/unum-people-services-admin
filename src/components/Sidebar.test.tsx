@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { Sidebar } from './Sidebar';
 import { expect, test, vi, describe, beforeEach } from 'vitest';
 import { usePathname, useRouter } from 'next/navigation';
@@ -101,4 +101,18 @@ test('menu tem Flags logo depois de Termos', () => {
   const links = screen.getAllByRole('link').map((l) => l.getAttribute('href'));
   expect(links.indexOf('/flags')).toBe(links.indexOf('/terms') + 1);
   expect(screen.getByRole('link', { name: /Flags/ })).toHaveAttribute('href', '/flags');
+});
+
+// jornada-do-visitante spec-2-painel RF-2-09: item Jornada logo depois do Dashboard.
+test('menu tem Jornada logo depois do Dashboard, ativo nas páginas da jornada', () => {
+  vi.mocked(useAuthStore).mockReturnValue({ logout: vi.fn() } as unknown as ReturnType<typeof useAuthStore>);
+  vi.mocked(useRouter).mockReturnValue({ push: vi.fn() } as unknown as ReturnType<typeof useRouter>);
+  vi.mocked(usePathname).mockReturnValue('/dashboard/jornada/5b1f8a3c-2d4e-4f6a-8b9c-0d1e2f2da0b6');
+  render(<Sidebar />);
+  const nav = screen.getByRole('navigation');
+  const links = within(nav).getAllByRole('link').map((l) => l.getAttribute('href'));
+  expect(links.indexOf('/dashboard/jornada')).toBe(links.indexOf('/dashboard') + 1);
+  const jornada = within(nav).getByRole('link', { name: 'Jornada' });
+  expect(jornada).toHaveAttribute('aria-current', 'page');
+  expect(within(nav).getByRole('link', { name: 'Visão Geral' })).not.toHaveAttribute('aria-current');
 });
