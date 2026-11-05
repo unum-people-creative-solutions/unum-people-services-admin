@@ -27,7 +27,7 @@ interface GrupoDaVisita {
   eventos: EventoJornada[];
 }
 
-const porData = (a: string, b: string) => new Date(a).getTime() - new Date(b).getTime();
+const porData = (a: number, b: number) => a - b;
 
 // Visitas da mais recente para a mais antiga; eventos de cada uma em ordem cronológica.
 function agruparPorVisita(dados: VisitanteJornada): GrupoDaVisita[] {
@@ -171,7 +171,7 @@ export default function VisitantePage() {
                               key={`${evento.em}-${i}`}
                               className="grid grid-cols-[5rem_minmax(10rem,16rem)_1fr] items-center gap-3 px-4 py-2 text-sm"
                             >
-                              <time dateTime={evento.em} className="text-slate-500 tabular-nums">
+                              <time dateTime={new Date(evento.em).toISOString()} className="text-slate-500 tabular-nums">
                                 {formatarHoraComSegundos(evento.em)}
                               </time>
                               {rotulo !== null ? (

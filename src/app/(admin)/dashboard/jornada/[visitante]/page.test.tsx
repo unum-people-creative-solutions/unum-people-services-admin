@@ -22,27 +22,27 @@ const resposta: VisitanteJornada = {
   visitante: ID,
   visitas: [
     {
-      visitante: ID, visita: VISITA_TARDE, inicio: '2026-11-05T20:12:00Z', fim: '2026-11-05T20:31:40Z',
+      visitante: ID, visita: VISITA_TARDE, inicio: 1793909520000 /* 2026-11-05T20:12:00Z */, fim: 1793910700000 /* 2026-11-05T20:31:40Z */,
       aparelho: 'computador', origem: 'google_ads', campanha: 'vitrine-novembro', paginas: 4,
       etapas: [1, 2, 3, 4, 5, 6, 7, 8], usos: ['lp_menu_tema'], teste: false,
     },
     {
-      visitante: ID, visita: VISITA_NOITE, inicio: '2026-11-05T21:51:08Z', fim: '2026-11-05T21:51:21Z',
+      visitante: ID, visita: VISITA_NOITE, inicio: 1793915468000 /* 2026-11-05T21:51:08Z */, fim: 1793915481000 /* 2026-11-05T21:51:21Z */,
       aparelho: 'celular', origem: 'direto', paginas: 2, etapas: [1, 2], usos: [], teste: false,
     },
   ],
   eventos: [
-    { em: '2026-11-05T20:12:00Z', nome: 'lp_page_view', caminho: '/', visita: VISITA_TARDE },
-    { em: '2026-11-05T20:14:30Z', nome: 'lp_menu_tema', caminho: '/configurar/editar', visita: VISITA_TARDE },
-    { em: '2026-11-05T20:31:40Z', nome: 'lp_checkout_succeeded', caminho: '/configurar/sucesso', visita: VISITA_TARDE },
-    { em: '2026-11-05T21:51:08Z', nome: 'lp_editor_opened', caminho: '/configurar/editar', visita: VISITA_NOITE },
-    { em: '2026-11-05T21:51:19Z', nome: 'lp_page_view', caminho: '/', visita: VISITA_NOITE },
-    { em: '2026-11-05T21:51:21Z', nome: 'lp_evento_novo', caminho: '/configurar', visita: VISITA_NOITE },
+    { em: 1793909520000 /* 2026-11-05T20:12:00Z */, nome: 'lp_page_view', caminho: '/', visita: VISITA_TARDE },
+    { em: 1793909670000 /* 2026-11-05T20:14:30Z */, nome: 'lp_menu_tema', caminho: '/configurar/editar', visita: VISITA_TARDE },
+    { em: 1793910700000 /* 2026-11-05T20:31:40Z */, nome: 'lp_checkout_succeeded', caminho: '/configurar/sucesso', visita: VISITA_TARDE },
+    { em: 1793915468000 /* 2026-11-05T21:51:08Z */, nome: 'lp_editor_opened', caminho: '/configurar/editar', visita: VISITA_NOITE },
+    { em: 1793915479000 /* 2026-11-05T21:51:19Z */, nome: 'lp_page_view', caminho: '/', visita: VISITA_NOITE },
+    { em: 1793915481000 /* 2026-11-05T21:51:21Z */, nome: 'lp_evento_novo', caminho: '/configurar', visita: VISITA_NOITE },
   ],
   contratacoes: [
     {
       tenant_id: 'a1b2c3d4-0000-4000-8000-000000000001', nome: 'Espaço Sereno', status: 'ATIVO',
-      pago: true, plano: 'pagina', em: '2026-11-05T20:31:40Z',
+      pago: true, plano: 'pagina', em: 1793910700000 /* 2026-11-05T20:31:40Z */,
     },
   ],
 };
@@ -103,6 +103,22 @@ describe('Página do visitante', () => {
       '17:14:30Menu: Editar tema/configurar/editar',
       '17:31:40Contratou/configurar/sucesso',
     ]);
+  });
+
+  // validation-fase2 L1: JSON real da API (instantes em ms Unix), com o mesmo JSON.parse do lib/api.ts.
+  test('contrato real: eventos, visitas e contratações em milissegundos', async () => {
+    const real = JSON.parse(
+      '{"visitante":"' + ID + '","visitas":[{"visitante":"' + ID + '","visita":"7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d","inicio":1793880000000,"fim":1793880003000,"aparelho":"celular","origem":"google_ads","campanha":"c1","paginas":1,"etapas":[1,2,8],"usos":["lp_menu_ia"],"teste":false}],"eventos":[{"em":1793880000000,"nome":"lp_page_view","caminho":"/saude","visita":"7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"}],"contratacoes":[{"tenant_id":"t-1","nome":"Espaço Sereno","status":"ATIVO","pago":true,"plano":"pagina","em":1793880004000}]}',
+    ) as VisitanteJornada;
+    vi.mocked(jornadaService.visitante).mockResolvedValue(real);
+    renderizar();
+    expect(await screen.findByText('1ª visita 5/11 09:00 · 1 visita')).toBeInTheDocument();
+    const contratacao = screen.getByRole('region', { name: 'Contratação' });
+    expect(within(contratacao).getByText('5/11 09:00')).toBeInTheDocument();
+    const visita = screen.getByRole('region', { name: 'Visita de 5/11 · 09:00 · Celular · Anúncio do Google' });
+    const [evento] = within(visita).getAllByRole('listitem');
+    expect(evento.textContent).toBe('09:00:00Viu a página/saude');
+    expect(within(evento).getByText('09:00:00')).toHaveAttribute('datetime', '2026-11-05T12:00:00.000Z');
   });
 
   test('CA-2-08: 404 mostra Visitante não encontrado e o link de volta', async () => {

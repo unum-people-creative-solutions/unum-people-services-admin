@@ -158,9 +158,10 @@ describe('datas', () => {
   });
 
   it('CA-2-10: horários em Brasília', () => {
-    expect(formatarHora('2026-11-05T21:51:08Z')).toBe('18:51');
-    expect(formatarHoraComSegundos('2026-11-05T21:51:08Z')).toBe('18:51:08');
-    expect(formatarDiaMes('2026-11-06T01:30:00Z')).toBe('5/11');
+    // A API manda os instantes em milissegundos Unix (número), não ISO.
+    expect(formatarHora(Date.UTC(2026, 10, 5, 21, 51, 8))).toBe('18:51');
+    expect(formatarHoraComSegundos(Date.UTC(2026, 10, 5, 21, 51, 8))).toBe('18:51:08');
+    expect(formatarDiaMes(Date.UTC(2026, 10, 6, 1, 30, 0))).toBe('5/11');
   });
 
   it('formatarDia mostra o dia UTC por extenso', () => {

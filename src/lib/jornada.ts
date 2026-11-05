@@ -1,6 +1,6 @@
 // Cálculos e rótulos da jornada do visitante (spec-2-painel, blueprint §3 e §5).
 // Funções puras: a tela filtra e soma as linhas cruas da API sem nova chamada.
-import type { Aparelho, FunilJornada, OrigemCrua } from '@/types/jornada';
+import type { Aparelho, FunilJornada, InstanteMs, OrigemCrua } from '@/types/jornada';
 
 export const ROTULOS_ETAPAS = [
   'Visitou',
@@ -180,17 +180,17 @@ const formatoDia = new Intl.DateTimeFormat('pt-BR', {
   year: 'numeric',
 });
 
-export function formatarHora(iso: string): string {
-  return formatoHora.format(new Date(iso));
+export function formatarHora(instante: InstanteMs): string {
+  return formatoHora.format(new Date(instante));
 }
 
-export function formatarHoraComSegundos(iso: string): string {
-  return formatoHoraSegundos.format(new Date(iso));
+export function formatarHoraComSegundos(instante: InstanteMs): string {
+  return formatoHoraSegundos.format(new Date(instante));
 }
 
 // O pt-BR completa com zero ("05/11"); o blueprint mostra "5/11".
-export function formatarDiaMes(iso: string): string {
-  const partes = formatoDiaMes.formatToParts(new Date(iso));
+export function formatarDiaMes(instante: InstanteMs): string {
+  const partes = formatoDiaMes.formatToParts(new Date(instante));
   const dia = partes.find((p) => p.type === 'day')?.value ?? '';
   const mes = partes.find((p) => p.type === 'month')?.value ?? '';
   return `${Number(dia)}/${Number(mes)}`;

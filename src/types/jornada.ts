@@ -1,6 +1,10 @@
 // Contratos de GET /admin/dashboard/jornada/* (unum-people-services-api,
 // Lambda admin). Espelham, campo a campo, os RF-2-01 a RF-2-03 de
 // unum-people-docs/spec/features/unum-people-services/jornada-do-visitante/spec-2-painel.md.
+// Os instantes (inicio, fim, em) chegam como número: milissegundos Unix (int64 no Go).
+
+// Milissegundos desde 1970-01-01T00:00:00Z.
+export type InstanteMs = number;
 
 export type Aparelho = 'celular' | 'computador';
 
@@ -44,15 +48,15 @@ export interface ContratacaoJornada {
   status: string;
   pago: boolean;
   plano: string;
-  em: string;
+  em: InstanteMs;
 }
 
 // RF-2-02: resumo de uma visita.
 export interface VisitaJornada {
   visitante: string;
   visita: string;
-  inicio: string;
-  fim: string;
+  inicio: InstanteMs;
+  fim: InstanteMs;
   aparelho: Aparelho;
   origem: OrigemCrua;
   campanha?: string;
@@ -65,7 +69,7 @@ export interface VisitaJornada {
 
 // RF-2-03: evento da linha do tempo.
 export interface EventoJornada {
-  em: string;
+  em: InstanteMs;
   nome: string;
   caminho: string;
   visita: string;

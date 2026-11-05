@@ -43,8 +43,8 @@ const funil: FunilJornada = {
 const visitaDireta: VisitaJornada = {
   visitante: '5b1f8a3c-2d4e-4f6a-8b9c-0d1e2f2da0b6',
   visita: '0c4b5a8e-1f2a-4b3c-9d8e-7f6a5b4c3d2e',
-  inicio: '2026-11-05T21:51:08Z',
-  fim: '2026-11-05T21:53:00Z',
+  inicio: 1793915468000 /* 2026-11-05T21:51:08Z */,
+  fim: 1793915580000 /* 2026-11-05T21:53:00Z */,
   aparelho: 'celular',
   origem: 'direto',
   paginas: 3,
@@ -56,8 +56,8 @@ const visitaDireta: VisitaJornada = {
 const visitaContratou: VisitaJornada = {
   visitante: '7c2e9b4d-3e5f-4a7b-9c0d-1e2f3a4b5c6d',
   visita: '1d5c6b9f-2a3b-4c4d-8e9f-8a7b6c5d4e3f',
-  inicio: '2026-11-05T20:12:00Z',
-  fim: '2026-11-05T20:31:00Z',
+  inicio: 1793909520000 /* 2026-11-05T20:12:00Z */,
+  fim: 1793910660000 /* 2026-11-05T20:31:00Z */,
   aparelho: 'computador',
   origem: 'google_ads',
   campanha: 'vitrine-novembro',
@@ -71,7 +71,7 @@ const visitaContratou: VisitaJornada = {
     status: 'ATIVO',
     pago: true,
     plano: 'pagina',
-    em: '2026-11-05T20:31:00Z',
+    em: 1793910660000 /* 2026-11-05T20:31:00Z */,
   },
 };
 
@@ -79,7 +79,7 @@ const visitaNaoPagou: VisitaJornada = {
   ...visitaContratou,
   visitante: '8d3f0c5e-4f6a-4b8c-8d1e-2f3a4b5c6d7e',
   visita: '2e6d7c0a-3b4c-4d5e-9f0a-9b8c7d6e5f4a',
-  inicio: '2026-11-05T13:05:00Z',
+  inicio: 1793883900000 /* 2026-11-05T13:05:00Z */,
   usos: [],
   contratacao: { ...visitaContratou.contratacao!, tenant_id: 'a1b2c3d4-0000-4000-8000-000000000002', nome: 'Clínica Aurora', status: 'PENDENTE', pago: false },
 };
@@ -88,7 +88,7 @@ const visitaTeste: VisitaJornada = {
   ...visitaDireta,
   visitante: '9e4a1d6f-5a7b-4c9d-9e2f-3a4b5c6d7e8f',
   visita: '3f7e8d1b-4c5d-4e6f-8a1b-0c9d8e7f6a5b',
-  inicio: '2026-11-05T22:30:00Z',
+  inicio: 1793917800000 /* 2026-11-05T22:30:00Z */,
   teste: true,
 };
 
@@ -263,6 +263,20 @@ describe('Página Jornada do visitante', () => {
     expect(within(linhaNaoPagou).getByRole('link', { name: 'Clínica Aurora' })).toHaveAttribute(
       'href', '/tenants/a1b2c3d4-0000-4000-8000-000000000002',
     );
+  });
+
+  // validation-fase2 L1: JSON real da API (instantes em ms Unix), com o mesmo JSON.parse do lib/api.ts.
+  test('contrato real: visita com inicio e em em milissegundos', async () => {
+    const real = JSON.parse(
+      '[{"visitante":"3f2b8c1e-9d4a-4b7e-8a6f-1c2d3e4f5a6b","visita":"7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d","inicio":1793880000000,"fim":1793880003000,"aparelho":"celular","origem":"google_ads","campanha":"c1","paginas":1,"etapas":[1,2,8],"usos":["lp_menu_ia"],"teste":false,"contratacao":{"tenant_id":"t-1","nome":"Espaço Sereno","status":"ATIVO","pago":true,"plano":"pagina","em":1793880004000}}]',
+    ) as VisitaJornada[];
+    vi.mocked(jornadaService.visitas).mockResolvedValue(real);
+    renderizar();
+    const tabela = await screen.findByRole('table');
+    const [, linha] = within(tabela).getAllByRole('row');
+    expect(within(linha).getAllByRole('cell').map((td) => td.textContent)).toEqual([
+      '09:00', 'Celular', 'Anúncio do Google', '1', 'ContratouUsou o editor', 'Espaço SerenoPagou',
+    ]);
   });
 
   test('a linha inteira leva ao caminho do visitante', async () => {
