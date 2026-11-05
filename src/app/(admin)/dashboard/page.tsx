@@ -1,8 +1,12 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { tenantService } from '@/services/tenantService';
+import { jornadaService } from '@/services/jornadaService';
+import { FunilVitrine } from '@/components/jornada/FunilVitrine';
+import { calcularFunil, periodoUtc } from '@/lib/jornada';
 import type { AuditRecord, SystemErrorLog } from '@/types/dashboard';
 import { Users, Ban, Activity, TrendingUp, Clock, AlertCircle } from 'lucide-react';
 
@@ -23,6 +27,17 @@ export default function DashboardPage() {
     queryFn: () => tenantService.getSystemErrors({ start: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() }),
     refetchInterval: 30000,
   });
+
+  // Funil da vitrine (spec-2-painel RF-2-06): hoje e os 6 dias anteriores, em UTC.
+  const [periodoFunil] = useState(() => periodoUtc(7, new Date()));
+  const funilQuery = useQuery({
+    queryKey: ['jornada-funil', periodoFunil.de, periodoFunil.ate],
+    queryFn: () => jornadaService.funil(periodoFunil.de, periodoFunil.ate),
+  });
+  const valoresFunil = useMemo(
+    () => (funilQuery.data ? calcularFunil(funilQuery.data, { origem: 'todas', aparelho: 'todos' }) : undefined),
+    [funilQuery.data],
+  );
 
   const logsLoading = auditLoading || errorsLoading;
 
@@ -95,7 +110,7 @@ export default function DashboardPage() {
 
   const cards = [
     { title: 'Total Tenants', value: stats?.total_tenants || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { title: 'Ativos', value: stats?.active_tenants || 0, icon: Activity, color: 'text-green-600', bg: 'bg-green-50' },
+    { title: 'Ativos (pagos)', value: stats?.active_tenants || 0, icon: Activity, color: 'text-green-600', bg: 'bg-green-50' },
     { title: 'Bloqueados', value: stats?.blocked_tenants || 0, icon: Ban, color: 'text-red-600', bg: 'bg-red-50' },
     { title: 'Est. MRR', value: `R$ ${(stats?.estimated_mrr || 0).toLocaleString('pt-BR')}`, icon: TrendingUp, color: 'text-primary-600', bg: 'bg-primary-50' },
   ];
@@ -128,6 +143,21 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
+
+        <FunilVitrine
+          idTitulo="titulo-funil-vitrine"
+          titulo="Funil da vitrine · últimos 7 dias"
+          valores={valoresFunil}
+          carregando={funilQuery.isPending || (funilQuery.isError && funilQuery.isFetching)}
+          erro={funilQuery.isError}
+          onTentar={() => void funilQuery.refetch()}
+          textoVazio="Nenhuma visita registrada nos últimos 7 dias."
+          acao={
+            <Link href="/dashboard/jornada" className="text-sm font-medium text-primary-600 hover:text-primary-800">
+              Ver a jornada →
+            </Link>
+          }
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Logs de Atividade / Erros */}
