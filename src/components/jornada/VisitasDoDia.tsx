@@ -13,6 +13,7 @@ import {
 } from '@/lib/jornada';
 import { EsqueletoDaSecao, ErroDaSecao } from './EstadoDaSecao';
 import { SeloPagamento, SeloTeste, SeloUsouEditor } from './Selos';
+import { EmpresaContratante } from './EmpresaContratante';
 
 interface VisitasDoDiaProps {
   dia: string;
@@ -148,12 +149,11 @@ export function VisitasDoDia({
                       <td className="px-3 py-2.5">
                         {v.contratacao ? (
                           <div className="flex flex-wrap items-center gap-2">
-                            <Link
-                              href={`/tenants/${encodeURIComponent(v.contratacao.tenant_id)}`}
+                            <EmpresaContratante
+                              tenantId={v.contratacao.tenant_id}
+                              nome={v.contratacao.nome}
                               className="font-medium text-primary-700 hover:underline"
-                            >
-                              {v.contratacao.nome}
-                            </Link>
+                            />
                             <SeloPagamento pago={v.contratacao.pago} />
                           </div>
                         ) : (

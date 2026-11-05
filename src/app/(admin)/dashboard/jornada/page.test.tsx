@@ -279,6 +279,20 @@ describe('Página Jornada do visitante', () => {
     ]);
   });
 
+  // validation-fase2 L2: tenant removido chega com nome vazio.
+  test('contratação de tenant removido mostra Empresa removida, sem link', async () => {
+    vi.mocked(jornadaService.visitas).mockResolvedValue([
+      { ...visitaContratou, contratacao: { ...visitaContratou.contratacao!, tenant_id: 't-sumiu', nome: '' } },
+    ]);
+    renderizar();
+    const tabela = await screen.findByRole('table');
+    const [, linha] = within(tabela).getAllByRole('row');
+    const celula = within(linha).getAllByRole('cell')[5];
+    expect(within(celula).getByText('Empresa removida')).toBeInTheDocument();
+    expect(within(celula).getByText('t-sumiu')).toBeInTheDocument();
+    expect(within(celula).queryByRole('link')).not.toBeInTheDocument();
+  });
+
   test('a linha inteira leva ao caminho do visitante', async () => {
     renderizar();
     const tabela = await screen.findByRole('table');

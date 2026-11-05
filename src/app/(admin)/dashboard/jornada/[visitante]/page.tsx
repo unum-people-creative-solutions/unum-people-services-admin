@@ -17,6 +17,7 @@ import {
 } from '@/lib/jornada';
 import { EsqueletoDaSecao, ErroDaSecao } from '@/components/jornada/EstadoDaSecao';
 import { SeloPagamento, SeloTeste } from '@/components/jornada/Selos';
+import { EmpresaContratante } from '@/components/jornada/EmpresaContratante';
 import type { EventoJornada, VisitaJornada, VisitanteJornada } from '@/types/jornada';
 
 // spec-2-painel RF-2-08; blueprint §4.
@@ -128,12 +129,11 @@ export default function VisitantePage() {
                   <ul className="divide-y divide-slate-100">
                     {dados.contratacoes.map((c) => (
                       <li key={c.tenant_id} className="flex flex-wrap items-center gap-x-4 gap-y-2 p-4 text-sm">
-                        <Link
-                          href={`/tenants/${encodeURIComponent(c.tenant_id)}`}
+                        <EmpresaContratante
+                          tenantId={c.tenant_id}
+                          nome={c.nome}
                           className="font-semibold text-primary-700 hover:underline"
-                        >
-                          {c.nome}
-                        </Link>
+                        />
                         <SeloPagamento pago={c.pago} />
                         <span className="text-xs font-medium text-slate-500">{c.status}</span>
                         <span className="text-slate-600">Plano {c.plano}</span>

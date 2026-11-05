@@ -121,6 +121,19 @@ describe('Página do visitante', () => {
     expect(within(evento).getByText('09:00:00')).toHaveAttribute('datetime', '2026-11-05T12:00:00.000Z');
   });
 
+  // validation-fase2 L2: tenant removido chega com nome vazio.
+  test('contratação de tenant removido mostra Empresa removida, sem link', async () => {
+    vi.mocked(jornadaService.visitante).mockResolvedValue({
+      ...resposta,
+      contratacoes: [{ ...resposta.contratacoes[0], tenant_id: 't-sumiu', nome: '' }],
+    });
+    renderizar();
+    const secao = await screen.findByRole('region', { name: 'Contratação' });
+    expect(within(secao).getByText('Empresa removida')).toBeInTheDocument();
+    expect(within(secao).getByText('t-sumiu')).toBeInTheDocument();
+    expect(within(secao).queryByRole('link')).not.toBeInTheDocument();
+  });
+
   test('CA-2-08: 404 mostra Visitante não encontrado e o link de volta', async () => {
     vi.mocked(jornadaService.visitante).mockRejectedValue(new ApiError('visitante_nao_encontrado', 404));
     renderizar(true);
