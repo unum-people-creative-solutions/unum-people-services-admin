@@ -169,7 +169,7 @@ export default function VisitantePage() {
                           return (
                             <li
                               key={`${evento.em}-${i}`}
-                              className="grid grid-cols-[5rem_minmax(10rem,16rem)_1fr] items-center gap-3 px-4 py-2 text-sm"
+                              className="grid grid-cols-[4.5rem_1fr] sm:grid-cols-[5rem_minmax(10rem,16rem)_1fr] items-center gap-x-3 gap-y-0.5 px-4 py-2 text-sm"
                             >
                               <time dateTime={new Date(evento.em).toISOString()} className="text-slate-500 tabular-nums">
                                 {formatarHoraComSegundos(evento.em)}
@@ -179,7 +179,10 @@ export default function VisitantePage() {
                               ) : (
                                 <span className="font-mono text-slate-700">{evento.nome}</span>
                               )}
-                              <span className="font-mono text-xs text-slate-500 truncate">{evento.caminho}</span>
+                              {/* No celular o caminho desce para a linha de baixo, sob o rótulo. */}
+                              <span className="col-start-2 sm:col-start-auto min-w-0 font-mono text-xs text-slate-500 truncate">
+                                {evento.caminho}
+                              </span>
                             </li>
                           );
                         })}
