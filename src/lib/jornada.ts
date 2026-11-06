@@ -1,6 +1,6 @@
 // Cálculos e rótulos da jornada do visitante (spec-2-painel, blueprint §3 e §5).
 // Funções puras: a tela filtra e soma as linhas cruas da API sem nova chamada.
-import type { Aparelho, FunilJornada, InstanteMs, OrigemCrua } from '@/types/jornada';
+import type { Aparelho, FunilJornada, InstanteMs, OrigemCrua, PaginaDeEntrada } from '@/types/jornada';
 
 export const ROTULOS_ETAPAS = [
   'Visitou',
@@ -36,9 +36,124 @@ const ROTULOS_EVENTOS: Record<string, string> = {
   lp_ia_aplicou: 'IA: aplicou as mudanças',
 };
 
+// spec-3-leitura RF-3-14: páginas de entrada, na ordem das abas (também a do desempate).
+export const ROTULOS_PAGINA: Record<PaginaDeEntrada, string> = {
+  inicio: 'Início',
+  saude: 'Saúde',
+  crm: 'CRM',
+  blog: 'Blog',
+};
+
+// RF-3-14: nome da seção (data-jornada-secao, sem "lp_secao_") → rótulo.
+export const ROTULOS_SECAO: Record<string, string> = {
+  modelos: 'Modelos',
+  vantagens: 'Vantagens',
+  como_funciona: 'Como funciona',
+  planos: 'Planos',
+  blog: 'Blog',
+  crm: 'CRM',
+  perguntas: 'Perguntas frequentes',
+  caminho: 'Caminho',
+  funcoes: 'Funções',
+  junto: 'Junto',
+  fechamento: 'Fechamento',
+};
+
+// RF-3-14: nome do clique (sem "lp_clique_") → rótulo. A ordem é a da tabela, usada no desempate.
+export const ROTULOS_CLIQUE: Record<string, string> = {
+  hero_montar: 'Topo: botão principal',
+  hero_planos: 'Topo: ver planos',
+  galeria_modelo: 'Galeria: escolheu um modelo',
+  galeria_aparelho: 'Galeria: trocou o aparelho',
+  galeria_montar: 'Galeria: botão para montar',
+  vantagens_montar: 'Vantagens: botão para montar',
+  plano_escolher: 'Planos: escolheu um plano',
+  blog_conhecer: 'Blog: conhecer',
+  blog_plano: 'Blog: ver o plano',
+  crm_conhecer: 'CRM: conhecer',
+  crm_plano: 'CRM: ver o plano',
+  pergunta_abrir: 'Abriu uma pergunta',
+  fechamento_montar: 'Fechamento: botão principal',
+  produto_todos_planos: 'Plano: ver todos os planos',
+  produto_crm: 'Plano: conhecer o CRM',
+  marca: 'Logo',
+  minha_conta: 'Minha conta',
+  rodape_email: 'Rodapé: e-mail',
+  rodape_termos: 'Rodapé: termos',
+  rodape_privacidade: 'Rodapé: privacidade',
+  rodape_ajuda: 'Rodapé: ajuda',
+};
+
+// RF-3-05: seções na ordem da página. Saúde, CRM e Blog usam a PaginaDeProduto.
+const SECOES_PRODUTO = ['caminho', 'funcoes', 'junto', 'planos', 'perguntas', 'fechamento'] as const;
+
+export const SECOES_DA_PAGINA: Record<PaginaDeEntrada, readonly string[]> = {
+  inicio: ['modelos', 'vantagens', 'como_funciona', 'planos', 'blog', 'crm', 'perguntas', 'fechamento'],
+  saude: SECOES_PRODUTO,
+  crm: SECOES_PRODUTO,
+  blog: SECOES_PRODUTO,
+};
+
+// RF-3-14 "Botões de cada página", na ordem da tabela de cliques (a do desempate).
+const BOTOES_INICIO = [
+  'hero_montar', 'hero_planos', 'galeria_modelo', 'galeria_aparelho', 'galeria_montar', 'vantagens_montar',
+  'plano_escolher', 'blog_conhecer', 'blog_plano', 'crm_conhecer', 'crm_plano', 'pergunta_abrir',
+  'fechamento_montar', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
+] as const;
+
+const BOTOES_PRODUTO = [
+  'hero_montar', 'hero_planos', 'plano_escolher', 'pergunta_abrir', 'fechamento_montar', 'produto_todos_planos',
+  'produto_crm', 'marca', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
+] as const;
+
+export const BOTOES_DA_PAGINA: Record<PaginaDeEntrada, readonly string[]> = {
+  inicio: BOTOES_INICIO,
+  saude: BOTOES_PRODUTO,
+  crm: BOTOES_PRODUTO,
+  blog: BOTOES_PRODUTO,
+};
+
+// RF-3-13: linhas dos blocos "Rolagem" e "Tempo na página" (evento como vem da API, sem "lp_").
+export const ROLAGEM_LEITURA: ReadonlyArray<{ evento: string; rotulo: string }> = [
+  { evento: 'rolagem_25', rotulo: '25%' },
+  { evento: 'rolagem_50', rotulo: '50%' },
+  { evento: 'rolagem_75', rotulo: '75%' },
+  { evento: 'rolagem_100', rotulo: 'Até o fim' },
+];
+
+export const TEMPO_LEITURA: ReadonlyArray<{ evento: string; rotulo: string }> = [
+  { evento: 'tempo_10s', rotulo: '10 s' },
+  { evento: 'tempo_30s', rotulo: '30 s' },
+  { evento: 'tempo_1min', rotulo: '1 min' },
+  { evento: 'tempo_3min', rotulo: '3 min' },
+];
+
+// RF-3-15: rolagem e tempo na linha do tempo do visitante.
+const ROTULOS_LEITURA: Record<string, string> = {
+  lp_rolagem_25: 'Rolou 25%',
+  lp_rolagem_50: 'Rolou 50%',
+  lp_rolagem_75: 'Rolou 75%',
+  lp_rolagem_100: 'Rolou até o fim',
+  lp_tempo_10s: 'Ficou 10 s',
+  lp_tempo_30s: 'Ficou 30 s',
+  lp_tempo_1min: 'Ficou 1 min',
+  lp_tempo_3min: 'Ficou 3 min',
+};
+
+function rotuloComPrefixo(nome: string, prefixo: string, rotulos: Record<string, string>, antes: string): string | null {
+  if (!nome.startsWith(prefixo)) return null;
+  const chave = nome.slice(prefixo.length);
+  return Object.hasOwn(rotulos, chave) ? `${antes}${rotulos[chave]}` : null;
+}
+
 // null para evento desconhecido: a tela mostra o nome cru.
 export function rotuloDoEvento(nome: string): string | null {
-  return Object.hasOwn(ROTULOS_EVENTOS, nome) ? ROTULOS_EVENTOS[nome] : null;
+  if (Object.hasOwn(ROTULOS_EVENTOS, nome)) return ROTULOS_EVENTOS[nome];
+  if (Object.hasOwn(ROTULOS_LEITURA, nome)) return ROTULOS_LEITURA[nome];
+  return (
+    rotuloComPrefixo(nome, 'lp_secao_', ROTULOS_SECAO, 'Viu: ') ??
+    rotuloComPrefixo(nome, 'lp_clique_', ROTULOS_CLIQUE, 'Clicou: ')
+  );
 }
 
 const ROTULOS_APARELHO: Record<Aparelho, string> = {
@@ -121,6 +236,20 @@ export function calcularUso(funil: FunilJornada, filtro: FiltroJornada): Record<
     uso[linha.evento] = (uso[linha.evento] ?? 0) + linha.visitas;
   }
   return uso;
+}
+
+// spec-3-leitura RF-3-13: visitas por página e evento (sem "lp_"), com os mesmos filtros.
+export function calcularLeitura(
+  funil: FunilJornada,
+  filtro: FiltroJornada,
+): Record<PaginaDeEntrada, Record<string, number>> {
+  const leitura: Record<PaginaDeEntrada, Record<string, number>> = { inicio: {}, saude: {}, crm: {}, blog: {} };
+  for (const linha of funil.leitura) {
+    if (!Object.hasOwn(leitura, linha.pagina) || !passa(linha, filtro)) continue;
+    const pagina = leitura[linha.pagina];
+    pagina[linha.evento] = (pagina[linha.evento] ?? 0) + linha.visitas;
+  }
+  return leitura;
 }
 
 export function taxa(valor: number, base: number): number | null {
