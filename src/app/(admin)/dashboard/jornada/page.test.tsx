@@ -372,6 +372,42 @@ describe('Página Jornada do visitante', () => {
     expect(within(celula).queryByRole('link')).not.toBeInTheDocument();
   });
 
+  // RF-4-24: cache por visitante (['jornada-visitante', visitante]), não por visita.
+  test('CA-4-20: duas visitas do mesmo visitante buscam o visitante uma vez e cada área mostra a sua visita', async () => {
+    const visitaEditor: VisitaJornada = { ...visitaDireta, visita: 'visita-editor' };
+    const visitaPrevia: VisitaJornada = { ...visitaDireta, visita: 'visita-previa', inicio: visitaDireta.inicio - 3_600_000 };
+    vi.mocked(jornadaService.visitas).mockResolvedValue([visitaEditor, visitaPrevia]);
+    vi.mocked(jornadaService.visitante).mockResolvedValue({
+      visitante: visitaDireta.visitante,
+      visitas: [visitaEditor, visitaPrevia],
+      eventos: [
+        { em: visitaPrevia.inicio, nome: 'lp_page_view', caminho: '/configurar/preview', visita: 'visita-previa' },
+        { em: visitaPrevia.inicio + 5_000, nome: 'lp_previa_secao_services', caminho: '/configurar/preview', visita: 'visita-previa' },
+        { em: visitaEditor.inicio, nome: 'lp_page_view', caminho: '/configurar/editar', visita: 'visita-editor' },
+        { em: visitaEditor.inicio + 5_000, nome: 'lp_clique_editor_imagem', caminho: '/configurar/editar', visita: 'visita-editor' },
+      ],
+      contratacoes: [],
+    });
+    renderizar();
+    const tabela = await screen.findByRole('table');
+    fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' }));
+    fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 17:51' }));
+
+    const areaDe = (hora: string) =>
+      document.getElementById(
+        within(tabela).getByRole('button', { name: `Fechar a visita das ${hora}` }).getAttribute('aria-controls')!,
+      )!;
+    const editor = areaDe('18:51');
+    const previa = areaDe('17:51');
+    expect(await within(editor).findByText('Pôs ou trocou imagem')).toBeInTheDocument();
+    expect(within(editor).queryByText('Viu: Serviços')).not.toBeInTheDocument();
+    expect(await within(previa).findByText('Viu: Serviços')).toBeInTheDocument();
+    expect(within(previa).queryByText('Pôs ou trocou imagem')).not.toBeInTheDocument();
+
+    expect(jornadaService.visitante).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(jornadaService.visitante).mock.calls).toEqual([[visitaDireta.visitante]]);
+  });
+
   // spec-4-detalhe RF-4-24, CA-4-20: a linha abre embaixo.
   test('CA-4-20: o botão abre a área da visita, busca o visitante uma vez e fecha', async () => {
     renderizar();
