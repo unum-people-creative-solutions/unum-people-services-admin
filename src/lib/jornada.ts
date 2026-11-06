@@ -1,6 +1,6 @@
 // Cálculos e rótulos da jornada do visitante (spec-2-painel, blueprint §3 e §5).
 // Funções puras: a tela filtra e soma as linhas cruas da API sem nova chamada.
-import type { Aparelho, FunilJornada, InstanteMs, OrigemCrua, PaginaDeEntrada } from '@/types/jornada';
+import type { Aparelho, EventoJornada, FunilJornada, InstanteMs, OrigemCrua, PaginaDeEntrada } from '@/types/jornada';
 
 export const ROTULOS_ETAPAS = [
   'Visitou',
@@ -140,20 +140,292 @@ const ROTULOS_LEITURA: Record<string, string> = {
   lp_tempo_3min: 'Ficou 3 min',
 };
 
-function rotuloComPrefixo(nome: string, prefixo: string, rotulos: Record<string, string>, antes: string): string | null {
-  if (!nome.startsWith(prefixo)) return null;
-  const chave = nome.slice(prefixo.length);
-  return Object.hasOwn(rotulos, chave) ? `${antes}${rotulos[chave]}` : null;
+// spec-4-detalhe Vocabulário: rotas e rótulos no painel.
+export const ROTULOS_ROTA: Record<string, string> = {
+  '/': 'Início',
+  '/saude': 'Saúde',
+  '/crm': 'CRM',
+  '/blog': 'Blog',
+  '/configurar': 'Escolha do modelo',
+  '/configurar/editar': 'Editor',
+  '/configurar/preview': 'Prévia',
+  '/configurar/contratar': 'Contratação',
+  '/configurar/sucesso': 'Sucesso',
+};
+
+// Caminho fora da tabela aparece cru.
+export function rotuloDaRota(caminho: string): string {
+  return Object.hasOwn(ROTULOS_ROTA, caminho) ? ROTULOS_ROTA[caminho] : caminho;
 }
 
+// TECH-DESIGN-jornada-detalhe-da-visita §4.4: nome do clique (sem "lp_clique_") → rótulo no painel.
+export const ROTULOS_CLIQUE_CONFIGURADOR: Record<string, string> = {
+  escolha_guia: 'Abriu "Como funciona?"',
+  escolha_modelo: 'Trocou o modelo',
+  escolha_tema: 'Trocou o tema',
+  escolha_botao: 'Mudou o destino do botão',
+  escolha_celular: 'Viu no celular',
+  escolha_computador: 'Viu no computador',
+  escolha_voltar: 'Voltou para o início',
+  editor_voltar: 'Voltou para a escolha do modelo',
+  editor_menu: 'Abriu o menu Editar',
+  editor_opcoes: 'Abriu Opções',
+  editor_previa: 'Foi para a prévia',
+  editor_descartar: 'Descartou o rascunho',
+  editor_contratar: 'Clicou em Contratar',
+  editor_imagem: 'Pôs ou trocou imagem',
+  editor_imagem_remover: 'Removeu imagem',
+  editor_link: 'Editou um link',
+  editor_whatsapp: 'Editou o WhatsApp',
+  editor_item_adicionar: 'Adicionou item',
+  editor_item_remover: 'Removeu item',
+  editor_secao_ocultar: 'Ocultou seção',
+  editor_secao_mostrar: 'Mostrou seção',
+  editor_layout_confirmar: 'Confirmou a troca de layout',
+  editor_layout_cancelar: 'Desistiu da troca de layout',
+  previa_voltar: 'Voltou a editar',
+  previa_contratar: 'Clicou em Contratar',
+  previa_botao: 'Testou um botão da página',
+  contratar_plano: 'Escolheu um plano',
+  contratar_pix: 'Escolheu Pix',
+  contratar_cartao: 'Escolheu cartão',
+  contratar_termo_ler: 'Abriu o Termo',
+  contratar_termo_aceitar: 'Marcou o aceite do Termo',
+  contratar_voltar: 'Voltou para a prévia',
+  contratar_finalizar: 'Clicou em Finalizar',
+  contratar_crm_planos: 'Foi ver planos com CRM',
+  contratar_crm_whatsapp: 'Trocou para WhatsApp',
+  sucesso_fatura: 'Abriu a fatura',
+  sucesso_site: 'Abriu o site no ar',
+};
+
+// TECH-DESIGN §4.5: nome do erro (sem "lp_erro_") → rótulo no painel. A prévia repete os do editor.
+export const ROTULOS_ERRO: Record<string, string> = {
+  escolha_endereco: 'Endereço da página inválido',
+  escolha_link: 'Link do botão inválido',
+  editor_rascunho_incompativel: 'Rascunho descartado (versão antiga)',
+  editor_rascunho_ilegivel: 'Rascunho ilegível',
+  editor_imagem_nao_guardada: 'Imagem não guardada no navegador',
+  editor_rascunho_nao_salvo: 'Navegador não guarda o rascunho',
+  editor_imagem_grande: 'Imagem grande demais',
+  editor_imagem_formato: 'Formato de imagem recusado',
+  editor_imagem_processar: 'Falha ao processar a imagem',
+  editor_link: 'Link inválido',
+  editor_whatsapp: 'WhatsApp vazio',
+  editor_texto_limite: 'Texto no limite de caracteres',
+  editor_endereco: 'Endereço da página inválido',
+  editor_link_botao: 'Link do botão inválido',
+  editor_ia_copiar: 'IA: não copiou sozinho',
+  previa_rascunho_incompativel: 'Rascunho descartado (versão antiga)',
+  previa_rascunho_ilegivel: 'Rascunho ilegível',
+  previa_imagem_nao_guardada: 'Imagem não guardada no navegador',
+  previa_rascunho_nao_salvo: 'Navegador não guarda o rascunho',
+  previa_sem_rascunho: 'Prévia sem página montada',
+  contratar_negocio: 'Campo Nome do negócio',
+  contratar_nome: 'Campo Seu nome',
+  contratar_email: 'Campo E-mail',
+  contratar_documento: 'Campo CPF ou CNPJ',
+  contratar_celular: 'Campo Celular',
+  contratar_nicho: 'Campo Ramo',
+  contratar_cep: 'Campo CEP',
+  contratar_endereco: 'Campo Endereço',
+  contratar_numero: 'Campo Número',
+  contratar_bairro: 'Campo Bairro',
+  contratar_outro_campo: 'Outro campo',
+  contratar_link_em_uso: 'Link em uso',
+  contratar_link_formato: 'Link em formato inválido',
+  contratar_link_verificar: 'Não conferiu o link',
+  contratar_planos: 'Planos não carregaram',
+  contratar_sem_planos: 'Nenhum plano disponível',
+  contratar_termos: 'Faltou aceitar o Termo',
+  contratar_modo_teste: 'Modo teste recusado',
+  contratar_termo_atualizado: 'Termo mudou durante o preenchimento',
+  contratar_falhou: 'A contratação falhou',
+  contratar_sem_rascunho: 'Contratação sem página montada',
+};
+
+// spec-4-detalhe RF-4-28: seções da prévia (sem "lp_previa_secao_"), na ordem da tabela de seções.
+export const ROTULOS_SECAO_PREVIA: Record<string, string> = {
+  benefits: 'Diferenciais',
+  steps: 'Passos',
+  testimonials: 'Depoimentos',
+  faq: 'Perguntas',
+  final_cta: 'Chamada',
+  location: 'Localização',
+  services: 'Serviços',
+  gallery: 'Galeria',
+  about: 'Quem somos',
+  product: 'Produto',
+  event: 'Evento',
+  menu: 'Cardápio',
+  fees: 'Valores',
+};
+
+const TEMPO_NA_PAGINA = 'lp_tempo_na_pagina';
+
+const ROLAGEM: Record<string, 25 | 50 | 75 | 100> = {
+  lp_rolagem_25: 25,
+  lp_rolagem_50: 50,
+  lp_rolagem_75: 75,
+  lp_rolagem_100: 100,
+};
+
+// Tipo do evento para o resumo da visita (RF-4-25); o rótulo vem sem prefixo.
+type TipoDoEvento = 'acao' | 'clique' | 'erro' | 'secao' | 'secao_previa';
+
+function rotuloPorPrefixo(nome: string, prefixo: string, rotulos: Record<string, string>): string | null {
+  if (!nome.startsWith(prefixo)) return null;
+  const chave = nome.slice(prefixo.length);
+  return Object.hasOwn(rotulos, chave) ? rotulos[chave] : null;
+}
+
+function classificar(nome: string): { tipo: TipoDoEvento; rotulo: string } | null {
+  // Etapas e usos do editor; lp_page_view é a passagem, não uma ação.
+  if (nome !== 'lp_page_view' && Object.hasOwn(ROTULOS_EVENTOS, nome)) {
+    return { tipo: 'acao', rotulo: ROTULOS_EVENTOS[nome] };
+  }
+  const prefixados: Array<[TipoDoEvento, string, Record<string, string>]> = [
+    ['secao', 'lp_secao_', ROTULOS_SECAO],
+    ['secao_previa', 'lp_previa_secao_', ROTULOS_SECAO_PREVIA],
+    ['clique', 'lp_clique_', ROTULOS_CLIQUE],
+    ['clique', 'lp_clique_', ROTULOS_CLIQUE_CONFIGURADOR],
+    ['erro', 'lp_erro_', ROTULOS_ERRO],
+  ];
+  for (const [tipo, prefixo, rotulos] of prefixados) {
+    const rotulo = rotuloPorPrefixo(nome, prefixo, rotulos);
+    if (rotulo !== null) return { tipo, rotulo };
+  }
+  return null;
+}
+
+const PREFIXO_NA_LINHA_DO_TEMPO: Record<TipoDoEvento, string> = {
+  acao: '',
+  clique: 'Clicou: ',
+  erro: 'Erro: ',
+  secao: 'Viu: ',
+  secao_previa: 'Viu na prévia: ',
+};
+
+// spec-4-detalhe RF-4-28: recebe o evento inteiro (o tempo depende de segundos).
 // null para evento desconhecido: a tela mostra o nome cru.
-export function rotuloDoEvento(nome: string): string | null {
-  if (Object.hasOwn(ROTULOS_EVENTOS, nome)) return ROTULOS_EVENTOS[nome];
+export function rotuloDoEvento(evento: EventoJornada): string | null {
+  const { nome } = evento;
+  if (nome === TEMPO_NA_PAGINA) {
+    return evento.segundos === undefined ? null : `Ficou ${formatarDuracao(evento.segundos)} nesta página`;
+  }
+  if (nome === 'lp_page_view') return ROTULOS_EVENTOS[nome];
   if (Object.hasOwn(ROTULOS_LEITURA, nome)) return ROTULOS_LEITURA[nome];
-  return (
-    rotuloComPrefixo(nome, 'lp_secao_', ROTULOS_SECAO, 'Viu: ') ??
-    rotuloComPrefixo(nome, 'lp_clique_', ROTULOS_CLIQUE, 'Clicou: ')
-  );
+  const classificado = classificar(nome);
+  return classificado ? `${PREFIXO_NA_LINHA_DO_TEMPO[classificado.tipo]}${classificado.rotulo}` : null;
+}
+
+// spec-4-detalhe RF-4-26.
+export function formatarDuracao(segundos: number): string {
+  if (segundos < 60) return `${segundos} s`;
+  if (segundos < 3600) {
+    const minutos = Math.floor(segundos / 60);
+    const resto = segundos % 60;
+    return resto === 0 ? `${minutos} min` : `${minutos} min ${resto} s`;
+  }
+  const horas = Math.floor(segundos / 3600);
+  const minutos = Math.floor((segundos % 3600) / 60);
+  return `${horas} h ${String(minutos).padStart(2, '0')} min`;
+}
+
+export interface AcaoDaPagina {
+  rotulo: string;
+  vezes: number;
+}
+
+export interface PaginaDaVisita {
+  caminho: string;
+  passagens: number;
+  segundos: number | null;
+  rolagem: 25 | 50 | 75 | 100 | null;
+  secoes: string[];
+  acoes: AcaoDaPagina[];
+  erros: string[];
+}
+
+export interface ResumoDaVisita {
+  inicio: InstanteMs;
+  fim: InstanteMs;
+  duracaoMs: number;
+  paginas: PaginaDaVisita[];
+  ultimaPagina: string;
+}
+
+function emOrdem(eventos: EventoJornada[]): EventoJornada[] {
+  return [...eventos].sort((a, b) => a.em - b.em);
+}
+
+// spec-4-detalhe RF-4-25: só os eventos da visita, na ordem do tempo. null se a visita não tem eventos.
+export function resumirVisita(eventos: EventoJornada[], visita: string): ResumoDaVisita | null {
+  const daVisita = emOrdem(eventos.filter((e) => e.visita === visita));
+  if (daVisita.length === 0) return null;
+
+  const paginas = new Map<string, PaginaDaVisita>();
+  for (const evento of daVisita) {
+    let pagina = paginas.get(evento.caminho);
+    if (!pagina) {
+      pagina = { caminho: evento.caminho, passagens: 0, segundos: null, rolagem: null, secoes: [], acoes: [], erros: [] };
+      paginas.set(evento.caminho, pagina);
+    }
+    const { nome } = evento;
+    if (nome === 'lp_page_view') {
+      pagina.passagens += 1;
+      continue;
+    }
+    if (nome === TEMPO_NA_PAGINA) {
+      pagina.segundos = (pagina.segundos ?? 0) + (evento.segundos ?? 0);
+      continue;
+    }
+    if (Object.hasOwn(ROLAGEM, nome)) {
+      pagina.rolagem = Math.max(pagina.rolagem ?? 0, ROLAGEM[nome]) as PaginaDaVisita['rolagem'];
+      continue;
+    }
+    const classificado = classificar(nome);
+    if (!classificado) continue;
+    const { tipo, rotulo } = classificado;
+    if (tipo === 'secao' || tipo === 'secao_previa') {
+      if (!pagina.secoes.includes(rotulo)) pagina.secoes.push(rotulo);
+    } else if (tipo === 'erro') {
+      if (!pagina.erros.includes(rotulo)) pagina.erros.push(rotulo);
+    } else {
+      const anterior = pagina.acoes.at(-1);
+      if (anterior?.rotulo === rotulo) anterior.vezes += 1;
+      else pagina.acoes.push({ rotulo, vezes: 1 });
+    }
+  }
+
+  const inicio = daVisita[0].em;
+  const fim = daVisita[daVisita.length - 1].em;
+  return {
+    inicio,
+    fim,
+    duracaoMs: fim - inicio,
+    paginas: [...paginas.values()],
+    ultimaPagina: daVisita[daVisita.length - 1].caminho,
+  };
+}
+
+export interface TempoDaPagina {
+  caminho: string;
+  segundos: number;
+  visitas: number;
+}
+
+// spec-4-detalhe RF-4-27: soma de todas as visitas, uma linha por caminho com tempo medido, na ordem da 1ª vez.
+export function tempoPorPagina(eventos: EventoJornada[]): TempoDaPagina[] {
+  const porCaminho = new Map<string, { segundos: number; visitas: Set<string> }>();
+  for (const evento of emOrdem(eventos)) {
+    if (evento.nome !== TEMPO_NA_PAGINA) continue;
+    const linha = porCaminho.get(evento.caminho) ?? { segundos: 0, visitas: new Set<string>() };
+    linha.segundos += evento.segundos ?? 0;
+    linha.visitas.add(evento.visita);
+    porCaminho.set(evento.caminho, linha);
+  }
+  return [...porCaminho].map(([caminho, { segundos, visitas }]) => ({ caminho, segundos, visitas: visitas.size }));
 }
 
 const ROTULOS_APARELHO: Record<Aparelho, string> = {
@@ -275,6 +547,26 @@ export function somarDias(dia: string, dias: number): string {
 export function periodoUtc(dias: number, agora: Date): { de: string; ate: string } {
   const ate = diaUtc(agora);
   return { de: somarDias(ate, -(dias - 1)), ate };
+}
+
+const UM_DIA_MS = 86_400_000;
+
+// spec-4-detalhe RF-4-21: períodos da página Jornada, nesta ordem.
+export const PERIODOS: ReadonlyArray<{ rotulo: string; ms: number }> = [
+  { rotulo: '1 h', ms: 3_600_000 },
+  { rotulo: '3 h', ms: 10_800_000 },
+  { rotulo: '6 h', ms: 21_600_000 },
+  { rotulo: '12 h', ms: 43_200_000 },
+  { rotulo: '24 horas', ms: UM_DIA_MS },
+  { rotulo: '3 dias', ms: 3 * UM_DIA_MS },
+  { rotulo: '7 dias', ms: 7 * UM_DIA_MS },
+  { rotulo: '15 dias', ms: 15 * UM_DIA_MS },
+  { rotulo: '30 dias', ms: 30 * UM_DIA_MS },
+];
+
+// Janela móvel que termina agora, em ms.
+export function janela(ms: number, agora: InstanteMs): { desde: InstanteMs; ate: InstanteMs } {
+  return { desde: agora - ms, ate: agora };
 }
 
 // Horários sempre em Brasília (RF-2-11), sem conta de fuso à mão.

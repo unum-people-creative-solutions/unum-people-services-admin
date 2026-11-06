@@ -165,7 +165,7 @@ export default function VisitantePage() {
                     ) : (
                       <ol className="divide-y divide-slate-50">
                         {grupo.eventos.map((evento, i) => {
-                          const rotulo = rotuloDoEvento(evento.nome);
+                          const rotulo = rotuloDoEvento(evento);
                           return (
                             <li
                               key={`${evento.em}-${i}`}
