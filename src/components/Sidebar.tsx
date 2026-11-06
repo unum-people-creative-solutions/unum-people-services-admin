@@ -13,7 +13,7 @@ import {
   ChevronRight,
   LogOut,
   Menu,
-  X, ShieldCheck } from 'lucide-react';
+  X, ShieldCheck, Route } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -24,6 +24,11 @@ const menuItems = [
     title: 'Visão Geral',
     href: '/dashboard',
     icon: LayoutDashboard,
+  },
+  {
+    title: 'Jornada',
+    href: '/dashboard/jornada',
+    icon: Route,
   },
   {
     title: 'Gestão de Tenants',
@@ -126,6 +131,7 @@ export function Sidebar() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsOpen(false)}
+                  aria-current={isActive ? 'page' : undefined}
                   className={cn(
                     "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group",
                     isActive 

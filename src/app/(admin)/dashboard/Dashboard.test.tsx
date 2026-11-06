@@ -12,6 +12,13 @@ vi.mock('@/services/tenantService', () => ({
   },
 }));
 
+// A seção do funil (spec-2-painel RF-2-06) tem testes próprios em DashboardFunil.test.tsx.
+vi.mock('@/services/jornadaService', () => ({
+  jornadaService: {
+    funil: vi.fn(() => Promise.resolve({ etapas: [], uso: [], pagou: [] })),
+  },
+}));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
