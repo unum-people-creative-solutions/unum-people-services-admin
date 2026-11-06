@@ -593,14 +593,6 @@ const formatoDiaMes = new Intl.DateTimeFormat('pt-BR', {
   month: 'numeric',
 });
 
-// O dia da lista de visitas é um dia UTC (GSI1); mostrado como está.
-const formatoDia = new Intl.DateTimeFormat('pt-BR', {
-  timeZone: 'UTC',
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
-
 export function formatarHora(instante: InstanteMs): string {
   return formatoHora.format(new Date(instante));
 }
@@ -615,8 +607,4 @@ export function formatarDiaMes(instante: InstanteMs): string {
   const dia = partes.find((p) => p.type === 'day')?.value ?? '';
   const mes = partes.find((p) => p.type === 'month')?.value ?? '';
   return `${Number(dia)}/${Number(mes)}`;
-}
-
-export function formatarDia(dia: string): string {
-  return formatoDia.format(new Date(`${dia}T00:00:00Z`));
 }

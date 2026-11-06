@@ -15,7 +15,6 @@ import {
   formatarHora,
   formatarHoraComSegundos,
   formatarDiaMes,
-  formatarDia,
   maiorEtapa,
   ROTULOS_PAGINA,
   ROTULOS_SECAO,
@@ -190,10 +189,6 @@ describe('datas', () => {
     expect(formatarHora(Date.UTC(2026, 10, 5, 21, 51, 8))).toBe('18:51');
     expect(formatarHoraComSegundos(Date.UTC(2026, 10, 5, 21, 51, 8))).toBe('18:51:08');
     expect(formatarDiaMes(Date.UTC(2026, 10, 6, 1, 30, 0))).toBe('5/11');
-  });
-
-  it('formatarDia mostra o dia UTC por extenso', () => {
-    expect(formatarDia('2026-11-05')).toBe('5 de nov. de 2026');
   });
 });
 

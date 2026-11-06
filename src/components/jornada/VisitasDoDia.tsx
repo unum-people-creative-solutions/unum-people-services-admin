@@ -1,11 +1,9 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { MouseEvent } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { VisitaJornada } from '@/types/jornada';
 import {
   ROTULOS_ETAPAS,
-  formatarDia,
   formatarHora,
   maiorEtapa,
   rotuloDaOrigem,
@@ -16,14 +14,10 @@ import { SeloPagamento, SeloTeste, SeloUsouEditor } from './Selos';
 import { EmpresaContratante } from './EmpresaContratante';
 
 interface VisitasDoDiaProps {
-  dia: string;
-  hoje: string;
   visitas: VisitaJornada[] | undefined;
   carregando: boolean;
   erro: boolean;
   onTentar: () => void;
-  onDiaAnterior: () => void;
-  onProximoDia: () => void;
   mostrarTeste: boolean;
   onMostrarTeste: (valor: boolean) => void;
 }
@@ -34,14 +28,10 @@ export function caminhoDoVisitante(visitante: string): string {
 
 // Visitas do dia (blueprint §3.4).
 export function VisitasDoDia({
-  dia,
-  hoje,
   visitas,
   carregando,
   erro,
   onTentar,
-  onDiaAnterior,
-  onProximoDia,
   mostrarTeste,
   onMostrarTeste,
 }: VisitasDoDiaProps) {
@@ -63,26 +53,6 @@ export function VisitasDoDia({
         <h2 id="titulo-visitas" className="font-bold text-slate-900">
           Visitas
         </h2>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            aria-label="Dia anterior"
-            onClick={onDiaAnterior}
-            className="p-1.5 rounded-md text-slate-600 hover:bg-slate-100"
-          >
-            <ChevronLeft size={18} aria-hidden="true" />
-          </button>
-          <span className="min-w-[9rem] text-center text-sm font-medium text-slate-700">{formatarDia(dia)}</span>
-          <button
-            type="button"
-            aria-label="Próximo dia"
-            onClick={onProximoDia}
-            disabled={dia >= hoje}
-            className="p-1.5 rounded-md text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-          >
-            <ChevronRight size={18} aria-hidden="true" />
-          </button>
-        </div>
         <label className="flex items-center gap-2 text-sm text-slate-600 sm:ml-auto">
           <input
             type="checkbox"

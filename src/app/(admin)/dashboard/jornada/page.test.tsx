@@ -97,6 +97,10 @@ const visitaTeste: VisitaJornada = {
 
 const push = vi.fn();
 
+// Relógio fixo dos testes: 2026-11-05T23:00:00Z (20:00 em Brasília).
+const T = Date.UTC(2026, 10, 5, 23, 0, 0);
+const DIA = 86_400_000;
+
 function renderizar() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -130,21 +134,84 @@ describe('Página Jornada do visitante', () => {
     ).toBeInTheDocument();
   });
 
-  test('período: 7 dias por padrão, e mudar o período faz nova chamada', async () => {
+  // spec-4-detalhe RF-4-21, CA-4-17.
+  test('períodos: os nove na ordem, 7 dias por padrão, sem "Hoje", e a janela de 7 dias até agora', async () => {
     renderizar();
     const grupo = screen.getByRole('group', { name: 'Período' });
-    expect(within(grupo).getByRole('button', { name: '7 dias' })).toHaveAttribute('aria-pressed', 'true');
-    expect(within(grupo).getByRole('button', { name: 'Hoje' })).toHaveAttribute('aria-pressed', 'false');
+    expect(within(grupo).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      '1 h', '3 h', '6 h', '12 h', '24 horas', '3 dias', '7 dias', '15 dias', '30 dias',
+    ]);
+    expect(
+      within(grupo).getAllByRole('button').filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent),
+    ).toEqual(['7 dias']);
+    expect(within(grupo).getAllByRole('button').filter((b) => b.getAttribute('aria-pressed') === 'false')).toHaveLength(8);
+    expect(within(grupo).queryByRole('button', { name: 'Hoje' })).not.toBeInTheDocument();
     await screen.findByRole('region', { name: 'Funil · 7 dias' });
-    expect(jornadaService.funil).toHaveBeenLastCalledWith('2026-10-30', '2026-11-05');
+    expect(jornadaService.funil).toHaveBeenLastCalledWith(T - 7 * DIA, T);
+    expect(jornadaService.visitas).toHaveBeenLastCalledWith(T - 7 * DIA, T);
+  });
 
-    fireEvent.click(within(grupo).getByRole('button', { name: 'Hoje' }));
-    await waitFor(() => expect(jornadaService.funil).toHaveBeenLastCalledWith('2026-11-05', '2026-11-05'));
-    expect(within(grupo).getByRole('button', { name: 'Hoje' })).toHaveAttribute('aria-pressed', 'true');
+  test('CA-4-17: "24 horas" pede funil e visitas com a janela de 24 h, e o título usa o rótulo', async () => {
+    renderizar();
+    await screen.findByRole('region', { name: 'Funil · 7 dias' });
+    fireEvent.click(within(screen.getByRole('group', { name: 'Período' })).getByRole('button', { name: '24 horas' }));
+    await waitFor(() => expect(jornadaService.funil).toHaveBeenLastCalledWith(T - DIA, T));
+    expect(jornadaService.visitas).toHaveBeenLastCalledWith(T - DIA, T);
+    expect(screen.getByRole('button', { name: '24 horas' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByRole('region', { name: 'Funil · 24 horas' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Páginas de entrada · 24 horas' })).toBeInTheDocument();
+  });
 
-    fireEvent.click(within(grupo).getByRole('button', { name: '30 dias' }));
-    await waitFor(() => expect(jornadaService.funil).toHaveBeenLastCalledWith('2026-10-07', '2026-11-05'));
-    expect(await screen.findByRole('region', { name: 'Funil · 30 dias' })).toBeInTheDocument();
+  test('RF-4-22: trocar o período recalcula a janela até agora', async () => {
+    renderizar();
+    await screen.findByRole('region', { name: 'Funil · 7 dias' });
+    vi.setSystemTime(T + 60_000);
+    fireEvent.click(screen.getByRole('button', { name: '1 h' }));
+    await waitFor(() => expect(jornadaService.funil).toHaveBeenLastCalledWith(T + 60_000 - 3_600_000, T + 60_000));
+    expect(jornadaService.visitas).toHaveBeenLastCalledWith(T + 60_000 - 3_600_000, T + 60_000);
+  });
+
+  // spec-4-detalhe RF-4-22, CA-4-18. Rode também com TZ=Asia/Tokyo (L-054).
+  test('CA-4-18: Atualizar busca de novo até agora e mostra "Atualizado às HH:MM" em Brasília', async () => {
+    renderizar();
+    const aviso = await screen.findByText('Atualizado às 20:00');
+    expect(aviso.textContent).toBe('Atualizado às 20:00');
+    expect(aviso).toHaveAttribute('aria-live', 'polite');
+    expect(jornadaService.funil).toHaveBeenCalledTimes(1);
+    expect(jornadaService.visitas).toHaveBeenCalledTimes(1);
+
+    // Relógio parado em T: o clique busca de novo, com ate = T.
+    fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
+    await waitFor(() => expect(jornadaService.funil).toHaveBeenCalledTimes(2));
+    expect(jornadaService.funil).toHaveBeenLastCalledWith(T - 7 * DIA, T);
+    await waitFor(() => expect(jornadaService.visitas).toHaveBeenCalledTimes(2));
+    expect(jornadaService.visitas).toHaveBeenLastCalledWith(T - 7 * DIA, T);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Atualizar' })).toBeEnabled());
+
+    vi.setSystemTime(T + 60_000);
+    fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
+    await waitFor(() => expect(jornadaService.funil).toHaveBeenLastCalledWith(T + 60_000 - 7 * DIA, T + 60_000));
+    expect(jornadaService.visitas).toHaveBeenLastCalledWith(T + 60_000 - 7 * DIA, T + 60_000);
+    expect((await screen.findByText('Atualizado às 20:01')).textContent).toBe('Atualizado às 20:01');
+    expect(screen.queryByText('Atualizado às 20:00')).not.toBeInTheDocument();
+  });
+
+  test('CA-4-18: durante a busca o Atualizar fica desabilitado, com aria-busy', async () => {
+    renderizar();
+    await screen.findByText('Atualizado às 20:00');
+    const botao = screen.getByRole('button', { name: 'Atualizar' });
+    expect(botao).toBeEnabled();
+    expect(botao).toHaveAttribute('aria-busy', 'false');
+
+    let responder: (f: FunilJornada) => void = () => {};
+    vi.mocked(jornadaService.funil).mockReturnValueOnce(new Promise((r) => { responder = r; }));
+    fireEvent.click(botao);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Atualizar' })).toBeDisabled());
+    expect(screen.getByRole('button', { name: 'Atualizar' })).toHaveAttribute('aria-busy', 'true');
+
+    responder(funil);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Atualizar' })).toBeEnabled());
+    expect(screen.getByRole('button', { name: 'Atualizar' })).toHaveAttribute('aria-busy', 'false');
   });
 
   test('CA-2-07: funil sem filtro, com a taxa sobre a etapa anterior', async () => {
@@ -241,8 +308,7 @@ describe('Página Jornada do visitante', () => {
   test('visitas do dia: hora em Brasília, origem agrupada, até onde foi e o contratante com link', async () => {
     renderizar();
     const visitas = await screen.findByRole('region', { name: 'Visitas' });
-    expect(within(visitas).getByText('5 de nov. de 2026')).toBeInTheDocument();
-    expect(jornadaService.visitas).toHaveBeenCalledWith('2026-11-05', false);
+    expect(jornadaService.visitas).toHaveBeenCalledWith(T - 7 * DIA, T);
     const tabela = await within(visitas).findByRole('table');
     expect(within(tabela).getAllByRole('columnheader').map((th) => th.textContent)).toEqual([
       'Hora', 'Aparelho', 'Origem', 'Páginas', 'Até onde foi', 'Contratou',
@@ -304,26 +370,27 @@ describe('Página Jornada do visitante', () => {
     expect(push).toHaveBeenCalledWith('/dashboard/jornada/5b1f8a3c-2d4e-4f6a-8b9c-0d1e2f2da0b6');
   });
 
-  test('CA-2-07: Mostrar visitas de teste refaz a chamada com teste=1 e mostra o selo Teste', async () => {
-    renderizar();
-    await screen.findByRole('table');
+  // RF-4-19/RF-4-23: a API devolve as de teste sempre; a tela filtra sem nova chamada.
+  test('Mostrar visitas de teste mostra a visita de teste com o selo, sem nova chamada', async () => {
     vi.mocked(jornadaService.visitas).mockResolvedValue([visitaTeste, visitaDireta]);
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Mostrar visitas de teste' }));
-    await waitFor(() => expect(jornadaService.visitas).toHaveBeenLastCalledWith('2026-11-05', true));
+    renderizar();
     const tabela = await screen.findByRole('table');
-    await waitFor(() => expect(within(tabela).getAllByRole('row')).toHaveLength(3));
+    expect(within(tabela).getAllByRole('row')).toHaveLength(2);
+    expect(within(tabela).queryByText('Teste')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Mostrar visitas de teste' }));
+    expect(within(tabela).getAllByRole('row')).toHaveLength(3);
     const [, linhaTeste] = within(tabela).getAllByRole('row');
     expect(within(linhaTeste).getByText('Teste')).toBeInTheDocument();
+    expect(jornadaService.visitas).toHaveBeenCalledTimes(1);
   });
 
-  test('navegação por dia: › desabilitado hoje, ‹ volta um dia', async () => {
+  // CA-4-19: a lista segue o período.
+  test('a navegação por dia não existe', async () => {
     renderizar();
     const visitas = await screen.findByRole('region', { name: 'Visitas' });
-    expect(within(visitas).getByRole('button', { name: 'Próximo dia' })).toBeDisabled();
-    fireEvent.click(within(visitas).getByRole('button', { name: 'Dia anterior' }));
-    await waitFor(() => expect(jornadaService.visitas).toHaveBeenLastCalledWith('2026-11-04', false));
-    expect(within(visitas).getByText('4 de nov. de 2026')).toBeInTheDocument();
-    expect(within(visitas).getByRole('button', { name: 'Próximo dia' })).toBeEnabled();
+    await within(visitas).findByRole('table');
+    expect(within(visitas).queryByRole('button', { name: 'Dia anterior' })).not.toBeInTheDocument();
+    expect(within(visitas).queryByRole('button', { name: 'Próximo dia' })).not.toBeInTheDocument();
   });
 
   test('dia sem visitas', async () => {
