@@ -47,7 +47,8 @@ export interface LinhaLeitura {
   visitas: number;
 }
 
-// GET /admin/dashboard/jornada/funil?de=AAAA-MM-DD&ate=AAAA-MM-DD
+// GET /admin/dashboard/jornada/funil?desde=<ms>&ate=<ms> (spec-4-detalhe RF-4-18)
+// ou ?de=AAAA-MM-DD&ate=AAAA-MM-DD (formato antigo); a resposta é a mesma.
 export interface FunilJornada {
   etapas: LinhaEtapa[];
   uso: LinhaUso[];
@@ -88,6 +89,8 @@ export interface EventoJornada {
   nome: string;
   caminho: string;
   visita: string;
+  // spec-4-detalhe RF-4-16/RF-4-20: só em lp_tempo_na_pagina (1 a 300); omitido nos outros.
+  segundos?: number;
 }
 
 // GET /admin/dashboard/jornada/visitantes/{visitante}

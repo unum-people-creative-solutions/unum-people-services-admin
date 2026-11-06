@@ -1,0 +1,49 @@
+{
+  "visitante": "3f2b8c1e-9d4a-4b7e-8a6f-1c2d3e4f5a6b",
+  "visitas": [
+    {
+      "visitante": "3f2b8c1e-9d4a-4b7e-8a6f-1c2d3e4f5a6b",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "inicio": 1793880000000,
+      "fim": 1793880043000,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "paginas": 2,
+      "etapas": [
+        1,
+        4,
+        5
+      ],
+      "usos": [],
+      "teste": false
+    }
+  ],
+  "eventos": [
+    {
+      "em": 1793880000000,
+      "nome": "lp_page_view",
+      "caminho": "/configurar/editar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1793880005000,
+      "nome": "lp_clique_editor_imagem",
+      "caminho": "/configurar/editar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1793880042000,
+      "nome": "lp_tempo_na_pagina",
+      "caminho": "/configurar/editar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 42
+    },
+    {
+      "em": 1793880043000,
+      "nome": "lp_page_view",
+      "caminho": "/configurar/preview",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    }
+  ],
+  "contratacoes": []
+}

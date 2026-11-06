@@ -1,35 +1,31 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { RefreshCw } from 'lucide-react';
 import { jornadaService } from '@/services/jornadaService';
 import { FunilVitrine } from '@/components/jornada/FunilVitrine';
 import { UsoDoEditor } from '@/components/jornada/UsoDoEditor';
 import { PaginasDeEntrada } from '@/components/jornada/PaginasDeEntrada';
-import { VisitasDoDia } from '@/components/jornada/VisitasDoDia';
+import { VisitasDoPeriodo } from '@/components/jornada/VisitasDoPeriodo';
 import {
+  PERIODOS,
   ROTULOS_ORIGEM,
   calcularFunil,
   calcularLeitura,
   calcularUso,
-  diaUtc,
-  periodoUtc,
+  formatarHora,
+  janela,
   rotuloDoAparelho,
-  somarDias,
   type FiltroJornada,
   type GrupoOrigem,
 } from '@/lib/jornada';
 import type { Aparelho } from '@/types/jornada';
 
-// spec-2-painel RF-2-07; blueprint §3.
+// spec-2-painel RF-2-07; blueprint §3; spec-4-detalhe RF-4-21 e RF-4-22.
 
-const PERIODOS = [
-  { dias: 1, rotulo: 'Hoje' },
-  { dias: 7, rotulo: '7 dias' },
-  { dias: 30, rotulo: '30 dias' },
-] as const;
-
-type Dias = (typeof PERIODOS)[number]['dias'];
+const PERIODO_PADRAO = PERIODOS.find((p) => p.rotulo === '7 dias')!;
+const UM_DIA_MS = 86_400_000;
 
 const GRUPOS_ORIGEM = Object.keys(ROTULOS_ORIGEM) as GrupoOrigem[];
 const APARELHOS: Aparelho[] = ['celular', 'computador'];
@@ -38,23 +34,47 @@ const classeSelect =
   'rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500';
 
 export default function JornadaPage() {
-  const [hoje] = useState(() => diaUtc(new Date()));
-  const [dias, setDias] = useState<Dias>(7);
+  const queryClient = useQueryClient();
+  // A janela termina no instante da última troca de período ou do último Atualizar.
+  // rodada: o Atualizar busca de novo mesmo quando o relógio não andou.
+  const [consulta, setConsulta] = useState(() => ({ periodo: PERIODO_PADRAO, agora: Date.now(), rodada: 0 }));
   const [filtro, setFiltro] = useState<FiltroJornada>({ origem: 'todas', aparelho: 'todos' });
-  const [dia, setDia] = useState(hoje);
   const [mostrarTeste, setMostrarTeste] = useState(false);
 
-  const periodo = useMemo(() => periodoUtc(dias, new Date(`${hoje}T12:00:00Z`)), [dias, hoje]);
+  const { periodo, rodada } = consulta;
+  const { desde, ate } = janela(periodo.ms, consulta.agora);
 
   const funilQuery = useQuery({
-    queryKey: ['jornada-funil', periodo.de, periodo.ate],
-    queryFn: () => jornadaService.funil(periodo.de, periodo.ate),
+    queryKey: ['jornada-funil', desde, ate, rodada],
+    queryFn: () => jornadaService.funil(desde, ate),
   });
 
+  // RF-4-19: as de teste vêm sempre; a tela filtra pelo "Mostrar visitas de teste".
   const visitasQuery = useQuery({
-    queryKey: ['jornada-visitas', dia, mostrarTeste],
-    queryFn: () => jornadaService.visitas(dia, mostrarTeste),
+    queryKey: ['jornada-visitas', desde, ate, rodada],
+    queryFn: () => jornadaService.visitas(desde, ate),
   });
+
+  const visitas = useMemo(
+    () => visitasQuery.data?.filter((v) => mostrarTeste || !v.teste),
+    [visitasQuery.data, mostrarTeste],
+  );
+
+  const atualizando = funilQuery.isFetching || visitasQuery.isFetching;
+  const atualizadoEm =
+    funilQuery.isSuccess && visitasQuery.isSuccess && !atualizando
+      ? Math.max(funilQuery.dataUpdatedAt, visitasQuery.dataUpdatedAt)
+      : null;
+
+  function trocarPeriodo(novo: (typeof PERIODOS)[number]) {
+    setConsulta((c) => ({ ...c, periodo: novo, agora: Date.now() }));
+  }
+
+  function atualizar() {
+    setConsulta((c) => ({ ...c, agora: Date.now(), rodada: c.rodada + 1 }));
+    // As visitas abertas buscam o visitante de novo (RF-4-22).
+    void queryClient.invalidateQueries({ queryKey: ['jornada-visitante'] });
+  }
 
   // Filtros recalculados na tela, a partir das linhas cruas (sem nova chamada).
   const valores = useMemo(
@@ -74,7 +94,7 @@ export default function JornadaPage() {
   const comFiltros = (nome: string) =>
     [
       nome,
-      PERIODOS.find((p) => p.dias === dias)?.rotulo,
+      periodo.rotulo,
       filtro.origem !== 'todas' ? ROTULOS_ORIGEM[filtro.origem] : null,
       filtro.aparelho !== 'todos' ? rotuloDoAparelho(filtro.aparelho) : null,
     ]
@@ -95,19 +115,19 @@ export default function JornadaPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-x-8 gap-y-4 bg-white px-6 py-4 rounded-xl shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3">
-            <span aria-hidden="true" className="text-sm font-medium text-slate-600">
+          <div className="flex w-full items-start gap-3">
+            <span aria-hidden="true" className="py-2 text-sm font-medium text-slate-600">
               Período:
             </span>
-            <div role="group" aria-label="Período" className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50">
+            <div role="group" aria-label="Período" className="flex flex-wrap rounded-lg border border-slate-200 p-0.5 bg-slate-50">
               {PERIODOS.map((p) => (
                 <button
-                  key={p.dias}
+                  key={p.rotulo}
                   type="button"
-                  aria-pressed={dias === p.dias}
-                  onClick={() => setDias(p.dias)}
+                  aria-pressed={periodo === p}
+                  onClick={() => trocarPeriodo(p)}
                   className={
-                    dias === p.dias
+                    periodo === p
                       ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-white text-primary-700 shadow-sm'
                       : 'px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900'
                   }
@@ -147,6 +167,25 @@ export default function JornadaPage() {
               ))}
             </select>
           </label>
+          <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
+            <button
+              type="button"
+              onClick={atualizar}
+              disabled={atualizando}
+              aria-busy={atualizando}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw
+                size={16}
+                aria-hidden="true"
+                className={atualizando ? 'animate-spin motion-reduce:animate-none' : undefined}
+              />
+              Atualizar
+            </button>
+            <p aria-live="polite" className="text-sm text-slate-500">
+              {atualizadoEm !== null ? `Atualizado às ${formatarHora(atualizadoEm)}` : ''}
+            </p>
+          </div>
         </div>
 
         <FunilVitrine
@@ -175,15 +214,13 @@ export default function JornadaPage() {
           onTentar={() => void funilQuery.refetch()}
         />
 
-        <VisitasDoDia
-          dia={dia}
-          hoje={hoje}
-          visitas={visitasQuery.data}
+        <VisitasDoPeriodo
+          rotuloPeriodo={periodo.rotulo}
+          comData={periodo.ms > UM_DIA_MS}
+          visitas={visitas}
           carregando={visitasCarregando}
           erro={visitasQuery.isError}
           onTentar={() => void visitasQuery.refetch()}
-          onDiaAnterior={() => setDia((d) => somarDias(d, -1))}
-          onProximoDia={() => setDia((d) => (d < hoje ? somarDias(d, 1) : d))}
           mostrarTeste={mostrarTeste}
           onMostrarTeste={setMostrarTeste}
         />
