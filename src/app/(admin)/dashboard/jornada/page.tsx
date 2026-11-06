@@ -5,10 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import { jornadaService } from '@/services/jornadaService';
 import { FunilVitrine } from '@/components/jornada/FunilVitrine';
 import { UsoDoEditor } from '@/components/jornada/UsoDoEditor';
+import { PaginasDeEntrada } from '@/components/jornada/PaginasDeEntrada';
 import { VisitasDoDia } from '@/components/jornada/VisitasDoDia';
 import {
   ROTULOS_ORIGEM,
   calcularFunil,
+  calcularLeitura,
   calcularUso,
   diaUtc,
   periodoUtc,
@@ -63,15 +65,21 @@ export default function JornadaPage() {
     () => (funilQuery.data ? calcularUso(funilQuery.data, filtro) : undefined),
     [funilQuery.data, filtro],
   );
+  const leitura = useMemo(
+    () => (funilQuery.data ? calcularLeitura(funilQuery.data, filtro) : undefined),
+    [funilQuery.data, filtro],
+  );
 
-  const tituloFunil = [
-    'Funil',
-    PERIODOS.find((p) => p.dias === dias)?.rotulo,
-    filtro.origem !== 'todas' ? ROTULOS_ORIGEM[filtro.origem] : null,
-    filtro.aparelho !== 'todos' ? rotuloDoAparelho(filtro.aparelho) : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  // Período e filtros no título das seções que os obedecem (blueprint §3.2; leitura §7.1).
+  const comFiltros = (nome: string) =>
+    [
+      nome,
+      PERIODOS.find((p) => p.dias === dias)?.rotulo,
+      filtro.origem !== 'todas' ? ROTULOS_ORIGEM[filtro.origem] : null,
+      filtro.aparelho !== 'todos' ? rotuloDoAparelho(filtro.aparelho) : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
 
   const funilCarregando = funilQuery.isPending || (funilQuery.isError && funilQuery.isFetching);
   const visitasCarregando = visitasQuery.isPending || (visitasQuery.isError && visitasQuery.isFetching);
@@ -143,7 +151,7 @@ export default function JornadaPage() {
 
         <FunilVitrine
           idTitulo="titulo-funil-jornada"
-          titulo={tituloFunil}
+          titulo={comFiltros('Funil')}
           valores={valores}
           carregando={funilCarregando}
           erro={funilQuery.isError}
@@ -154,6 +162,14 @@ export default function JornadaPage() {
 
         <UsoDoEditor
           uso={uso}
+          carregando={funilCarregando}
+          erro={funilQuery.isError}
+          onTentar={() => void funilQuery.refetch()}
+        />
+
+        <PaginasDeEntrada
+          titulo={comFiltros('Páginas de entrada')}
+          leitura={leitura}
           carregando={funilCarregando}
           erro={funilQuery.isError}
           onTentar={() => void funilQuery.refetch()}
