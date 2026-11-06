@@ -11,10 +11,16 @@ export function EsqueletoDaSecao({ linhas = 5 }: { linhas?: number }) {
   );
 }
 
-export function ErroDaSecao({ onTentar }: { onTentar: () => void }) {
+export function ErroDaSecao({
+  onTentar,
+  mensagem = 'Não foi possível carregar.',
+}: {
+  onTentar: () => void;
+  mensagem?: string;
+}) {
   return (
     <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-      <span>Não foi possível carregar.</span>
+      <span>{mensagem}</span>
       <button
         type="button"
         onClick={onTentar}

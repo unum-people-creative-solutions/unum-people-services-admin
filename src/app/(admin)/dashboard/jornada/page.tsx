@@ -1,13 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { jornadaService } from '@/services/jornadaService';
 import { FunilVitrine } from '@/components/jornada/FunilVitrine';
 import { UsoDoEditor } from '@/components/jornada/UsoDoEditor';
 import { PaginasDeEntrada } from '@/components/jornada/PaginasDeEntrada';
-import { VisitasDoDia } from '@/components/jornada/VisitasDoDia';
+import { VisitasDoPeriodo } from '@/components/jornada/VisitasDoPeriodo';
 import {
   PERIODOS,
   ROTULOS_ORIGEM,
@@ -25,6 +25,7 @@ import type { Aparelho } from '@/types/jornada';
 // spec-2-painel RF-2-07; blueprint §3; spec-4-detalhe RF-4-21 e RF-4-22.
 
 const PERIODO_PADRAO = PERIODOS.find((p) => p.rotulo === '7 dias')!;
+const UM_DIA_MS = 86_400_000;
 
 const GRUPOS_ORIGEM = Object.keys(ROTULOS_ORIGEM) as GrupoOrigem[];
 const APARELHOS: Aparelho[] = ['celular', 'computador'];
@@ -33,6 +34,7 @@ const classeSelect =
   'rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500';
 
 export default function JornadaPage() {
+  const queryClient = useQueryClient();
   // A janela termina no instante da última troca de período ou do último Atualizar.
   // rodada: o Atualizar busca de novo mesmo quando o relógio não andou.
   const [consulta, setConsulta] = useState(() => ({ periodo: PERIODO_PADRAO, agora: Date.now(), rodada: 0 }));
@@ -70,6 +72,8 @@ export default function JornadaPage() {
 
   function atualizar() {
     setConsulta((c) => ({ ...c, agora: Date.now(), rodada: c.rodada + 1 }));
+    // As visitas abertas buscam o visitante de novo (RF-4-22).
+    void queryClient.invalidateQueries({ queryKey: ['jornada-visitante'] });
   }
 
   // Filtros recalculados na tela, a partir das linhas cruas (sem nova chamada).
@@ -210,7 +214,9 @@ export default function JornadaPage() {
           onTentar={() => void funilQuery.refetch()}
         />
 
-        <VisitasDoDia
+        <VisitasDoPeriodo
+          rotuloPeriodo={periodo.rotulo}
+          comData={periodo.ms > UM_DIA_MS}
           visitas={visitas}
           carregando={visitasCarregando}
           erro={visitasQuery.isError}

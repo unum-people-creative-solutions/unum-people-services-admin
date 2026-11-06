@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import JornadaPage from './page';
 import { jornadaService } from '@/services/jornadaService';
 import { ApiError } from '@/lib/apiError';
-import type { FunilJornada, VisitaJornada } from '@/types/jornada';
+import type { FunilJornada, VisitaJornada, VisitanteJornada } from '@/types/jornada';
 // JSON real de GET /admin/dashboard/jornada/funil (L-071).
 import fixtureFunilLeitura from '@/services/__fixtures__/funil-leitura.json';
+// JSON real de GET /admin/dashboard/jornada/visitantes/{v} com segundos (CA-4-16, L-071).
+import fixtureVisitanteComTempo from '@/services/__fixtures__/visitante-com-tempo.json';
 
 // spec-2-painel RF-2-07, CA-2-07, CA-2-09, CA-2-10; blueprint §3.
 
@@ -97,6 +99,9 @@ const visitaTeste: VisitaJornada = {
 
 const push = vi.fn();
 
+// O mesmo JSON.parse do lib/api.ts; os eventos são atribuídos à visita aberta.
+const visitanteComTempo = JSON.parse(JSON.stringify(fixtureVisitanteComTempo)) as VisitanteJornada;
+
 // Relógio fixo dos testes: 2026-11-05T23:00:00Z (20:00 em Brasília).
 const T = Date.UTC(2026, 10, 5, 23, 0, 0);
 const DIA = 86_400_000;
@@ -122,6 +127,11 @@ describe('Página Jornada do visitante', () => {
     vi.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
     vi.mocked(jornadaService.funil).mockResolvedValue(funil);
     vi.mocked(jornadaService.visitas).mockResolvedValue([visitaDireta, visitaContratou, visitaNaoPagou]);
+    vi.mocked(jornadaService.visitante).mockImplementation(async (id) => ({
+      ...visitanteComTempo,
+      visitante: id,
+      eventos: visitanteComTempo.eventos.map((e) => ({ ...e, visita: id === visitaDireta.visitante ? visitaDireta.visita : visitaContratou.visita })),
+    }));
   });
 
   afterEach(() => vi.useRealTimers());
@@ -305,9 +315,9 @@ describe('Página Jornada do visitante', () => {
     ]);
   });
 
-  test('visitas do dia: hora em Brasília, origem agrupada, até onde foi e o contratante com link', async () => {
+  test('visitas do período: data e hora em Brasília, origem agrupada, até onde foi e o contratante com link', async () => {
     renderizar();
-    const visitas = await screen.findByRole('region', { name: 'Visitas' });
+    const visitas = await screen.findByRole('region', { name: 'Visitas · 7 dias' });
     expect(jornadaService.visitas).toHaveBeenCalledWith(T - 7 * DIA, T);
     const tabela = await within(visitas).findByRole('table');
     expect(within(tabela).getAllByRole('columnheader').map((th) => th.textContent)).toEqual([
@@ -316,14 +326,14 @@ describe('Página Jornada do visitante', () => {
     const [, linhaDireta, linhaContratou, linhaNaoPagou] = within(tabela).getAllByRole('row');
 
     expect(within(linhaDireta).getAllByRole('cell').map((td) => td.textContent)).toEqual([
-      '18:51', 'Celular', 'Direto', '3', 'Abriu o configurador', '—',
+      '5/11 18:51', 'Celular', 'Direto', '3', 'Abriu o configurador', '—',
     ]);
-    expect(within(linhaDireta).getByRole('link', { name: '18:51' })).toHaveAttribute(
+    expect(within(linhaDireta).getByRole('link', { name: '5/11 18:51' })).toHaveAttribute(
       'href', '/dashboard/jornada/5b1f8a3c-2d4e-4f6a-8b9c-0d1e2f2da0b6',
     );
 
     expect(within(linhaContratou).getAllByRole('cell').map((td) => td.textContent)).toEqual([
-      '17:12', 'Computador', 'Anúncio do Google', '4', 'Abriu a contrataçãoUsou o editor', 'Espaço SerenoPagou',
+      '5/11 17:12', 'Computador', 'Anúncio do Google', '4', 'Abriu a contrataçãoUsou o editor', 'Espaço SerenoPagou',
     ]);
     expect(within(linhaContratou).getByRole('link', { name: 'Espaço Sereno' })).toHaveAttribute(
       'href', '/tenants/a1b2c3d4-0000-4000-8000-000000000001',
@@ -344,7 +354,7 @@ describe('Página Jornada do visitante', () => {
     const tabela = await screen.findByRole('table');
     const [, linha] = within(tabela).getAllByRole('row');
     expect(within(linha).getAllByRole('cell').map((td) => td.textContent)).toEqual([
-      '09:00', 'Celular', 'Anúncio do Google', '1', 'ContratouUsou o editor', 'Espaço SerenoPagou',
+      '5/11 09:00', 'Celular', 'Anúncio do Google', '1', 'ContratouUsou o editor', 'Espaço SerenoPagou',
     ]);
   });
 
@@ -362,12 +372,137 @@ describe('Página Jornada do visitante', () => {
     expect(within(celula).queryByRole('link')).not.toBeInTheDocument();
   });
 
-  test('a linha inteira leva ao caminho do visitante', async () => {
+  // spec-4-detalhe RF-4-24, CA-4-20: a linha abre embaixo.
+  test('CA-4-20: o botão abre a área da visita, busca o visitante uma vez e fecha', async () => {
+    renderizar();
+    const tabela = await screen.findByRole('table');
+    const abrir = within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' });
+    expect(abrir).toHaveAttribute('aria-expanded', 'false');
+    expect(jornadaService.visitante).not.toHaveBeenCalled();
+
+    fireEvent.click(abrir);
+    const fechar = within(tabela).getByRole('button', { name: 'Fechar a visita das 18:51' });
+    expect(fechar).toHaveAttribute('aria-expanded', 'true');
+    const area = document.getElementById(fechar.getAttribute('aria-controls')!)!;
+    expect(area).not.toBeNull();
+    expect(await within(area).findByText('Pôs ou trocou imagem')).toBeInTheDocument();
+    expect(within(area).getAllByRole('cell')).toHaveLength(1);
+    expect(within(area).getByRole('cell')).toHaveAttribute('colspan', '6');
+    expect(jornadaService.visitante).toHaveBeenCalledTimes(1);
+    expect(jornadaService.visitante).toHaveBeenCalledWith(visitaDireta.visitante);
+
+    fireEvent.click(fechar);
+    expect(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' })).toHaveAttribute('aria-expanded', 'false');
+    expect(within(tabela).queryByText('Pôs ou trocou imagem')).not.toBeInTheDocument();
+
+    // Reabrir usa o cache do visitante.
+    fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' }));
+    expect(await within(tabela).findByText('Pôs ou trocou imagem')).toBeInTheDocument();
+    expect(jornadaService.visitante).toHaveBeenCalledTimes(1);
+  });
+
+  test('CA-4-20: o clique na linha, fora de links, abre a visita', async () => {
     renderizar();
     const tabela = await screen.findByRole('table');
     const [, linha] = within(tabela).getAllByRole('row');
     fireEvent.click(within(linha).getByText('Celular'));
-    expect(push).toHaveBeenCalledWith('/dashboard/jornada/5b1f8a3c-2d4e-4f6a-8b9c-0d1e2f2da0b6');
+    expect(within(tabela).getByRole('button', { name: 'Fechar a visita das 18:51' })).toHaveAttribute('aria-expanded', 'true');
+    expect(await within(tabela).findByText('Pôs ou trocou imagem')).toBeInTheDocument();
+    fireEvent.click(within(linha).getByText('Celular'));
+    expect(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('CA-4-20: o link da hora leva à página do visitante e não abre a linha', async () => {
+    renderizar();
+    const tabela = await screen.findByRole('table');
+    const link = within(tabela).getByRole('link', { name: '5/11 18:51' });
+    expect(link).toHaveAttribute('href', '/dashboard/jornada/5b1f8a3c-2d4e-4f6a-8b9c-0d1e2f2da0b6');
+    fireEvent.click(link);
+    expect(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' })).toHaveAttribute('aria-expanded', 'false');
+    expect(jornadaService.visitante).not.toHaveBeenCalled();
+  });
+
+  test('CA-4-20: duas linhas podem ficar abertas', async () => {
+    renderizar();
+    const tabela = await screen.findByRole('table');
+    fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' }));
+    fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 17:12' }));
+    expect(within(tabela).getByRole('button', { name: 'Fechar a visita das 18:51' })).toHaveAttribute('aria-expanded', 'true');
+    expect(within(tabela).getByRole('button', { name: 'Fechar a visita das 17:12' })).toHaveAttribute('aria-expanded', 'true');
+    await waitFor(() => expect(jornadaService.visitante).toHaveBeenCalledTimes(2));
+  });
+
+  test('CA-4-20: carregando, a área fica com aria-busy', async () => {
+    vi.mocked(jornadaService.visitante).mockReturnValue(new Promise(() => {}));
+    renderizar();
+    const tabela = await screen.findByRole('table');
+    fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' }));
+    const botao = within(tabela).getByRole('button', { name: 'Fechar a visita das 18:51' });
+    const area = document.getElementById(botao.getAttribute('aria-controls')!)!;
+    expect(within(area).getByRole('group', { name: 'Resumo da visita' })).toHaveAttribute('aria-busy', 'true');
+    expect(within(area).queryByRole('list')).not.toBeInTheDocument();
+    expect(within(area).queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  test('CA-4-20: erro mostra a mensagem e "Tentar de novo", sem derrubar a tabela', async () => {
+    vi.mocked(jornadaService.visitante).mockRejectedValueOnce(new ApiError('internal', 500));
+    renderizar();
+    const tabela = await screen.findByRole('table');
+    fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' }));
+    expect(await within(tabela).findByText('Não foi possível carregar esta visita.')).toBeInTheDocument();
+    expect(within(tabela).getAllByRole('button', { name: /a visita das/ })).toHaveLength(3);
+    expect(within(tabela).getByText('Espaço Sereno')).toBeInTheDocument();
+
+    fireEvent.click(within(tabela).getByRole('button', { name: 'Tentar de novo' }));
+    expect(await within(tabela).findByText('Pôs ou trocou imagem')).toBeInTheDocument();
+    expect(jornadaService.visitante).toHaveBeenCalledTimes(2);
+  });
+
+  test('CA-4-18: com uma visita aberta, Atualizar busca o visitante de novo', async () => {
+    renderizar();
+    const tabela = await screen.findByRole('table');
+    fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' }));
+    expect(await screen.findByText('Pôs ou trocou imagem')).toBeInTheDocument();
+    await screen.findByText('Atualizado às 20:00');
+    expect(jornadaService.visitante).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
+    await waitFor(() => expect(jornadaService.visitante).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('Pôs ou trocou imagem')).toBeInTheDocument();
+  });
+
+  // spec-4-detalhe RF-4-23, CA-4-19.
+  test('CA-4-19: em "24 horas" a linha mostra só a hora; em "7 dias", "d/m HH:MM"', async () => {
+    renderizar();
+    const tabela = await screen.findByRole('table');
+    expect(within(tabela).getByRole('link', { name: '5/11 18:51' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '24 horas' }));
+    const visitas = await screen.findByRole('region', { name: 'Visitas · 24 horas' });
+    expect(await within(visitas).findByRole('link', { name: '18:51' })).toBeInTheDocument();
+    expect(within(visitas).queryByRole('link', { name: '5/11 18:51' })).not.toBeInTheDocument();
+  });
+
+  test('CA-4-19: com 150 visitas, 100 linhas e "Mostrar mais 100"; depois, 150 e o botão some', async () => {
+    const muitas: VisitaJornada[] = Array.from({ length: 150 }, (_, i) => ({
+      ...visitaDireta,
+      visitante: `visitante-${i}`,
+      visita: `visita-${i}`,
+      inicio: visitaDireta.inicio - i * 60_000,
+    }));
+    vi.mocked(jornadaService.visitas).mockResolvedValue(muitas);
+    renderizar();
+    const visitas = await screen.findByRole('region', { name: 'Visitas · 7 dias' });
+    const tabela = await within(visitas).findByRole('table');
+    expect(within(tabela).getAllByRole('row')).toHaveLength(101);
+    fireEvent.click(within(visitas).getByRole('button', { name: 'Mostrar mais 100' }));
+    expect(within(tabela).getAllByRole('row')).toHaveLength(151);
+    expect(within(visitas).queryByRole('button', { name: 'Mostrar mais 100' })).not.toBeInTheDocument();
+  });
+
+  test('CA-4-19: com até 100 visitas, sem "Mostrar mais 100"', async () => {
+    renderizar();
+    const visitas = await screen.findByRole('region', { name: 'Visitas · 7 dias' });
+    await within(visitas).findByRole('table');
+    expect(within(visitas).queryByRole('button', { name: 'Mostrar mais 100' })).not.toBeInTheDocument();
   });
 
   // RF-4-19/RF-4-23: a API devolve as de teste sempre; a tela filtra sem nova chamada.
@@ -387,17 +522,17 @@ describe('Página Jornada do visitante', () => {
   // CA-4-19: a lista segue o período.
   test('a navegação por dia não existe', async () => {
     renderizar();
-    const visitas = await screen.findByRole('region', { name: 'Visitas' });
+    const visitas = await screen.findByRole('region', { name: 'Visitas · 7 dias' });
     await within(visitas).findByRole('table');
     expect(within(visitas).queryByRole('button', { name: 'Dia anterior' })).not.toBeInTheDocument();
     expect(within(visitas).queryByRole('button', { name: 'Próximo dia' })).not.toBeInTheDocument();
   });
 
-  test('dia sem visitas', async () => {
+  test('CA-4-19: período sem visitas', async () => {
     vi.mocked(jornadaService.visitas).mockResolvedValue([]);
     renderizar();
-    const visitas = await screen.findByRole('region', { name: 'Visitas' });
-    expect(await within(visitas).findByText('Nenhuma visita neste dia.')).toBeInTheDocument();
+    const visitas = await screen.findByRole('region', { name: 'Visitas · 7 dias' });
+    expect(await within(visitas).findByText('Nenhuma visita neste período.')).toBeInTheDocument();
     expect(within(visitas).queryByRole('table')).not.toBeInTheDocument();
   });
 
@@ -418,7 +553,7 @@ describe('Página Jornada do visitante', () => {
   test('CA-2-09: erro das visitas mostra Tentar de novo na seção de visitas', async () => {
     vi.mocked(jornadaService.visitas).mockRejectedValueOnce(new ApiError('internal', 500));
     renderizar();
-    const visitas = await screen.findByRole('region', { name: 'Visitas' });
+    const visitas = await screen.findByRole('region', { name: 'Visitas · 7 dias' });
     expect(await within(visitas).findByText('Não foi possível carregar.')).toBeInTheDocument();
     fireEvent.click(within(visitas).getByRole('button', { name: 'Tentar de novo' }));
     expect(await within(visitas).findByRole('table')).toBeInTheDocument();
@@ -430,7 +565,7 @@ describe('Página Jornada do visitante', () => {
     renderizar();
     expect(screen.getByRole('region', { name: 'Funil · 7 dias' })).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('region', { name: 'Uso do editor' })).toHaveAttribute('aria-busy', 'true');
-    expect(screen.getByRole('region', { name: 'Visitas' })).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('region', { name: 'Visitas · 7 dias' })).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('region', { name: 'Páginas de entrada · 7 dias' })).toHaveAttribute('aria-busy', 'true');
   });
 });
