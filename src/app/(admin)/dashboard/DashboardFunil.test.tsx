@@ -30,6 +30,7 @@ const funil: FunilJornada = {
   ],
   uso: [],
   pagou: [{ aparelho: 'celular', origem: 'google_ads', visitas: 2 }],
+  leitura: [],
 };
 
 function renderizar() {
@@ -81,7 +82,7 @@ describe('Dashboard: funil da vitrine', () => {
   });
 
   test('período sem visitas mostra o aviso no lugar das barras', async () => {
-    vi.mocked(jornadaService.funil).mockResolvedValue({ etapas: [], uso: [], pagou: [] });
+    vi.mocked(jornadaService.funil).mockResolvedValue({ etapas: [], uso: [], pagou: [], leitura: [] });
     renderizar();
     const secao = await screen.findByRole('region', { name: /funil da vitrine/i });
     expect(await within(secao).findByText('Nenhuma visita registrada nos últimos 7 dias.')).toBeInTheDocument();

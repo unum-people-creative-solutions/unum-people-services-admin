@@ -1,0 +1,222 @@
+{
+  "etapas": [
+    {
+      "etapa": 1,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 12
+    },
+    {
+      "etapa": 8,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    }
+  ],
+  "uso": [
+    {
+      "evento": "lp_menu_ia",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 3
+    }
+  ],
+  "pagou": [
+    {
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    }
+  ],
+  "leitura": [
+    {
+      "pagina": "blog",
+      "evento": "clique_rodape_ajuda",
+      "aparelho": "celular",
+      "origem": "direto",
+      "visitas": 1
+    },
+    {
+      "pagina": "blog",
+      "evento": "rolagem_25",
+      "aparelho": "celular",
+      "origem": "direto",
+      "visitas": 1
+    },
+    {
+      "pagina": "blog",
+      "evento": "secao_funcoes",
+      "aparelho": "celular",
+      "origem": "direto",
+      "visitas": 1
+    },
+    {
+      "pagina": "blog",
+      "evento": "tempo_10s",
+      "aparelho": "celular",
+      "origem": "direto",
+      "visitas": 1
+    },
+    {
+      "pagina": "blog",
+      "evento": "visita",
+      "aparelho": "celular",
+      "origem": "direto",
+      "visitas": 1
+    },
+    {
+      "pagina": "crm",
+      "evento": "clique_produto_crm",
+      "aparelho": "computador",
+      "origem": "direto",
+      "visitas": 1
+    },
+    {
+      "pagina": "crm",
+      "evento": "rolagem_50",
+      "aparelho": "computador",
+      "origem": "direto",
+      "visitas": 1
+    },
+    {
+      "pagina": "crm",
+      "evento": "secao_caminho",
+      "aparelho": "computador",
+      "origem": "direto",
+      "visitas": 2
+    },
+    {
+      "pagina": "crm",
+      "evento": "tempo_30s",
+      "aparelho": "computador",
+      "origem": "direto",
+      "visitas": 1
+    },
+    {
+      "pagina": "crm",
+      "evento": "visita",
+      "aparelho": "computador",
+      "origem": "direto",
+      "visitas": 3
+    },
+    {
+      "pagina": "inicio",
+      "evento": "clique_galeria_modelo",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "pagina": "inicio",
+      "evento": "rolagem_25",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 3
+    },
+    {
+      "pagina": "inicio",
+      "evento": "secao_modelos",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 3
+    },
+    {
+      "pagina": "inicio",
+      "evento": "tempo_10s",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 2
+    },
+    {
+      "pagina": "inicio",
+      "evento": "visita",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 5
+    },
+    {
+      "pagina": "saude",
+      "evento": "clique_hero_montar",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 2
+    },
+    {
+      "pagina": "saude",
+      "evento": "clique_hero_planos",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "pagina": "saude",
+      "evento": "rolagem_100",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "pagina": "saude",
+      "evento": "rolagem_25",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 7
+    },
+    {
+      "pagina": "saude",
+      "evento": "rolagem_50",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 4
+    },
+    {
+      "pagina": "saude",
+      "evento": "rolagem_75",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 2
+    },
+    {
+      "pagina": "saude",
+      "evento": "secao_caminho",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 6
+    },
+    {
+      "pagina": "saude",
+      "evento": "secao_planos",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "pagina": "saude",
+      "evento": "tempo_10s",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 6
+    },
+    {
+      "pagina": "saude",
+      "evento": "tempo_30s",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 3
+    },
+    {
+      "pagina": "saude",
+      "evento": "visita",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 10
+    },
+    {
+      "pagina": "saude",
+      "evento": "visita",
+      "aparelho": "computador",
+      "origem": "direto",
+      "visitas": 2
+    }
+  ]
+}

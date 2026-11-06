@@ -42,6 +42,7 @@ const funil: FunilJornada = {
     { aparelho: 'computador', origem: 'google_ads', visitas: 2 },
     { aparelho: 'celular', origem: 'direto', visitas: 1 },
   ],
+  leitura: [],
 };
 
 describe('rótulos', () => {

@@ -38,6 +38,7 @@ const funil: FunilJornada = {
     { evento: 'lp_ia_resposta_invalida', aparelho: 'celular', origem: 'google_ads', visitas: 2 },
   ],
   pagou: [{ aparelho: 'computador', origem: 'google_ads', visitas: 1 }],
+  leitura: [],
 };
 
 const visitaDireta: VisitaJornada = {
