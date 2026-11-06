@@ -109,6 +109,7 @@ describe('LogsPage - período', () => {
   it('ao escolher "3 h", consulta as últimas 3 horas', async () => {
     renderizar();
     fireEvent.change(screen.getByRole('combobox', { name: 'Período' }), { target: { value: '3 h' } });
+    expect(screen.getByRole('combobox', { name: 'Período' })).toHaveValue('3 h');
     await vi.waitFor(() => {
       expect(tenantService.getSystemErrors).toHaveBeenLastCalledWith(
         expect.objectContaining({ start: new Date(T - 3 * HORA).toISOString() })
