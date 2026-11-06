@@ -120,7 +120,7 @@ export function PaginasDeEntrada({ titulo, leitura, carregando, erro, onTentar }
                 ))}
               </div>
               {n > 0 ? (
-                <p className="text-sm text-slate-500 tabular-nums">{`${n} visitas viram esta página`}</p>
+                <p className="text-sm text-slate-500 tabular-nums">{n === 1 ? '1 visita viu esta página' : `${n} visitas viram esta página`}</p>
               ) : null}
             </div>
 

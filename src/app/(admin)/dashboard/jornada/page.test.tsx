@@ -513,6 +513,17 @@ describe('Página Jornada: Páginas de entrada', () => {
     expect(jornadaService.funil).toHaveBeenCalledTimes(1);
   });
 
+  test('base no singular com 1 visita e no plural com 2 ou mais', async () => {
+    renderizar();
+    const secao = await secaoCarregada();
+    expect(within(secao).getByText('12 visitas viram esta página')).toBeInTheDocument();
+    fireEvent.click(within(secao).getByRole('button', { name: 'Blog' }));
+    expect(within(secao).getByText('1 visita viu esta página')).toBeInTheDocument();
+    expect(within(secao).queryByText('1 visitas viram esta página')).not.toBeInTheDocument();
+    fireEvent.click(within(secao).getByRole('button', { name: 'CRM' }));
+    expect(within(secao).getByText('3 visitas viram esta página')).toBeInTheDocument();
+  });
+
   test('empate de visitas: vale a ordem das abas', async () => {
     vi.mocked(jornadaService.funil).mockResolvedValue({
       ...funilReal,
