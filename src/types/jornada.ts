@@ -34,11 +34,26 @@ export interface LinhaPagou {
   visitas: number;
 }
 
+// spec-3-leitura: página de entrada (/, /saude, /crm, /blog).
+export type PaginaDeEntrada = 'inicio' | 'saude' | 'crm' | 'blog';
+
+// RF-3-11/12: leitura das páginas de entrada, dos SKs leitura:<pagina>:<evento>.
+// evento vem sem "lp_": visita, rolagem_*, tempo_*, secao_* ou clique_*.
+export interface LinhaLeitura {
+  pagina: PaginaDeEntrada;
+  evento: string;
+  aparelho: Aparelho;
+  origem: OrigemCrua;
+  visitas: number;
+}
+
 // GET /admin/dashboard/jornada/funil?de=AAAA-MM-DD&ate=AAAA-MM-DD
 export interface FunilJornada {
   etapas: LinhaEtapa[];
   uso: LinhaUso[];
   pagou: LinhaPagou[];
+  // RF-3-11: lista vazia é [], nunca null.
+  leitura: LinhaLeitura[];
 }
 
 // RF-2-02/03: contratação ligada ao visitante.
