@@ -5,7 +5,9 @@ import { useParams } from 'next/navigation';
 import VisitantePage from './page';
 import { jornadaService } from '@/services/jornadaService';
 import { ApiError } from '@/lib/apiError';
-import type { VisitanteJornada } from '@/types/jornada';
+import type { EventoJornada, VisitanteJornada } from '@/types/jornada';
+// JSON real de GET /admin/dashboard/jornada/visitantes/{v} com segundos (CA-4-16, L-071).
+import fixtureVisitanteComTempo from '@/services/__fixtures__/visitante-com-tempo.json';
 
 // spec-2-painel RF-2-08, CA-2-08, CA-2-09, CA-2-10; blueprint §4 e §5.
 
@@ -92,7 +94,9 @@ describe('Página do visitante', () => {
       'Visita de 5/11 · 17:12 · Computador · Anúncio do Google',
     ]);
     const linhas = (secao: HTMLElement) =>
-      within(secao).getAllByRole('listitem').map((li) => li.textContent);
+      within(within(secao).getByRole('list', { name: 'Linha do tempo' }))
+        .getAllByRole('listitem')
+        .map((li) => li.textContent);
     expect(linhas(visitas[0])).toEqual([
       '18:51:08Abriu o editor/configurar/editar',
       '18:51:19Viu a página/',
@@ -116,7 +120,7 @@ describe('Página do visitante', () => {
     const contratacao = screen.getByRole('region', { name: 'Contratação' });
     expect(within(contratacao).getByText('5/11 09:00')).toBeInTheDocument();
     const visita = screen.getByRole('region', { name: 'Visita de 5/11 · 09:00 · Celular · Anúncio do Google' });
-    const [evento] = within(visita).getAllByRole('listitem');
+    const [evento] = within(within(visita).getByRole('list', { name: 'Linha do tempo' })).getAllByRole('listitem');
     expect(evento.textContent).toBe('09:00:00Viu a página/saude');
     expect(within(evento).getByText('09:00:00')).toHaveAttribute('datetime', '2026-11-05T12:00:00.000Z');
   });
@@ -159,5 +163,85 @@ describe('Página do visitante', () => {
     vi.mocked(jornadaService.visitante).mockReturnValue(new Promise(() => {}));
     renderizar();
     expect(screen.getByRole('region', { name: 'Caminho do visitante' })).toHaveAttribute('aria-busy', 'true');
+  });
+});
+
+// spec-4-detalhe RF-4-27 e RF-4-28 (linha do tempo), CA-4-23.
+describe('Página do visitante: tempo por página e resumo por visita', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useParams).mockReturnValue({ visitante: ID });
+  });
+
+  // Duas visitas: editor 8 s + 12 s na da tarde e 30 s na da noite; a escolha só na da noite.
+  const tempo = (em: number, caminho: string, visita: string, segundos: number): EventoJornada => ({
+    em, nome: 'lp_tempo_na_pagina', caminho, visita, segundos,
+  });
+  const comTempo: VisitanteJornada = {
+    ...resposta,
+    eventos: [
+      ...resposta.eventos,
+      tempo(1793909600000, '/configurar/editar', VISITA_TARDE, 8),
+      tempo(1793909700000, '/configurar/editar', VISITA_TARDE, 12),
+      tempo(1793915470000, '/configurar', VISITA_NOITE, 40),
+      tempo(1793915475000, '/configurar/editar', VISITA_NOITE, 30),
+    ],
+  };
+
+  test('CA-4-23: "Tempo por página" soma todas as visitas, com "1 visita" e "2 visitas"', async () => {
+    vi.mocked(jornadaService.visitante).mockResolvedValue(comTempo);
+    renderizar();
+    const bloco = await screen.findByRole('region', { name: 'Tempo por página' });
+    expect(within(bloco).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Editor · 50 s · 2 visitas',
+      'Escolha do modelo · 40 s · 1 visita',
+    ]);
+    // Acima das visitas.
+    const regioes = screen.getAllByRole('region').map((r) => r.getAttribute('aria-label') ?? r.getAttribute('aria-labelledby'));
+    expect(regioes.indexOf('titulo-tempo-por-pagina')).toBeLessThan(regioes.findIndex((r) => r?.startsWith('titulo-visita-')));
+  });
+
+  test('CA-4-23: cada visita mostra o resumo acima da linha do tempo', async () => {
+    vi.mocked(jornadaService.visitante).mockResolvedValue(comTempo);
+    renderizar();
+    const visitas = await screen.findAllByRole('region', { name: /^Visita de/ });
+    expect(visitas).toHaveLength(2);
+    for (const visita of visitas) {
+      const listas = within(visita).getAllByRole('list').map((l) => l.getAttribute('aria-label'));
+      expect(listas).toEqual(['Páginas da visita', 'Linha do tempo']);
+    }
+    const [noite, tarde] = visitas;
+    const linhasDasPaginas = (secao: HTMLElement) =>
+      within(within(secao).getByRole('list', { name: 'Páginas da visita' }))
+        .getAllByRole('listitem')
+        .map((li) => within(li).getAllByRole('paragraph')[0].textContent);
+    expect(linhasDasPaginas(tarde)).toEqual([
+      'Início —Tempo medido a partir da publicação desta fase',
+      'Editor 20 s',
+      'Sucesso —Tempo medido a partir da publicação desta fase',
+    ]);
+    expect(linhasDasPaginas(noite)).toEqual([
+      'Editor 30 s',
+      'Escolha do modelo 40 s',
+      'Início —Tempo medido a partir da publicação desta fase',
+    ]);
+  });
+
+  test('CA-4-23: com o JSON real, a linha do tempo mostra "Ficou 42 s nesta página"', async () => {
+    const dados = JSON.parse(JSON.stringify(fixtureVisitanteComTempo)) as VisitanteJornada;
+    vi.mocked(useParams).mockReturnValue({ visitante: dados.visitante });
+    vi.mocked(jornadaService.visitante).mockResolvedValue(dados);
+    renderizar();
+    const [visita] = await screen.findAllByRole('region', { name: /^Visita de/ });
+    const linhaDoTempo = within(visita).getByRole('list', { name: 'Linha do tempo' });
+    expect(within(linhaDoTempo).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      '09:00:00Viu a página/configurar/editar',
+      '09:00:05Pôs ou trocou imagem/configurar/editar',
+      '09:00:42Ficou 42 s nesta página/configurar/editar',
+      '09:00:43Viu a página/configurar/preview',
+    ]);
+    expect(within(linhaDoTempo).getByText('Ficou 42 s nesta página').textContent).toBe('Ficou 42 s nesta página');
+    const bloco = screen.getByRole('region', { name: 'Tempo por página' });
+    expect(within(bloco).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Editor · 42 s · 1 visita']);
   });
 });

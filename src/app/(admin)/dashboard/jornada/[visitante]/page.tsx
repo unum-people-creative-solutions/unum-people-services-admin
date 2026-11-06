@@ -9,18 +9,23 @@ import { jornadaService } from '@/services/jornadaService';
 import { ApiError } from '@/lib/apiError';
 import {
   formatarDiaMes,
+  formatarDuracao,
   formatarHora,
   formatarHoraComSegundos,
+  resumirVisita,
   rotuloDaOrigem,
+  rotuloDaRota,
   rotuloDoAparelho,
   rotuloDoEvento,
+  tempoPorPagina,
 } from '@/lib/jornada';
 import { EsqueletoDaSecao, ErroDaSecao } from '@/components/jornada/EstadoDaSecao';
 import { SeloPagamento, SeloTeste } from '@/components/jornada/Selos';
 import { EmpresaContratante } from '@/components/jornada/EmpresaContratante';
+import { ResumoDaVisita } from '@/components/jornada/DetalheDaVisita';
 import type { EventoJornada, VisitaJornada, VisitanteJornada } from '@/types/jornada';
 
-// spec-2-painel RF-2-08; blueprint §4.
+// spec-2-painel RF-2-08; blueprint §4; spec-4-detalhe RF-4-27.
 
 interface GrupoDaVisita {
   visita: string;
@@ -69,6 +74,7 @@ export default function VisitantePage() {
   });
 
   const grupos = useMemo(() => (consulta.data ? agruparPorVisita(consulta.data) : []), [consulta.data]);
+  const tempos = useMemo(() => (consulta.data ? tempoPorPagina(consulta.data.eventos) : []), [consulta.data]);
   const naoEncontrado = consulta.error instanceof ApiError && consulta.error.status === 404;
   const carregando = consulta.isPending || (consulta.isError && consulta.isFetching);
 
@@ -116,6 +122,26 @@ export default function VisitantePage() {
                 </p>
               </div>
 
+              {tempos.length > 0 ? (
+                <section
+                  aria-labelledby="titulo-tempo-por-pagina"
+                  className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+                >
+                  <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+                    <h2 id="titulo-tempo-por-pagina" className="font-bold text-slate-900">
+                      Tempo por página
+                    </h2>
+                  </div>
+                  <ul className="divide-y divide-slate-100">
+                    {tempos.map((t) => (
+                      <li key={t.caminho} className="px-4 py-2.5 text-sm text-slate-700 tabular-nums">
+                        {`${rotuloDaRota(t.caminho)} · ${formatarDuracao(t.segundos)} · ${t.visitas} ${t.visitas === 1 ? 'visita' : 'visitas'}`}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+
               {dados.contratacoes.length > 0 ? (
                 <section
                   aria-labelledby="titulo-contratacao"
@@ -148,6 +174,7 @@ export default function VisitantePage() {
 
               {grupos.map((grupo) => {
                 const idTitulo = `titulo-visita-${grupo.visita}`;
+                const resumo = resumirVisita(grupo.eventos, grupo.visita);
                 return (
                   <section
                     key={grupo.visita}
@@ -160,12 +187,17 @@ export default function VisitantePage() {
                       </h2>
                       {grupo.resumo?.teste ? <SeloTeste /> : null}
                     </div>
+                    {resumo ? (
+                      <div className="p-4 border-b border-slate-100">
+                        <ResumoDaVisita resumo={resumo} />
+                      </div>
+                    ) : null}
                     {grupo.eventos.length === 0 ? (
                       <p className="p-4 text-sm text-slate-500">Nenhum evento registrado nesta visita.</p>
                     ) : (
-                      <ol className="divide-y divide-slate-50">
+                      <ol aria-label="Linha do tempo" className="divide-y divide-slate-50">
                         {grupo.eventos.map((evento, i) => {
-                          const rotulo = rotuloDoEvento(evento.nome);
+                          const rotulo = rotuloDoEvento(evento);
                           return (
                             <li
                               key={`${evento.em}-${i}`}
