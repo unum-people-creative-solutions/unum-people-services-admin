@@ -6,6 +6,8 @@ import JornadaPage from './page';
 import { jornadaService } from '@/services/jornadaService';
 import { ApiError } from '@/lib/apiError';
 import type { FunilJornada, VisitaJornada } from '@/types/jornada';
+// JSON real de GET /admin/dashboard/jornada/funil (L-071).
+import fixtureFunilLeitura from '@/services/__fixtures__/funil-leitura.json';
 
 // spec-2-painel RF-2-07, CA-2-07, CA-2-09, CA-2-10; blueprint §3.
 
@@ -362,5 +364,195 @@ describe('Página Jornada do visitante', () => {
     expect(screen.getByRole('region', { name: 'Funil · 7 dias' })).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('region', { name: 'Uso do editor' })).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('region', { name: 'Visitas' })).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('region', { name: 'Páginas de entrada · 7 dias' })).toHaveAttribute('aria-busy', 'true');
+  });
+});
+
+// spec-3-leitura RF-3-13, CA-3-14: seção "Páginas de entrada" com o JSON real da API (L-071).
+describe('Página Jornada: Páginas de entrada', () => {
+  // O mesmo JSON.parse do lib/api.ts sobre o corpo real de GET /admin/dashboard/jornada/funil.
+  const funilReal = JSON.parse(JSON.stringify(fixtureFunilLeitura)) as FunilJornada;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-05T23:00:00Z'));
+    vi.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
+    vi.mocked(jornadaService.funil).mockResolvedValue(funilReal);
+    vi.mocked(jornadaService.visitas).mockResolvedValue([visitaDireta]);
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  async function secaoCarregada(nome = 'Páginas de entrada · 7 dias') {
+    const secao = await screen.findByRole('region', { name: nome });
+    await within(secao).findByRole('group', { name: 'Página de entrada' });
+    return secao;
+  }
+
+  function linhas(secao: HTMLElement, bloco: string) {
+    return within(within(secao).getByRole('list', { name: bloco }))
+      .getAllByRole('listitem')
+      .map((li) => li.textContent);
+  }
+
+  function abaPressionada(secao: HTMLElement) {
+    return within(within(secao).getByRole('group', { name: 'Página de entrada' }))
+      .getAllByRole('button')
+      .filter((b) => b.getAttribute('aria-pressed') === 'true')
+      .map((b) => b.textContent);
+  }
+
+  test('fica entre "Uso do editor" e "Visitas"', async () => {
+    renderizar();
+    await secaoCarregada();
+    expect(screen.getAllByRole('region').map((r) => r.getAttribute('aria-labelledby'))).toEqual([
+      'titulo-funil-jornada',
+      'titulo-uso-editor',
+      'titulo-paginas-entrada',
+      'titulo-visitas',
+    ]);
+  });
+
+  test('abas com aria-pressed; a inicial é a de mais visitas (Saúde, 12)', async () => {
+    renderizar();
+    const secao = await secaoCarregada();
+    const abas = within(within(secao).getByRole('group', { name: 'Página de entrada' })).getAllByRole('button');
+    expect(abas.map((b) => b.textContent)).toEqual(['Início', 'Saúde', 'CRM', 'Blog']);
+    expect(abaPressionada(secao)).toEqual(['Saúde']);
+    expect(within(secao).getByText('12 visitas viram esta página')).toBeInTheDocument();
+  });
+
+  test('números de cada bloco e porcentagens sobre as visitas da página, como taxa()', async () => {
+    renderizar();
+    const secao = await secaoCarregada();
+    expect(linhas(secao, 'Rolagem')).toEqual(['25%758%', '50%433%', '75%217%', 'Até o fim18%']);
+    expect(linhas(secao, 'Tempo na página (aba visível)')).toEqual(['10 s650%', '30 s325%', '1 min00%', '3 min00%']);
+    expect(linhas(secao, 'Seções vistas')).toEqual([
+      'Caminho650%',
+      'Funções00%',
+      'Junto00%',
+      'Planos18%',
+      'Perguntas frequentes00%',
+      'Fechamento00%',
+    ]);
+  });
+
+  test('cliques: só os botões da página de produto, do mais clicado ao menos, empate na ordem da tabela', async () => {
+    renderizar();
+    const secao = await secaoCarregada();
+    expect(linhas(secao, 'Cliques')).toEqual([
+      'Topo: botão principal2',
+      'Topo: ver planos1',
+      'Planos: escolheu um plano0',
+      'Abriu uma pergunta0',
+      'Fechamento: botão principal0',
+      'Plano: ver todos os planos0',
+      'Plano: conhecer o CRM0',
+      'Logo0',
+      'Minha conta0',
+      'Rodapé: e-mail0',
+      'Rodapé: termos0',
+      'Rodapé: privacidade0',
+      'Rodapé: ajuda0',
+    ]);
+  });
+
+  test('trocar de aba mostra a outra página', async () => {
+    renderizar();
+    const secao = await secaoCarregada();
+    fireEvent.click(within(secao).getByRole('button', { name: 'CRM' }));
+    expect(abaPressionada(secao)).toEqual(['CRM']);
+    expect(within(secao).getByText('3 visitas viram esta página')).toBeInTheDocument();
+    expect(linhas(secao, 'Rolagem')).toEqual(['25%00%', '50%133%', '75%00%', 'Até o fim00%']);
+    expect(linhas(secao, 'Seções vistas')[0]).toBe('Caminho267%');
+    expect(linhas(secao, 'Cliques').slice(0, 3)).toEqual([
+      'Plano: conhecer o CRM1',
+      'Topo: botão principal0',
+      'Topo: ver planos0',
+    ]);
+
+    fireEvent.click(within(secao).getByRole('button', { name: 'Início' }));
+    expect(abaPressionada(secao)).toEqual(['Início']);
+    expect(within(secao).getByText('5 visitas viram esta página')).toBeInTheDocument();
+    expect(linhas(secao, 'Seções vistas')).toEqual([
+      'Modelos360%',
+      'Vantagens00%',
+      'Como funciona00%',
+      'Planos00%',
+      'Blog00%',
+      'CRM00%',
+      'Perguntas frequentes00%',
+      'Fechamento00%',
+    ]);
+    const cliques = linhas(secao, 'Cliques');
+    expect(cliques).toHaveLength(18);
+    expect(cliques.slice(0, 3)).toEqual(['Galeria: escolheu um modelo1', 'Topo: botão principal0', 'Topo: ver planos0']);
+    expect(cliques).not.toContain('Logo0');
+    expect(cliques).not.toContain('Plano: ver todos os planos0');
+  });
+
+  test('filtros de origem e aparelho recalculam os números sem nova chamada', async () => {
+    renderizar();
+    await secaoCarregada();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'google' } });
+    const google = screen.getByRole('region', { name: 'Páginas de entrada · 7 dias · Anúncio do Google' });
+    expect(abaPressionada(google)).toEqual(['Saúde']);
+    expect(within(google).getByText('10 visitas viram esta página')).toBeInTheDocument();
+    expect(linhas(google, 'Rolagem')).toEqual(['25%770%', '50%440%', '75%220%', 'Até o fim110%']);
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'todas' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Aparelho' }), { target: { value: 'computador' } });
+    const computador = screen.getByRole('region', { name: 'Páginas de entrada · 7 dias · Computador' });
+    // CRM tem 3 visitas no computador, Saúde tem 2: a aba inicial acompanha o filtro.
+    expect(abaPressionada(computador)).toEqual(['CRM']);
+    expect(within(computador).getByText('3 visitas viram esta página')).toBeInTheDocument();
+    fireEvent.click(within(computador).getByRole('button', { name: 'Saúde' }));
+    expect(within(computador).getByText('2 visitas viram esta página')).toBeInTheDocument();
+    expect(linhas(computador, 'Rolagem')).toEqual(['25%00%', '50%00%', '75%00%', 'Até o fim00%']);
+    expect(jornadaService.funil).toHaveBeenCalledTimes(1);
+  });
+
+  test('empate de visitas: vale a ordem das abas', async () => {
+    vi.mocked(jornadaService.funil).mockResolvedValue({
+      ...funilReal,
+      leitura: [
+        { pagina: 'blog', evento: 'visita', aparelho: 'celular', origem: 'direto', visitas: 4 },
+        { pagina: 'crm', evento: 'visita', aparelho: 'celular', origem: 'direto', visitas: 4 },
+        { pagina: 'inicio', evento: 'visita', aparelho: 'celular', origem: 'direto', visitas: 1 },
+      ],
+    });
+    renderizar();
+    const secao = await secaoCarregada();
+    expect(abaPressionada(secao)).toEqual(['CRM']);
+  });
+
+  test('n = 0: a frase de vazio no lugar dos blocos', async () => {
+    renderizar();
+    await secaoCarregada();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'campanha' } });
+    const secao = screen.getByRole('region', { name: 'Páginas de entrada · 7 dias · Outra campanha' });
+    expect(abaPressionada(secao)).toEqual(['Início']);
+    expect(within(secao).getByText('Nenhuma visita entrou por esta página no período.')).toBeInTheDocument();
+    expect(within(secao).queryByRole('list')).not.toBeInTheDocument();
+  });
+
+  test('leitura vazia da API ([]): a frase de vazio', async () => {
+    vi.mocked(jornadaService.funil).mockResolvedValue(funil);
+    renderizar();
+    const secao = await secaoCarregada();
+    expect(within(secao).getByText('Nenhuma visita entrou por esta página no período.')).toBeInTheDocument();
+  });
+
+  test('erro: "Tentar de novo" na seção, as visitas seguem, e tentar de novo carrega', async () => {
+    vi.mocked(jornadaService.funil).mockRejectedValue(new ApiError('internal', 500));
+    renderizar();
+    const secao = await screen.findByRole('region', { name: 'Páginas de entrada · 7 dias' });
+    expect(await within(secao).findByText('Não foi possível carregar.')).toBeInTheDocument();
+    expect(await screen.findByRole('table')).toBeInTheDocument();
+
+    vi.mocked(jornadaService.funil).mockResolvedValue(funilReal);
+    fireEvent.click(within(secao).getByRole('button', { name: 'Tentar de novo' }));
+    expect(await within(secao).findByText('12 visitas viram esta página')).toBeInTheDocument();
   });
 });
