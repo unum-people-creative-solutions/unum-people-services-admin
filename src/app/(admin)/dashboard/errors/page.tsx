@@ -5,10 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import { tenantService } from '@/services/tenantService';
 import { AlertCircle, Clock, RefreshCw, Filter, Search, ShieldCheck, Bug, Calendar, ChevronRight, Terminal } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PERIODOS } from '@/lib/jornada';
 import type { AuditRecord, SystemErrorLog } from '@/types/dashboard';
 
 type LogSource = 'system' | 'audit';
-type Period = 'today' | '7d' | '30d' | 'all';
+// Os mesmos períodos da Jornada; o valor é o rótulo.
+const PERIODO_PADRAO = '24 horas';
 // A lista mostra erros do CloudWatch (fonte 'system') ou registros de auditoria
 // (fonte 'audit'); cada linha tem os campos de um dos dois contratos.
 type RegistroDoMonitor = Partial<SystemErrorLog> & Partial<AuditRecord>;
@@ -16,18 +18,14 @@ type RegistroDoMonitor = Partial<SystemErrorLog> & Partial<AuditRecord>;
 export default function LogsPage() {
   const [source, setSource] = useState<LogSource>('system');
   const [service, setService] = useState<string>('');
-  const [period, setPeriod] = useState<Period>('today');
+  const [period, setPeriod] = useState<string>(PERIODO_PADRAO);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLog, setSelectedLog] = useState<RegistroDoMonitor | null>(null);
 
-  const getPeriodDates = (p: Period) => {
-    if (p === 'all') return { start: undefined, end: undefined };
-    const end = new Date();
-    const start = new Date();
-    if (p === 'today') start.setHours(start.getHours() - 1); // Última 1h para CloudWatch ser mais rápido
-    if (p === '7d') start.setDate(start.getDate() - 7);
-    if (p === '30d') start.setDate(start.getDate() - 30);
-    return { start: start.toISOString(), end: end.toISOString() };
+  const getPeriodDates = (rotulo: string) => {
+    const ms = (PERIODOS.find((p) => p.rotulo === rotulo) ?? PERIODOS.find((p) => p.rotulo === PERIODO_PADRAO)!).ms;
+    const agora = Date.now();
+    return { start: new Date(agora - ms).toISOString(), end: new Date(agora).toISOString() };
   };
 
   const { data: logs, isLoading, refetch, isFetching } = useQuery({
@@ -139,13 +137,14 @@ export default function LogsPage() {
               <div className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-600">
                 <Calendar size={16} />
                 <select 
+                  aria-label="Período"
                   value={period}
-                  onChange={(e) => setPeriod(e.target.value as Period)}
+                  onChange={(e) => setPeriod(e.target.value)}
                   className="bg-transparent focus:outline-none text-sm font-medium cursor-pointer"
                 >
-                  <option value="today">Hoje (1h)</option>
-                  <option value="7d">7 dias</option>
-                  <option value="30d">30 dias</option>
+                  {PERIODOS.map((p) => (
+                    <option key={p.rotulo} value={p.rotulo}>{p.rotulo}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -181,6 +180,7 @@ export default function LogsPage() {
                     const message = log.message || log.new_state || 'Sem detalhes';
                     const level = log.level || log.action;
                     const isError = level === 'ERROR' || level?.includes('ERROR');
+                    const isWarn = level === 'WARN';
 
                     return (
                       <tr key={log.sk || idx} className="hover:bg-slate-50 transition-colors group">
@@ -193,7 +193,7 @@ export default function LogsPage() {
                         <td className="px-6 py-4">
                           <span className={cn(
                             "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase",
-                            isError ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"
+                            isError ? "bg-red-100 text-red-700" : isWarn ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"
                           )}>
                             {level}
                           </span>
