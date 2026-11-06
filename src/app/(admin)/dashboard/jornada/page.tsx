@@ -24,7 +24,7 @@ import type { Aparelho } from '@/types/jornada';
 
 // spec-2-painel RF-2-07; blueprint §3; spec-4-detalhe RF-4-21 e RF-4-22.
 
-const PERIODO_PADRAO = PERIODOS.find((p) => p.rotulo === '7 dias')!;
+const PERIODO_PADRAO = PERIODOS.find((p) => p.rotulo === '24 horas')!;
 const UM_DIA_MS = 86_400_000;
 
 const GRUPOS_ORIGEM = Object.keys(ROTULOS_ORIGEM) as GrupoOrigem[];

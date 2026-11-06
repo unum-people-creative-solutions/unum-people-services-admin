@@ -359,9 +359,9 @@ export default function PlansPage() {
 
       <section className="mb-12">
         <h2 className="text-xl font-bold mb-4">Planos Ativos</h2>
-        <div className="grid gap-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {activePlans.map((plan) => (
-            <div key={plan.slug} className="border p-4 rounded-xl flex justify-between items-center">
+            <div key={plan.slug} className="border p-4 rounded-xl flex flex-col justify-between gap-4">
               <div>
                 <h3>{plan.nome}</h3>
                 <p className="text-xs text-slate-500">
@@ -374,7 +374,7 @@ export default function PlansPage() {
               <button
                 type="button"
                 onClick={() => openEditDrawer(plan)}
-                className="px-4 py-2 border rounded hover:bg-slate-50"
+                className="self-start px-4 py-2 border rounded hover:bg-slate-50"
               >
                 Editar {plan.nome}
               </button>
@@ -385,12 +385,12 @@ export default function PlansPage() {
 
       <section>
         <h2 className="text-xl font-bold mb-4">Planos Desativados</h2>
-        <div className="grid gap-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {inactivePlans.map((plan) => {
             const linkedTenants = plan.tenant_count ?? 0;
             const canDelete = linkedTenants === 0;
             return (
-              <div key={plan.slug} className="border p-4 rounded-xl flex justify-between items-center">
+              <div key={plan.slug} className="border p-4 rounded-xl flex flex-col justify-between gap-4">
                 <div>
                   <h3>{plan.nome}</h3>
                   <p className="text-xs text-slate-500">{linkedTenants} tenant(s) vinculado(s)</p>
@@ -399,7 +399,7 @@ export default function PlansPage() {
                   type="button"
                   disabled={!canDelete || deleteMutation.isPending}
                   onClick={() => deleteMutation.mutate(plan.slug)}
-                  className="bg-secondary-600 text-white px-4 py-2 rounded disabled:opacity-50"
+                  className="self-start bg-secondary-600 text-white px-4 py-2 rounded disabled:opacity-50"
                 >
                   Excluir {plan.nome}
                 </button>
