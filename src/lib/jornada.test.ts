@@ -547,11 +547,15 @@ describe('rótulos do configurador (RF-4-28, CA-4-24)', () => {
     expect(Object.entries(ROTULOS_ROTA)).toEqual(Object.entries(TABELA_ROTAS));
   });
 
-  it('cada clique vira "Clicou: <rótulo>"', () => {
+  // RF-4-28 (emenda de 06/11): o clique do configurador já descreve a ação e sai sem prefixo;
+  // o da fase 3 (nome de botão) continua com "Clicou: ".
+  it('cada clique do configurador vira o próprio rótulo, sem prefixo', () => {
     for (const [nome, rotulo] of Object.entries(TABELA_CLIQUES_CONFIGURADOR)) {
-      expect(rotuloDoEvento(ev(`lp_clique_${nome}`))).toBe(`Clicou: ${rotulo}`);
+      expect(rotuloDoEvento(ev(`lp_clique_${nome}`))).toBe(rotulo);
     }
-    expect(rotuloDoEvento(ev('lp_clique_escolha_modelo'))).toBe('Clicou: Trocou o modelo');
+    expect(rotuloDoEvento(ev('lp_clique_contratar_finalizar'))).toBe('Clicou em Finalizar');
+    expect(rotuloDoEvento(ev('lp_clique_escolha_modelo'))).toBe('Trocou o modelo');
+    expect(rotuloDoEvento(ev('lp_clique_hero_montar'))).toBe('Clicou: Topo: botão principal');
   });
 
   it('cada erro vira "Erro: <rótulo>"', () => {

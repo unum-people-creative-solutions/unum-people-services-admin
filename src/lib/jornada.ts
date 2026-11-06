@@ -271,7 +271,7 @@ const ROLAGEM: Record<string, 25 | 50 | 75 | 100> = {
 };
 
 // Tipo do evento para o resumo da visita (RF-4-25); o rótulo vem sem prefixo.
-type TipoDoEvento = 'acao' | 'clique' | 'erro' | 'secao' | 'secao_previa';
+type TipoDoEvento = 'acao' | 'clique' | 'clique_configurador' | 'erro' | 'secao' | 'secao_previa';
 
 function rotuloPorPrefixo(nome: string, prefixo: string, rotulos: Record<string, string>): string | null {
   if (!nome.startsWith(prefixo)) return null;
@@ -288,7 +288,7 @@ function classificar(nome: string): { tipo: TipoDoEvento; rotulo: string } | nul
     ['secao', 'lp_secao_', ROTULOS_SECAO],
     ['secao_previa', 'lp_previa_secao_', ROTULOS_SECAO_PREVIA],
     ['clique', 'lp_clique_', ROTULOS_CLIQUE],
-    ['clique', 'lp_clique_', ROTULOS_CLIQUE_CONFIGURADOR],
+    ['clique_configurador', 'lp_clique_', ROTULOS_CLIQUE_CONFIGURADOR],
     ['erro', 'lp_erro_', ROTULOS_ERRO],
   ];
   for (const [tipo, prefixo, rotulos] of prefixados) {
@@ -301,6 +301,8 @@ function classificar(nome: string): { tipo: TipoDoEvento; rotulo: string } | nul
 const PREFIXO_NA_LINHA_DO_TEMPO: Record<TipoDoEvento, string> = {
   acao: '',
   clique: 'Clicou: ',
+  // RF-4-28: o rótulo do clique do configurador já descreve a ação ("Clicou em Contratar").
+  clique_configurador: '',
   erro: 'Erro: ',
   secao: 'Viu: ',
   secao_previa: 'Viu na prévia: ',

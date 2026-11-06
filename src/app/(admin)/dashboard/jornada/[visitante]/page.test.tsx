@@ -236,7 +236,7 @@ describe('Página do visitante: tempo por página e resumo por visita', () => {
     const linhaDoTempo = within(visita).getByRole('list', { name: 'Linha do tempo' });
     expect(within(linhaDoTempo).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       '09:00:00Viu a página/configurar/editar',
-      '09:00:05Clicou: Pôs ou trocou imagem/configurar/editar',
+      '09:00:05Pôs ou trocou imagem/configurar/editar',
       '09:00:42Ficou 42 s nesta página/configurar/editar',
       '09:00:43Viu a página/configurar/preview',
     ]);
