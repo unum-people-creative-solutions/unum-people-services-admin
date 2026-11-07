@@ -4,6 +4,8 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { PlanConfigFields } from './PlanConfigFields';
 import type { Plan } from '@/types/tenant';
 import type { Term } from '@/types/term';
+// JSON real de GET /admin/terms com os três tipos e um termo antigo sem tipo (L-071).
+import fixtureTipos from '@/services/__fixtures__/terms-tipos.json';
 
 const defaultTerms = [{ id: 't1', name: 'Termo Padrão', description: '', is_active: true, current_version: 1 }];
 
@@ -309,6 +311,16 @@ describe('PlanConfigFields', () => {
       render(<Wrapper terms={terms} defaultValues={{ plan_id: 'personalizado', term_id: 't1' }} />);
       expect(screen.getByRole('option', { name: 'Termo Ativo' })).toBeInTheDocument();
       expect(screen.queryByRole('option', { name: 'Termo Inativo' })).not.toBeInTheDocument();
+    });
+
+    // Pedido de 07/11/2026: termos de uso e política não são termo de contratação.
+    it('lista só termos de contratação ativos (sem tipo conta como contratação)', () => {
+      const terms = JSON.parse(JSON.stringify(fixtureTipos)) as Term[];
+      render(<Wrapper terms={terms} defaultValues={{ plan_id: 'personalizado', term_id: terms[0].id }} />);
+      const select = screen.getByLabelText(/Termo de Contratação/i) as HTMLSelectElement;
+      expect(Array.from(select.options).map((o) => o.textContent).filter((t) => t !== 'Selecione um termo')).toEqual([
+        'Termo de Contratação', 'Termo antigo sem tipo',
+      ]);
     });
 
     it('bloqueia submissão sem selecionar termo quando o plano for Personalizado', async () => {

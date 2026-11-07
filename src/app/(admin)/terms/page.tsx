@@ -9,6 +9,7 @@ import { termService } from '@/services/termService';
 import { Term, CreateTermInput } from '@/types/term';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ApiError } from '@/lib/apiError';
+import { TIPOS_DE_TERMO, rotuloDoTipo } from '@/lib/termos';
 
 const MOTIVO_DO_BLOQUEIO: Record<'aceites' | 'plano_ativo', string> = {
   aceites: 'Tem aceites registrados',
@@ -27,8 +28,11 @@ export default function TermsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const defaultValues: CreateTermInput = { name: '', description: '' };
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateTermInput>({ defaultValues });
+  const defaultValues: CreateTermInput = { name: '', description: '', type: 'contratacao_servico' };
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<CreateTermInput>({ defaultValues });
+  // Termos de uso e política: só um ativo por tipo; publicar desativa o atual (API).
+  const tipoEscolhido = watch('type');
+  const tipoUnico = tipoEscolhido === 'termos_uso' || tipoEscolhido === 'politica_privacidade';
 
   const createMutation = useMutation({
     mutationFn: (input: CreateTermInput) => termService.create(input),
@@ -94,6 +98,7 @@ export default function TermsPage() {
           <div>
             <h3>{term.name}</h3>
             <p className="text-xs text-slate-500">{term.description}</p>
+            <p className="text-xs text-slate-500">Tipo: {rotuloDoTipo(term)}</p>
             <p className="text-xs text-slate-400">Versão atual: v{term.current_version}</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -150,6 +155,24 @@ export default function TermsPage() {
                     placeholder="ex: Termo Pacote Site"
                   />
                   {errors.name && <span className="text-red-500 text-xs">Obrigatório</span>}
+                </div>
+                <div>
+                  <label htmlFor="type" className="block text-sm font-semibold mb-1">Tipo do termo</label>
+                  <select
+                    id="type"
+                    {...register('type', { required: true })}
+                    aria-describedby={tipoUnico ? 'aviso-tipo-unico' : undefined}
+                    className="w-full border p-2 rounded"
+                  >
+                    {TIPOS_DE_TERMO.map((t) => (
+                      <option key={t.valor} value={t.valor}>{t.rotulo}</option>
+                    ))}
+                  </select>
+                  {tipoUnico && (
+                    <p id="aviso-tipo-unico" className="text-xs text-amber-700 mt-1">
+                      Só um termo deste tipo fica ativo: ao publicar a primeira versão, o atual é desativado.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label htmlFor="description" className="block text-sm font-semibold mb-1">Descrição</label>

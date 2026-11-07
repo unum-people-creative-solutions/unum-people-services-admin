@@ -21,7 +21,7 @@ vi.mock('@tanstack/react-query', async (importOriginal) => {
   };
 });
 
-const term: Term = { id: 'term-1', name: 'Termo Site', description: '', is_active: true, current_version: 2, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' };
+const term: Term = { id: 'term-1', name: 'Termo Site', description: '', type: 'contratacao_servico', is_active: true, current_version: 2, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' };
 
 describe('VersionHistoryList', () => {
   it('lista as versões com link para o HTML publicado', async () => {

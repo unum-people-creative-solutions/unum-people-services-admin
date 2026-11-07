@@ -10,6 +10,7 @@ import { Term } from '@/types/term';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ApiError } from '@/lib/apiError';
 import { CurrencyInputBR } from '@/components/forms/CurrencyInputBR';
+import { termosDeContratacaoAtivos } from '@/lib/termos';
 
 // Campos de texto do formulário que o backend recebe como lista/string tratada.
 // `destaques` é um textarea (uma linha = um item) e vira lista só no envio.
@@ -36,7 +37,7 @@ export default function PlansPage() {
   // Defensivo: components que ainda não conhecem a query de termos (ex.: testes
   // legados desta tela) retornam o mock de ['plans'] para toda chamada de
   // useQuery — tratamos qualquer shape que não seja um array como "sem termos".
-  const activeTerms: Term[] = Array.isArray(termsData) ? termsData.filter((t) => t.is_active) : [];
+  const activeTerms: Term[] = Array.isArray(termsData) ? termosDeContratacaoAtivos(termsData) : [];
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
