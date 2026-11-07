@@ -98,6 +98,32 @@ describe('Dashboard Page Layout', () => {
     expect(integracao).toHaveAttribute('data-severidade', 'erro');
   });
 
+  // Pedido de 06/11/2026: horários em Brasília e ordem certa entre auditoria e sistema.
+  test('logs recentes: o @timestamp do CloudWatch vira o horário de Brasília e entra na ordem certa', async () => {
+    vi.mocked(tenantService.getLogs).mockResolvedValue([
+      { tenant_id: 'tenant-1', sk: 'AUDIT#1', created_at: '2026-11-07T00:30:00Z', action: 'TENANT_CREATED', actor: 'Admin', target_id: 'tenant-1', ip_address: '127.0.0.1', request_id: 'req-a1', expires_at: 0 },
+      { tenant_id: 'tenant-2', sk: 'AUDIT#2', created_at: '2026-11-07T01:00:00Z', action: 'TENANT_CREATED', actor: 'Admin', target_id: 'tenant-2', ip_address: '127.0.0.1', request_id: 'req-a2', expires_at: 0 },
+    ]);
+    vi.mocked(tenantService.getSystemErrors).mockResolvedValue([
+      { timestamp: '2026-11-07 00:44:35.142', level: 'WARN', message: 'Google Calendar request failed', service: 'crm', request_id: 'req-warn-1' },
+    ]);
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <DashboardPage />
+      </QueryClientProvider>
+    );
+
+    await screen.findByText('Google Calendar request failed');
+    expect(screen.getByText('06/11/2026, 21:44:35')).toBeInTheDocument();
+    expect(screen.getByText('06/11/2026, 22:00:00')).toBeInTheDocument();
+    expect(screen.getByText('06/11/2026, 21:30:00')).toBeInTheDocument();
+    const linhas = Array.from(document.querySelectorAll('[data-severidade]')).map((l) => l.textContent ?? '');
+    expect(linhas).toHaveLength(3);
+    expect(linhas[0]).toContain('tenant-2');
+    expect(linhas[1]).toContain('Google Calendar request failed');
+    expect(linhas[2]).toContain('tenant-1');
+  });
+
   test('verifies log container grid span', async () => {
     render(
       <QueryClientProvider client={queryClient}>
