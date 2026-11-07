@@ -6,6 +6,8 @@ export interface Term {
   current_version: number;
   created_at: string;
   updated_at: string;
+  // Só em GET /admin/terms: por que o termo não pode ser excluído, ou null.
+  bloqueio_exclusao?: 'aceites' | 'plano_ativo' | null;
 }
 
 export interface TermVersion {
