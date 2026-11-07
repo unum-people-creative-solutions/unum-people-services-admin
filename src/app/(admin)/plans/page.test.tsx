@@ -4,6 +4,8 @@ import PlansPage from './page';
 import { ApiError } from '@/lib/apiError';
 import { comoMock, OpcoesDeMutation, OpcoesDeQuery } from '@/test/mocks';
 import type { Term } from '@/types/term';
+// JSON real de GET /admin/terms com os três tipos e um termo antigo sem tipo (L-071).
+import fixtureTipos from '@/services/__fixtures__/terms-tipos.json';
 
 // Mocks for services and queries
 vi.mock('@/services/planService', () => ({
@@ -288,6 +290,19 @@ describe('PlansPage', () => {
     const select = screen.getByLabelText(/Termo de Contratação/i) as HTMLSelectElement;
     expect(screen.getByRole('option', { name: 'Termo Site' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Termo Inativo' })).not.toBeInTheDocument();
+  });
+
+  // Pedido de 07/11/2026: termos de uso e política não são termo de contratação.
+  it('select de Termo de Contratação mostra só termos de contratação ativos (sem tipo conta como contratação)', async () => {
+    await mockQueriesByKey(JSON.parse(JSON.stringify(fixtureTipos)) as Term[])();
+
+    render(<PlansPage />);
+    fireEvent.click(screen.getByRole('button', { name: /Novo Plano/i }));
+
+    const select = screen.getByLabelText(/Termo de Contratação/i) as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.textContent)).toEqual([
+      'Selecione um termo', 'Termo de Contratação', 'Termo antigo sem tipo',
+    ]);
   });
 
   it('bloqueia submissão sem selecionar termo e mostra erro de validação', async () => {

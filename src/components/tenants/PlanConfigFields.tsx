@@ -4,6 +4,7 @@ import { CurrencyInputBR } from '@/components/forms/CurrencyInputBR';
 import { formatCpfCnpj, isValidCpfCnpj } from '@/lib/cpfCnpj';
 import { Term } from '@/types/term';
 import { Plan } from '@/types/tenant';
+import { termosDeContratacaoAtivos } from '@/lib/termos';
 
 interface PlanConfigFieldsProps {
   // Ausente enquanto a consulta de planos carrega.
@@ -159,7 +160,7 @@ export function PlanConfigFields({ plansData, currentPlanId, isEditMode, terms =
               className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-white"
             >
               <option value="">Selecione um termo</option>
-              {terms.filter((t) => t.is_active).map((term) => (
+              {termosDeContratacaoAtivos(terms).map((term) => (
                 <option key={term.id} value={term.id}>{term.name}</option>
               ))}
             </select>

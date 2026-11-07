@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import TermsPage from './page';
 import { ApiError } from '@/lib/apiError';
@@ -6,6 +6,8 @@ import { comoMock, OpcoesDeMutation } from '@/test/mocks';
 import type { Term } from '@/types/term';
 // JSON real de GET /admin/terms com bloqueio_exclusao (L-071).
 import fixtureTermos from '@/services/__fixtures__/terms-lista.json';
+// JSON real de GET /admin/terms com os três tipos e um termo antigo sem tipo (L-071).
+import fixtureTipos from '@/services/__fixtures__/terms-tipos.json';
 
 vi.mock('@/services/termService', () => ({
   termService: {
@@ -78,7 +80,7 @@ describe('TermsPage', () => {
     }));
 
     const { termService } = await import('@/services/termService');
-    vi.mocked(termService.create).mockResolvedValue({ id: 'new-term-id', name: 'Termo Pacote Site', description: 'Escopo do pacote de site', is_active: true, current_version: 0, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' });
+    vi.mocked(termService.create).mockResolvedValue({ id: 'new-term-id', name: 'Termo Pacote Site', description: 'Escopo do pacote de site', type: 'contratacao_servico', is_active: true, current_version: 0, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' });
 
     render(<TermsPage />);
 
@@ -200,6 +202,71 @@ describe('TermsPage', () => {
     }
     expect(screen.queryByText(/^Abrir .+/)).not.toBeInTheDocument();
     expect(screen.queryByText(/^Excluir .+/)).not.toBeInTheDocument();
+  });
+
+  // Pedido de 07/11/2026: escolher o tipo ao criar o termo.
+  it('criação: Tipo do termo com os três tipos, "Termo de contratação" por padrão, e o tipo escolhido vai para a API', async () => {
+    const { useQuery, useMutation } = await import('@tanstack/react-query');
+    comoMock(useQuery).mockReturnValue({ data: [], isLoading: false });
+    comoMock(useMutation).mockImplementation(({ mutationFn }: OpcoesDeMutation) => ({
+      mutate: (variables: unknown) => mutationFn(variables),
+      isPending: false,
+    }));
+    const { termService } = await import('@/services/termService');
+    vi.mocked(termService.create).mockResolvedValue(JSON.parse(JSON.stringify(fixtureTipos))[0] as Term);
+
+    render(<TermsPage />);
+    fireEvent.click(screen.getByRole('button', { name: /Novo Termo/i }));
+
+    const tipo = screen.getByRole('combobox', { name: 'Tipo do termo' });
+    expect(Array.from((tipo as HTMLSelectElement).options).map((o) => [o.value, o.textContent])).toEqual([
+      ['contratacao_servico', 'Termo de contratação'],
+      ['termos_uso', 'Termos de uso'],
+      ['politica_privacidade', 'Política de privacidade'],
+    ]);
+    expect(tipo).toHaveDisplayValue('Termo de contratação');
+
+    fireEvent.change(screen.getByLabelText(/Nome/i), { target: { value: 'Política v11' } });
+    fireEvent.change(tipo, { target: { value: 'politica_privacidade' } });
+    fireEvent.click(screen.getByRole('button', { name: /Salvar Termo/i }));
+    await waitFor(() => {
+      expect(termService.create).toHaveBeenCalledWith({ name: 'Política v11', description: '', type: 'politica_privacidade' });
+    });
+  });
+
+  it('criação: termos de uso e política avisam que, ao publicar, o termo ativo do mesmo tipo é desativado', async () => {
+    const { useQuery, useMutation } = await import('@tanstack/react-query');
+    comoMock(useQuery).mockReturnValue({ data: [], isLoading: false });
+    comoMock(useMutation).mockImplementation(() => ({ mutate: vi.fn(), isPending: false }));
+
+    render(<TermsPage />);
+    fireEvent.click(screen.getByRole('button', { name: /Novo Termo/i }));
+    const tipo = screen.getByRole('combobox', { name: 'Tipo do termo' });
+    const aviso = 'Só um termo deste tipo fica ativo: ao publicar a primeira versão, o atual é desativado.';
+
+    expect(screen.queryByText(aviso)).not.toBeInTheDocument();
+    fireEvent.change(tipo, { target: { value: 'termos_uso' } });
+    expect(await screen.findByText(aviso)).toBeInTheDocument();
+    expect(tipo).toHaveAccessibleDescription(aviso);
+    fireEvent.change(tipo, { target: { value: 'politica_privacidade' } });
+    expect(screen.getByText(aviso)).toBeInTheDocument();
+    fireEvent.change(tipo, { target: { value: 'contratacao_servico' } });
+    await waitFor(() => expect(screen.queryByText(aviso)).not.toBeInTheDocument());
+  });
+
+  it('o card mostra o tipo; termo antigo sem tipo conta como termo de contratação', async () => {
+    const { useQuery, useMutation } = await import('@tanstack/react-query');
+    comoMock(useQuery).mockReturnValue({ data: JSON.parse(JSON.stringify(fixtureTipos)) as Term[], isLoading: false });
+    comoMock(useMutation).mockImplementation(() => ({ mutate: vi.fn(), isPending: false }));
+
+    render(<TermsPage />);
+
+    const tipoDoCard = (nome: string) =>
+      within(screen.getByRole('heading', { level: 3, name: nome }).closest('div.border') as HTMLElement).getByText(/^Tipo:/).textContent;
+    expect(tipoDoCard('Termo de Contratação')).toBe('Tipo: Termo de contratação');
+    expect(tipoDoCard('Termo antigo sem tipo')).toBe('Tipo: Termo de contratação');
+    expect(tipoDoCard('Termos de Uso')).toBe('Tipo: Termos de uso');
+    expect(tipoDoCard('Política de Privacidade')).toBe('Tipo: Política de privacidade');
   });
 
   // WARN-5 (/local-review): DeleteTerm no backend responde 409 quando o termo
