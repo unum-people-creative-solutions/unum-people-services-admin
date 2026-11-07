@@ -490,6 +490,13 @@ function passa(linha: { aparelho: Aparelho; origem: OrigemCrua }, filtro: Filtro
   return true;
 }
 
+export function filtrarVisitas<T extends { aparelho: Aparelho; origem: OrigemCrua }>(
+  visitas: readonly T[],
+  filtro: FiltroJornada,
+): T[] {
+  return visitas.filter((v) => passa(v, filtro));
+}
+
 // As 9 etapas: 1 a 8 vêm de `etapas`, a 9ª ("Pagou") de `pagou`.
 export function calcularFunil(funil: FunilJornada, filtro: FiltroJornada): number[] {
   const valores = new Array<number>(ROTULOS_ETAPAS.length).fill(0);
