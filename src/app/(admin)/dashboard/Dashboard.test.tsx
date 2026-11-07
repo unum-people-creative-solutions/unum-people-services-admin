@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import DashboardPage from './page';
 import { expect, test, vi, describe, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -64,6 +64,38 @@ describe('Dashboard Page Layout', () => {
     
     // Verifica a tag do serviço do erro
     expect(screen.getByText('api')).toBeDefined();
+  });
+
+  // Pedido de 06/11/2026: WARN amarelo, só erro em vermelho (como no Monitoramento).
+  test('logs recentes: ERROR e INTEGRATION_ERROR são erro, WARN é aviso, auditoria é normal', async () => {
+    vi.mocked(tenantService.getLogs).mockResolvedValue([
+      { tenant_id: 'tenant-1', sk: 'AUDIT#1', created_at: new Date().toISOString(), action: 'TENANT_CREATED', actor: 'Admin', target_id: 'tenant-1', ip_address: '127.0.0.1', request_id: 'req-audit-1', expires_at: 0 },
+      { tenant_id: 'tenant-2', sk: 'AUDIT#2', created_at: new Date().toISOString(), action: 'INTEGRATION_ERROR', actor: 'SYSTEM', target_id: 'asaas', ip_address: '', request_id: 'req-audit-2', expires_at: 0 },
+    ]);
+    vi.mocked(tenantService.getSystemErrors).mockResolvedValue([
+      { timestamp: new Date().toISOString(), level: 'ERROR', message: 'Connection Timeout', service: 'api', request_id: 'req-error-1' },
+      { timestamp: new Date().toISOString(), level: 'WARN', message: 'Jornada batch refused', service: 'jornada', request_id: 'req-warn-1' },
+    ]);
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <DashboardPage />
+      </QueryClientProvider>
+    );
+
+    const linha = async (texto: RegExp) => (await screen.findByText(texto)).closest('[data-severidade]') as HTMLElement;
+    const erro = await linha(/Connection Timeout/);
+    const aviso = await linha(/Jornada batch refused/);
+    const auditoria = await linha(/criou o tenant tenant-1/);
+    const integracao = await linha(/detectou erro na integração asaas/);
+
+    expect(erro).toHaveAttribute('data-severidade', 'erro');
+    expect(within(erro).getByTitle('System Error')).toBeInTheDocument();
+    expect(aviso).toHaveAttribute('data-severidade', 'aviso');
+    expect(within(aviso).getByTitle('Aviso do sistema')).toBeInTheDocument();
+    expect(within(aviso).queryByTitle('System Error')).not.toBeInTheDocument();
+    expect(within(aviso).getByText('WARN')).toBeInTheDocument();
+    expect(auditoria).toHaveAttribute('data-severidade', 'normal');
+    expect(integracao).toHaveAttribute('data-severidade', 'erro');
   });
 
   test('verifies log container grid span', async () => {
