@@ -115,6 +115,12 @@ function renderizar() {
   );
 }
 
+// A tela abre com a origem "Anúncio do Google"; os testes do total escolhem "Todas".
+function renderizarComTodas() {
+  renderizar();
+  fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'todas' } });
+}
+
 function valoresDoFunil(secao: HTMLElement) {
   return within(secao).getAllByRole('listitem').map((li) => li.textContent);
 }
@@ -137,7 +143,7 @@ describe('Página Jornada do visitante', () => {
   afterEach(() => vi.useRealTimers());
 
   test('cabeçalho do blueprint', () => {
-    renderizar();
+    renderizarComTodas();
     expect(screen.getByRole('heading', { level: 1, name: 'Jornada do visitante' })).toBeInTheDocument();
     expect(
       screen.getByText('De onde vêm, onde param e o que usam no configurador. Visitas de teste ficam fora dos números.'),
@@ -146,7 +152,7 @@ describe('Página Jornada do visitante', () => {
 
   // spec-4-detalhe RF-4-21, CA-4-17.
   test('períodos: os nove na ordem, 24 horas por padrão, sem "Hoje", e a janela de 24 h até agora', async () => {
-    renderizar();
+    renderizarComTodas();
     const grupo = screen.getByRole('group', { name: 'Período' });
     expect(within(grupo).getAllByRole('button').map((b) => b.textContent)).toEqual([
       '1 h', '3 h', '6 h', '12 h', '24 horas', '3 dias', '7 dias', '15 dias', '30 dias',
@@ -162,7 +168,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('CA-4-17: "7 dias" pede funil e visitas com a janela de 7 dias, e o título usa o rótulo', async () => {
-    renderizar();
+    renderizarComTodas();
     await screen.findByRole('region', { name: 'Funil · 24 horas' });
     fireEvent.click(within(screen.getByRole('group', { name: 'Período' })).getByRole('button', { name: '7 dias' }));
     await waitFor(() => expect(jornadaService.funil).toHaveBeenLastCalledWith(T - 7 * DIA, T));
@@ -173,7 +179,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('RF-4-22: trocar o período recalcula a janela até agora', async () => {
-    renderizar();
+    renderizarComTodas();
     await screen.findByRole('region', { name: 'Funil · 24 horas' });
     vi.setSystemTime(T + 60_000);
     fireEvent.click(screen.getByRole('button', { name: '1 h' }));
@@ -183,7 +189,7 @@ describe('Página Jornada do visitante', () => {
 
   // spec-4-detalhe RF-4-22, CA-4-18. Rode também com TZ=Asia/Tokyo (L-054).
   test('CA-4-18: Atualizar busca de novo até agora e mostra "Atualizado às HH:MM" em Brasília', async () => {
-    renderizar();
+    renderizarComTodas();
     const aviso = await screen.findByText('Atualizado às 20:00');
     expect(aviso.textContent).toBe('Atualizado às 20:00');
     expect(aviso).toHaveAttribute('aria-live', 'polite');
@@ -207,7 +213,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('CA-4-18: durante a busca o Atualizar fica desabilitado, com aria-busy', async () => {
-    renderizar();
+    renderizarComTodas();
     await screen.findByText('Atualizado às 20:00');
     const botao = screen.getByRole('button', { name: 'Atualizar' });
     expect(botao).toBeEnabled();
@@ -225,7 +231,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('CA-2-07: funil sem filtro, com a taxa sobre a etapa anterior', async () => {
-    renderizar();
+    renderizarComTodas();
     const secao = await screen.findByRole('region', { name: 'Funil · 24 horas' });
     await within(secao).findAllByRole('listitem');
     expect(valoresDoFunil(secao)).toEqual([
@@ -242,7 +248,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('CA-2-07: filtros de origem e aparelho recalculam funil e uso sem nova chamada', async () => {
-    renderizar();
+    renderizarComTodas();
     await screen.findByRole('region', { name: 'Funil · 24 horas' });
     fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'google' } });
     const secaoGoogle = screen.getByRole('region', { name: 'Funil · 24 horas · Anúncio do Google' });
@@ -285,7 +291,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('origem oferece os grupos do blueprint e aparelho as três opções', () => {
-    renderizar();
+    renderizarComTodas();
     const origem = screen.getByRole('combobox', { name: 'Origem' });
     expect(within(origem).getAllByRole('option').map((o) => o.textContent)).toEqual([
       'Todas', 'Anúncio do Google', 'Outra campanha', 'Outro site', 'Direto',
@@ -295,7 +301,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('CA-2-07: Uso do editor mostra as seis opções e o funil da IA', async () => {
-    renderizar();
+    renderizarComTodas();
     const uso = await screen.findByRole('region', { name: 'Uso do editor' });
     const menu = await within(uso).findByRole('list', { name: 'Menu "Editar"' });
     expect(within(menu).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
@@ -316,7 +322,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('visitas do período: data e hora em Brasília, origem agrupada, até onde foi e o contratante com link', async () => {
-    renderizar();
+    renderizarComTodas();
     await screen.findByRole('region', { name: 'Visitas · 24 horas' });
     fireEvent.click(screen.getByRole('button', { name: '7 dias' }));
     const visitas = await screen.findByRole('region', { name: 'Visitas · 7 dias' });
@@ -352,7 +358,7 @@ describe('Página Jornada do visitante', () => {
       '[{"visitante":"3f2b8c1e-9d4a-4b7e-8a6f-1c2d3e4f5a6b","visita":"7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d","inicio":1793880000000,"fim":1793880003000,"aparelho":"celular","origem":"google_ads","campanha":"c1","paginas":1,"etapas":[1,2,8],"usos":["lp_menu_ia"],"teste":false,"contratacao":{"tenant_id":"t-1","nome":"Espaço Sereno","status":"ATIVO","pago":true,"plano":"pagina","em":1793880004000}}]',
     ) as VisitaJornada[];
     vi.mocked(jornadaService.visitas).mockResolvedValue(real);
-    renderizar();
+    renderizarComTodas();
     const tabela = await screen.findByRole('table');
     const [, linha] = within(tabela).getAllByRole('row');
     expect(within(linha).getAllByRole('cell').map((td) => td.textContent)).toEqual([
@@ -365,7 +371,7 @@ describe('Página Jornada do visitante', () => {
     vi.mocked(jornadaService.visitas).mockResolvedValue([
       { ...visitaContratou, contratacao: { ...visitaContratou.contratacao!, tenant_id: 't-sumiu', nome: '' } },
     ]);
-    renderizar();
+    renderizarComTodas();
     const tabela = await screen.findByRole('table');
     const [, linha] = within(tabela).getAllByRole('row');
     const celula = within(linha).getAllByRole('cell')[5];
@@ -390,7 +396,7 @@ describe('Página Jornada do visitante', () => {
       ],
       contratacoes: [],
     });
-    renderizar();
+    renderizarComTodas();
     const tabela = await screen.findByRole('table');
     fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' }));
     fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 17:51' }));
@@ -412,7 +418,7 @@ describe('Página Jornada do visitante', () => {
 
   // spec-4-detalhe RF-4-24, CA-4-20: a linha abre embaixo.
   test('CA-4-20: o botão abre a área da visita, busca o visitante uma vez e fecha', async () => {
-    renderizar();
+    renderizarComTodas();
     const tabela = await screen.findByRole('table');
     const abrir = within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' });
     expect(abrir).toHaveAttribute('aria-expanded', 'false');
@@ -440,7 +446,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('CA-4-20: o clique na linha, fora de links, abre a visita', async () => {
-    renderizar();
+    renderizarComTodas();
     const tabela = await screen.findByRole('table');
     const [, linha] = within(tabela).getAllByRole('row');
     fireEvent.click(within(linha).getByText('Celular'));
@@ -451,7 +457,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('CA-4-20: o link da hora leva à página do visitante e não abre a linha', async () => {
-    renderizar();
+    renderizarComTodas();
     const tabela = await screen.findByRole('table');
     const link = within(tabela).getByRole('link', { name: '18:51' });
     expect(link).toHaveAttribute('href', '/dashboard/jornada/5b1f8a3c-2d4e-4f6a-8b9c-0d1e2f2da0b6');
@@ -461,7 +467,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('CA-4-20: duas linhas podem ficar abertas', async () => {
-    renderizar();
+    renderizarComTodas();
     const tabela = await screen.findByRole('table');
     fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' }));
     fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 17:12' }));
@@ -472,7 +478,7 @@ describe('Página Jornada do visitante', () => {
 
   test('CA-4-20: carregando, a área fica com aria-busy', async () => {
     vi.mocked(jornadaService.visitante).mockReturnValue(new Promise(() => {}));
-    renderizar();
+    renderizarComTodas();
     const tabela = await screen.findByRole('table');
     fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' }));
     const botao = within(tabela).getByRole('button', { name: 'Fechar a visita das 18:51' });
@@ -484,7 +490,7 @@ describe('Página Jornada do visitante', () => {
 
   test('CA-4-20: erro mostra a mensagem e "Tentar de novo", sem derrubar a tabela', async () => {
     vi.mocked(jornadaService.visitante).mockRejectedValueOnce(new ApiError('internal', 500));
-    renderizar();
+    renderizarComTodas();
     const tabela = await screen.findByRole('table');
     fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' }));
     expect(await within(tabela).findByText('Não foi possível carregar esta visita.')).toBeInTheDocument();
@@ -497,7 +503,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('CA-4-18: com uma visita aberta, Atualizar busca o visitante de novo', async () => {
-    renderizar();
+    renderizarComTodas();
     const tabela = await screen.findByRole('table');
     fireEvent.click(within(tabela).getByRole('button', { name: 'Abrir a visita das 18:51' }));
     expect(await screen.findByText('Pôs ou trocou imagem')).toBeInTheDocument();
@@ -510,7 +516,7 @@ describe('Página Jornada do visitante', () => {
 
   // spec-4-detalhe RF-4-23, CA-4-19.
   test('CA-4-19: em "24 horas" a linha mostra só a hora; em "7 dias", "d/m HH:MM"', async () => {
-    renderizar();
+    renderizarComTodas();
     const tabela = await within(await screen.findByRole('region', { name: 'Visitas · 24 horas' })).findByRole('table');
     expect(within(tabela).getByRole('link', { name: '18:51' })).toBeInTheDocument();
     expect(within(tabela).queryByRole('link', { name: '5/11 18:51' })).not.toBeInTheDocument();
@@ -527,7 +533,7 @@ describe('Página Jornada do visitante', () => {
       inicio: visitaDireta.inicio - i * 60_000,
     }));
     vi.mocked(jornadaService.visitas).mockResolvedValue(muitas);
-    renderizar();
+    renderizarComTodas();
     const visitas = await screen.findByRole('region', { name: 'Visitas · 24 horas' });
     const tabela = await within(visitas).findByRole('table');
     expect(within(tabela).getAllByRole('row')).toHaveLength(101);
@@ -537,7 +543,7 @@ describe('Página Jornada do visitante', () => {
   });
 
   test('CA-4-19: com até 100 visitas, sem "Mostrar mais 100"', async () => {
-    renderizar();
+    renderizarComTodas();
     const visitas = await screen.findByRole('region', { name: 'Visitas · 24 horas' });
     await within(visitas).findByRole('table');
     expect(within(visitas).queryByRole('button', { name: 'Mostrar mais 100' })).not.toBeInTheDocument();
@@ -546,7 +552,7 @@ describe('Página Jornada do visitante', () => {
   // RF-4-19/RF-4-23: a API devolve as de teste sempre; a tela filtra sem nova chamada.
   test('Mostrar visitas de teste mostra a visita de teste com o selo, sem nova chamada', async () => {
     vi.mocked(jornadaService.visitas).mockResolvedValue([visitaTeste, visitaDireta]);
-    renderizar();
+    renderizarComTodas();
     const tabela = await screen.findByRole('table');
     expect(within(tabela).getAllByRole('row')).toHaveLength(2);
     expect(within(tabela).queryByText('Teste')).not.toBeInTheDocument();
@@ -559,7 +565,7 @@ describe('Página Jornada do visitante', () => {
 
   // CA-4-19: a lista segue o período.
   test('a navegação por dia não existe', async () => {
-    renderizar();
+    renderizarComTodas();
     const visitas = await screen.findByRole('region', { name: 'Visitas · 24 horas' });
     await within(visitas).findByRole('table');
     expect(within(visitas).queryByRole('button', { name: 'Dia anterior' })).not.toBeInTheDocument();
@@ -568,7 +574,7 @@ describe('Página Jornada do visitante', () => {
 
   test('CA-4-19: período sem visitas', async () => {
     vi.mocked(jornadaService.visitas).mockResolvedValue([]);
-    renderizar();
+    renderizarComTodas();
     const visitas = await screen.findByRole('region', { name: 'Visitas · 24 horas' });
     expect(await within(visitas).findByText('Nenhuma visita neste período.')).toBeInTheDocument();
     expect(within(visitas).queryByRole('table')).not.toBeInTheDocument();
@@ -576,7 +582,7 @@ describe('Página Jornada do visitante', () => {
 
   test('CA-2-09: erro do funil mostra Tentar de novo no funil e no uso; as visitas seguem', async () => {
     vi.mocked(jornadaService.funil).mockRejectedValue(new ApiError('internal', 500));
-    renderizar();
+    renderizarComTodas();
     const funilSecao = await screen.findByRole('region', { name: 'Funil · 24 horas' });
     expect(await within(funilSecao).findByText('Não foi possível carregar.')).toBeInTheDocument();
     const uso = screen.getByRole('region', { name: 'Uso do editor' });
@@ -590,17 +596,66 @@ describe('Página Jornada do visitante', () => {
 
   test('CA-2-09: erro das visitas mostra Tentar de novo na seção de visitas', async () => {
     vi.mocked(jornadaService.visitas).mockRejectedValueOnce(new ApiError('internal', 500));
-    renderizar();
+    renderizarComTodas();
     const visitas = await screen.findByRole('region', { name: 'Visitas · 24 horas' });
     expect(await within(visitas).findByText('Não foi possível carregar.')).toBeInTheDocument();
     fireEvent.click(within(visitas).getByRole('button', { name: 'Tentar de novo' }));
     expect(await within(visitas).findByRole('table')).toBeInTheDocument();
   });
 
+  // Pedido de 06/11/2026: a origem começa em "Anúncio do Google".
+  test('abre com a origem "Anúncio do Google": as seções vêm filtradas e dizem isso no título', async () => {
+    renderizar();
+    expect(screen.getByRole('combobox', { name: 'Origem' })).toHaveDisplayValue('Anúncio do Google');
+    expect(screen.getByRole('combobox', { name: 'Aparelho' })).toHaveDisplayValue('Todos');
+    const funilSecao = await screen.findByRole('region', { name: 'Funil · 24 horas · Anúncio do Google' });
+    await within(funilSecao).findAllByRole('listitem');
+    expect(valoresDoFunil(funilSecao)[0]).toBe('Visitou80');
+    expect(screen.getByRole('region', { name: 'Páginas de entrada · 24 horas · Anúncio do Google' })).toBeInTheDocument();
+    const visitas = screen.getByRole('region', { name: 'Visitas · 24 horas · Anúncio do Google' });
+    const tabela = await within(visitas).findByRole('table');
+    const linhas = within(tabela).getAllByRole('row').slice(1);
+    expect(linhas.map((l) => within(l).getAllByRole('cell')[2].textContent)).toEqual([
+      'Anúncio do Google', 'Anúncio do Google',
+    ]);
+  });
+
+  test('Visitas obedecem a origem e o aparelho, sem nova chamada, e o título mostra os filtros', async () => {
+    renderizarComTodas();
+    const todas = await screen.findByRole('region', { name: 'Visitas · 24 horas' });
+    expect(within(await within(todas).findByRole('table')).getAllByRole('row')).toHaveLength(4);
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'direto' } });
+    const diretas = screen.getByRole('region', { name: 'Visitas · 24 horas · Direto' });
+    const linhasDiretas = within(within(diretas).getByRole('table')).getAllByRole('row').slice(1);
+    expect(linhasDiretas.map((l) => within(l).getAllByRole('cell')[0].textContent)).toEqual(['18:51']);
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'google' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Aparelho' }), { target: { value: 'computador' } });
+    const googleComputador = screen.getByRole('region', { name: 'Visitas · 24 horas · Anúncio do Google · Computador' });
+    const linhas = within(within(googleComputador).getByRole('table')).getAllByRole('row').slice(1);
+    expect(linhas.map((l) => within(l).getAllByRole('cell')[0].textContent)).toEqual(['17:12', '10:05']);
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Aparelho' }), { target: { value: 'celular' } });
+    const vazia = screen.getByRole('region', { name: 'Visitas · 24 horas · Anúncio do Google · Celular' });
+    expect(within(vazia).getByText('Nenhuma visita no período com esses filtros.')).toBeInTheDocument();
+    expect(within(vazia).queryByText('Nenhuma visita neste período.')).not.toBeInTheDocument();
+    expect(within(vazia).queryByRole('table')).not.toBeInTheDocument();
+    expect(jornadaService.visitas).toHaveBeenCalledTimes(1);
+  });
+
+  test('período sem nenhuma visita, com a origem padrão: "Nenhuma visita neste período."', async () => {
+    vi.mocked(jornadaService.visitas).mockResolvedValue([]);
+    renderizar();
+    const visitas = await screen.findByRole('region', { name: 'Visitas · 24 horas · Anúncio do Google' });
+    expect(await within(visitas).findByText('Nenhuma visita neste período.')).toBeInTheDocument();
+    expect(within(visitas).queryByText('Nenhuma visita no período com esses filtros.')).not.toBeInTheDocument();
+  });
+
   test('carregando: as seções ficam com aria-busy', () => {
     vi.mocked(jornadaService.funil).mockReturnValue(new Promise(() => {}));
     vi.mocked(jornadaService.visitas).mockReturnValue(new Promise(() => {}));
-    renderizar();
+    renderizarComTodas();
     expect(screen.getByRole('region', { name: 'Funil · 24 horas' })).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('region', { name: 'Uso do editor' })).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('region', { name: 'Visitas · 24 horas' })).toHaveAttribute('aria-busy', 'true');
@@ -644,7 +699,7 @@ describe('Página Jornada: Páginas de entrada', () => {
   }
 
   test('fica entre "Uso do editor" e "Visitas"', async () => {
-    renderizar();
+    renderizarComTodas();
     await secaoCarregada();
     expect(screen.getAllByRole('region').map((r) => r.getAttribute('aria-labelledby'))).toEqual([
       'titulo-funil-jornada',
@@ -655,7 +710,7 @@ describe('Página Jornada: Páginas de entrada', () => {
   });
 
   test('abas com aria-pressed; a inicial é a de mais visitas (Saúde, 12)', async () => {
-    renderizar();
+    renderizarComTodas();
     const secao = await secaoCarregada();
     const abas = within(within(secao).getByRole('group', { name: 'Página de entrada' })).getAllByRole('button');
     expect(abas.map((b) => b.textContent)).toEqual(['Início', 'Saúde', 'CRM', 'Blog']);
@@ -664,7 +719,7 @@ describe('Página Jornada: Páginas de entrada', () => {
   });
 
   test('números de cada bloco e porcentagens sobre as visitas da página, como taxa()', async () => {
-    renderizar();
+    renderizarComTodas();
     const secao = await secaoCarregada();
     expect(linhas(secao, 'Rolagem')).toEqual(['25%758%', '50%433%', '75%217%', 'Até o fim18%']);
     expect(linhas(secao, 'Tempo na página (aba visível)')).toEqual(['10 s650%', '30 s325%', '1 min00%', '3 min00%']);
@@ -679,7 +734,7 @@ describe('Página Jornada: Páginas de entrada', () => {
   });
 
   test('cliques: só os botões da página de produto, do mais clicado ao menos, empate na ordem da tabela', async () => {
-    renderizar();
+    renderizarComTodas();
     const secao = await secaoCarregada();
     expect(linhas(secao, 'Cliques')).toEqual([
       'Topo: botão principal2',
@@ -699,7 +754,7 @@ describe('Página Jornada: Páginas de entrada', () => {
   });
 
   test('trocar de aba mostra a outra página', async () => {
-    renderizar();
+    renderizarComTodas();
     const secao = await secaoCarregada();
     fireEvent.click(within(secao).getByRole('button', { name: 'CRM' }));
     expect(abaPressionada(secao)).toEqual(['CRM']);
@@ -733,7 +788,7 @@ describe('Página Jornada: Páginas de entrada', () => {
   });
 
   test('filtros de origem e aparelho recalculam os números sem nova chamada', async () => {
-    renderizar();
+    renderizarComTodas();
     await secaoCarregada();
     fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'google' } });
     const google = screen.getByRole('region', { name: 'Páginas de entrada · 24 horas · Anúncio do Google' });
@@ -754,7 +809,7 @@ describe('Página Jornada: Páginas de entrada', () => {
   });
 
   test('base no singular com 1 visita e no plural com 2 ou mais', async () => {
-    renderizar();
+    renderizarComTodas();
     const secao = await secaoCarregada();
     expect(within(secao).getByText('12 visitas viram esta página')).toBeInTheDocument();
     fireEvent.click(within(secao).getByRole('button', { name: 'Blog' }));
@@ -773,13 +828,13 @@ describe('Página Jornada: Páginas de entrada', () => {
         { pagina: 'inicio', evento: 'visita', aparelho: 'celular', origem: 'direto', visitas: 1 },
       ],
     });
-    renderizar();
+    renderizarComTodas();
     const secao = await secaoCarregada();
     expect(abaPressionada(secao)).toEqual(['CRM']);
   });
 
   test('n = 0: a frase de vazio no lugar dos blocos', async () => {
-    renderizar();
+    renderizarComTodas();
     await secaoCarregada();
     fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'campanha' } });
     const secao = screen.getByRole('region', { name: 'Páginas de entrada · 24 horas · Outra campanha' });
@@ -790,14 +845,14 @@ describe('Página Jornada: Páginas de entrada', () => {
 
   test('leitura vazia da API ([]): a frase de vazio', async () => {
     vi.mocked(jornadaService.funil).mockResolvedValue(funil);
-    renderizar();
+    renderizarComTodas();
     const secao = await secaoCarregada();
     expect(within(secao).getByText('Nenhuma visita entrou por esta página no período.')).toBeInTheDocument();
   });
 
   test('erro: "Tentar de novo" na seção, as visitas seguem, e tentar de novo carrega', async () => {
     vi.mocked(jornadaService.funil).mockRejectedValue(new ApiError('internal', 500));
-    renderizar();
+    renderizarComTodas();
     const secao = await screen.findByRole('region', { name: 'Páginas de entrada · 24 horas' });
     expect(await within(secao).findByText('Não foi possível carregar.')).toBeInTheDocument();
     expect(await screen.findByRole('table')).toBeInTheDocument();

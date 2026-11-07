@@ -178,17 +178,32 @@ export default function DashboardPage() {
                   [...Array(5)].map((_, i) => <div key={i} className="p-4 animate-pulse h-16 bg-slate-50/50"></div>)
                 ) : unifiedLogs.length === 0 ? (
                   <div className="p-8 text-center text-slate-400">Nenhum log registrado recentemente.</div>
-                ) : unifiedLogs.map((log) => (
-                  <div key={log.id} className={`p-4 hover:bg-slate-50 transition-colors ${log.type === 'error' ? 'bg-red-50/30' : ''}`}>
+                ) : unifiedLogs.map((log) => {
+                  // Só erro em vermelho; WARN em amarelo, como no Monitoramento (06/11/2026).
+                  const severidade =
+                    log.level?.includes('ERROR') ? 'erro' : log.type === 'error' && log.level === 'WARN' ? 'aviso' : 'normal';
+                  return (
+                  <div
+                    key={log.id}
+                    data-severidade={severidade}
+                    className={`p-4 hover:bg-slate-50 transition-colors ${
+                      severidade === 'erro' ? 'bg-red-50/30' : severidade === 'aviso' ? 'bg-amber-50/40' : ''
+                    }`}
+                  >
                     <div className="flex justify-between items-start mb-1">
                       <div className="flex items-center gap-2">
-                        {log.type === 'error' && (
+                        {log.type === 'error' && severidade === 'erro' && (
                           <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="System Error"></span>
                         )}
+                        {severidade === 'aviso' && (
+                          <span className="w-2 h-2 rounded-full bg-amber-400" title="Aviso do sistema"></span>
+                        )}
                         <span className={`text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1 ${
-                          log.type === 'error' || log.level === 'INTEGRATION_ERROR' 
-                            ? 'bg-red-100 text-red-700' 
-                            : 'bg-slate-100 text-slate-700'
+                          severidade === 'erro'
+                            ? 'bg-red-100 text-red-700'
+                            : severidade === 'aviso'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-slate-100 text-slate-700'
                         }`}>
                           {log.type === 'error' && <AlertCircle size={10} />}
                           {log.level}
@@ -211,7 +226,7 @@ export default function DashboardPage() {
                         {!['TENANT_CREATED', 'TENANT_UPDATED', 'INTEGRATION_ERROR'].includes(log.level) && (log.level || 'executou uma ação')}
                       </p>
                     ) : (
-                      <p className="text-sm text-red-800 font-medium">
+                      <p className={`text-sm font-medium ${severidade === 'aviso' ? 'text-amber-800' : 'text-red-800'}`}>
                         {log.message}
                       </p>
                     )}
@@ -222,7 +237,8 @@ export default function DashboardPage() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

@@ -14,6 +14,7 @@ import {
   calcularFunil,
   calcularLeitura,
   calcularUso,
+  filtrarVisitas,
   formatarHora,
   janela,
   rotuloDoAparelho,
@@ -38,7 +39,8 @@ export default function JornadaPage() {
   // A janela termina no instante da última troca de período ou do último Atualizar.
   // rodada: o Atualizar busca de novo mesmo quando o relógio não andou.
   const [consulta, setConsulta] = useState(() => ({ periodo: PERIODO_PADRAO, agora: Date.now(), rodada: 0 }));
-  const [filtro, setFiltro] = useState<FiltroJornada>({ origem: 'todas', aparelho: 'todos' });
+  // A origem começa no anúncio do Google (pedido de 06/11/2026); "Todas" segue no menu.
+  const [filtro, setFiltro] = useState<FiltroJornada>({ origem: 'google', aparelho: 'todos' });
   const [mostrarTeste, setMostrarTeste] = useState(false);
 
   const { periodo, rodada } = consulta;
@@ -55,9 +57,13 @@ export default function JornadaPage() {
     queryFn: () => jornadaService.visitas(desde, ate),
   });
 
-  const visitas = useMemo(
+  const visitasDoPeriodo = useMemo(
     () => visitasQuery.data?.filter((v) => mostrarTeste || !v.teste),
     [visitasQuery.data, mostrarTeste],
+  );
+  const visitas = useMemo(
+    () => (visitasDoPeriodo ? filtrarVisitas(visitasDoPeriodo, filtro) : undefined),
+    [visitasDoPeriodo, filtro],
   );
 
   const atualizando = funilQuery.isFetching || visitasQuery.isFetching;
@@ -215,7 +221,12 @@ export default function JornadaPage() {
         />
 
         <VisitasDoPeriodo
-          rotuloPeriodo={periodo.rotulo}
+          titulo={comFiltros('Visitas')}
+          textoVazio={
+            visitasDoPeriodo && visitasDoPeriodo.length > 0
+              ? 'Nenhuma visita no período com esses filtros.'
+              : 'Nenhuma visita neste período.'
+          }
           comData={periodo.ms > UM_DIA_MS}
           visitas={visitas}
           carregando={visitasCarregando}

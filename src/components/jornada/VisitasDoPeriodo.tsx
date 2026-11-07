@@ -20,7 +20,9 @@ const POR_PAGINA = 100;
 const COLUNAS = 6;
 
 interface VisitasDoPeriodoProps {
-  rotuloPeriodo: string;
+  // "Visitas" com o período e os filtros (blueprint §3.2).
+  titulo: string;
+  textoVazio: string;
   // Períodos acima de 24 horas mostram a data junto da hora.
   comData: boolean;
   visitas: VisitaJornada[] | undefined;
@@ -33,7 +35,8 @@ interface VisitasDoPeriodoProps {
 
 // Visitas do período (blueprint §3.4; spec-4-detalhe RF-4-23 e RF-4-24).
 export function VisitasDoPeriodo({
-  rotuloPeriodo,
+  titulo,
+  textoVazio,
   comData,
   visitas,
   carregando,
@@ -69,7 +72,7 @@ export function VisitasDoPeriodo({
     >
       <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center gap-x-6 gap-y-3">
         <h2 id="titulo-visitas" className="font-bold text-slate-900">
-          {`Visitas · ${rotuloPeriodo}`}
+          {titulo}
         </h2>
         <label className="flex items-center gap-2 text-sm text-slate-600 sm:ml-auto">
           <input
@@ -87,7 +90,7 @@ export function VisitasDoPeriodo({
         ) : erro || visitas === undefined ? (
           <ErroDaSecao onTentar={onTentar} />
         ) : visitas.length === 0 ? (
-          <p className="py-6 text-center text-sm text-slate-500">Nenhuma visita neste período.</p>
+          <p className="py-6 text-center text-sm text-slate-500">{textoVazio}</p>
         ) : (
           <>
             {/* contain: inline-size: a largura da tabela não empurra o <main> do layout (flex-1 sem min-w-0);
