@@ -9,6 +9,7 @@ import { FunilVitrine } from '@/components/jornada/FunilVitrine';
 import { calcularFunil, periodoUtc } from '@/lib/jornada';
 import type { AuditRecord, SystemErrorLog } from '@/types/dashboard';
 import { Users, Ban, Activity, TrendingUp, Clock, AlertCircle } from 'lucide-react';
+import { formatarHorarioDoLog, instanteDoLog } from '@/lib/horarioDosLogs';
 
 export default function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -63,24 +64,8 @@ export default function DashboardPage() {
     });
 
     const normalizedErrors = rawErrors.map((err, index) => {
-      let ts = err.timestamp || new Date().toISOString();
-      
-      // Ajuste de fuso horário: Se a data vier do CloudWatch sem indicação de fuso (ou em UTC)
-      // e estiver 3 horas adiantada, vamos normalizar para o objeto Date tratar corretamente.
-      // CloudWatch costuma enviar em UTC.
-      try {
-        const date = new Date(String(ts).replace(' ', 'T'));
-        if (!isNaN(date.getTime())) {
-          // Se detectarmos que os erros estão vindo em UTC puro (comum em CloudWatch)
-          // e o sistema espera horário local de Brasília (UTC-3), o Date() já deveria
-          // lidar com isso se a string estivesse em formato ISO correto.
-          // Como há um gap, vamos forçar o ajuste de 3 horas para sincronizar a lista.
-          date.setHours(date.getHours() - 3);
-          ts = date.toISOString();
-        }
-      } catch (e) {
-        console.error('Error parsing timestamp:', ts);
-      }
+      // O @timestamp do CloudWatch vem em UTC sem fuso: instanteDoLog o lê como UTC.
+      const ts = err.timestamp || new Date().toISOString();
 
       return {
         id: `error-${index}-${ts}`,
@@ -96,15 +81,7 @@ export default function DashboardPage() {
 
     return [...normalizedAudit, ...normalizedErrors]
       .filter(log => log.timestamp)
-      .sort((a, b) => {
-        const parseDate = (ts: string) => {
-          if (!ts) return 0;
-          const normalized = String(ts).replace(' ', 'T');
-          const d = new Date(normalized);
-          return isNaN(d.getTime()) ? 0 : d.getTime();
-        };
-        return parseDate(b.timestamp) - parseDate(a.timestamp);
-      })
+      .sort((a, b) => (instanteDoLog(b.timestamp) ?? 0) - (instanteDoLog(a.timestamp) ?? 0))
       .slice(0, 50);
   }, [auditLogs, systemErrors]);
 
@@ -214,7 +191,7 @@ export default function DashboardPage() {
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-slate-400">{new Date(log.timestamp).toLocaleString()}</span>
+                      <span className="text-xs text-slate-400">{formatarHorarioDoLog(log.timestamp)}</span>
                     </div>
                     
                     {log.type === 'audit' ? (

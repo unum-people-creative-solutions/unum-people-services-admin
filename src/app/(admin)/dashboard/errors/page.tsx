@@ -7,6 +7,7 @@ import { AlertCircle, Clock, RefreshCw, Filter, Search, ShieldCheck, Bug, Calend
 import { cn } from '@/lib/utils';
 import { PERIODOS } from '@/lib/jornada';
 import type { AuditRecord, SystemErrorLog } from '@/types/dashboard';
+import { formatarHorarioDoLog } from '@/lib/horarioDosLogs';
 
 type LogSource = 'system' | 'audit';
 // Os mesmos períodos da Jornada; o valor é o rótulo.
@@ -187,7 +188,7 @@ export default function LogsPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2 text-slate-600">
                             <Clock size={14} />
-                            <span className="text-xs">{new Date(timestamp).toLocaleString()}</span>
+                            <span className="text-xs">{formatarHorarioDoLog(timestamp)}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -255,7 +256,7 @@ export default function LogsPage() {
             <div className="p-6 overflow-y-auto bg-slate-50/30">
               <div className="bg-slate-900 rounded-xl p-6 font-mono text-sm leading-relaxed overflow-x-auto shadow-inner border border-slate-800">
                 <div className="text-slate-500 mb-4 pb-4 border-b border-slate-800">
-                  <span className="text-emerald-500">{'// '}{new Date(selectedLog.timestamp || selectedLog.created_at || '').toLocaleString()}</span>
+                  <span className="text-emerald-500">{'// '}{formatarHorarioDoLog(selectedLog.timestamp || selectedLog.created_at)}</span>
                   <br />
                   <span className="text-blue-400"># Origin:</span> {selectedLog.service || selectedLog.target_id || 'System'}
                   <br />
