@@ -3,6 +3,9 @@ import { describe, it, expect, vi } from 'vitest';
 import TermsPage from './page';
 import { ApiError } from '@/lib/apiError';
 import { comoMock, OpcoesDeMutation } from '@/test/mocks';
+import type { Term } from '@/types/term';
+// JSON real de GET /admin/terms com bloqueio_exclusao (L-071).
+import fixtureTermos from '@/services/__fixtures__/terms-lista.json';
 
 vi.mock('@/services/termService', () => ({
   termService: {
@@ -160,6 +163,43 @@ describe('TermsPage', () => {
     await waitFor(() => {
       expect(termService.remove).toHaveBeenCalledWith('t1');
     });
+  });
+
+  // Pedido de 06/11/2026: Excluir inativo quando o termo não pode ser excluído,
+  // com o motivo; os botões mostram só "Abrir" e "Excluir".
+  it('termo com aceites ou em uso por plano ativo: Excluir inativo com o motivo; os botões mostram só Abrir e Excluir', async () => {
+    const { useQuery, useMutation } = await import('@tanstack/react-query');
+    const termos = JSON.parse(JSON.stringify(fixtureTermos)) as Term[];
+    comoMock(useQuery).mockReturnValue({ data: termos, isLoading: false });
+    const mutateSpy = vi.fn();
+    comoMock(useMutation).mockImplementation(() => ({ mutate: mutateSpy, isPending: false }));
+
+    render(<TermsPage />);
+
+    const antigo = screen.getByRole('button', { name: 'Excluir Termo de Contratação antigo' });
+    expect(antigo).toHaveTextContent(/^Excluir$/);
+    expect(antigo).toBeDisabled();
+    expect(antigo).toHaveAccessibleDescription('Tem aceites registrados');
+    fireEvent.click(antigo);
+
+    const vigente = screen.getByRole('button', { name: 'Excluir Termo de Contratação' });
+    expect(vigente).toBeDisabled();
+    expect(vigente).toHaveAccessibleDescription('Em uso por um plano ativo');
+    fireEvent.click(vigente);
+    expect(mutateSpy).not.toHaveBeenCalled();
+
+    const livre = screen.getByRole('button', { name: 'Excluir Rascunho sem uso' });
+    expect(livre).toBeEnabled();
+    expect(livre).toHaveAccessibleDescription('');
+    fireEvent.click(livre);
+    expect(mutateSpy).toHaveBeenCalledWith('c0ffee00-0000-4000-8000-000000000001');
+
+    for (const nome of ['Termo de Contratação antigo', 'Termo de Contratação', 'Rascunho sem uso']) {
+      const abrir = screen.getByRole('link', { name: `Abrir ${nome}` });
+      expect(abrir).toHaveTextContent(/^Abrir$/);
+    }
+    expect(screen.queryByText(/^Abrir .+/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Excluir .+/)).not.toBeInTheDocument();
   });
 
   // WARN-5 (/local-review): DeleteTerm no backend responde 409 quando o termo

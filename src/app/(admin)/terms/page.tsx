@@ -10,6 +10,11 @@ import { Term, CreateTermInput } from '@/types/term';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ApiError } from '@/lib/apiError';
 
+const MOTIVO_DO_BLOQUEIO: Record<'aceites' | 'plano_ativo', string> = {
+  aceites: 'Tem aceites registrados',
+  plano_ativo: 'Em uso por um plano ativo',
+};
+
 export default function TermsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -80,36 +85,48 @@ export default function TermsPage() {
   const activeTerms = terms.filter((t) => t.is_active);
   const inactiveTerms = terms.filter((t) => !t.is_active);
 
-  const renderTermCard = (term: Term) => (
-    <div key={term.id} className="border p-4 rounded-xl">
-      <div className="flex h-full flex-col justify-between gap-4">
-        <div>
-          <h3>{term.name}</h3>
-          <p className="text-xs text-slate-500">{term.description}</p>
-          <p className="text-xs text-slate-400">Versão atual: v{term.current_version}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/terms/${term.id}`}
-            className="px-4 py-2 border rounded hover:bg-slate-50"
-          >
-            Abrir {term.name}
-          </Link>
-          <button
-            type="button"
-            disabled={deleteMutation.isPending}
-            onClick={() => {
-              setDeleteError(null);
-              deleteMutation.mutate(term.id);
-            }}
-            className="px-4 py-2 bg-secondary-600 text-white rounded disabled:opacity-50"
-          >
-            Excluir {term.name}
-          </button>
+  const renderTermCard = (term: Term) => {
+    const bloqueio = term.bloqueio_exclusao ? MOTIVO_DO_BLOQUEIO[term.bloqueio_exclusao] : null;
+    const idDoMotivo = `bloqueio-${term.id}`;
+    return (
+      <div key={term.id} className="border p-4 rounded-xl">
+        <div className="flex h-full flex-col justify-between gap-4">
+          <div>
+            <h3>{term.name}</h3>
+            <p className="text-xs text-slate-500">{term.description}</p>
+            <p className="text-xs text-slate-400">Versão atual: v{term.current_version}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/terms/${term.id}`}
+              aria-label={`Abrir ${term.name}`}
+              className="px-4 py-2 border rounded hover:bg-slate-50"
+            >
+              Abrir
+            </Link>
+            <button
+              type="button"
+              aria-label={`Excluir ${term.name}`}
+              aria-describedby={bloqueio ? idDoMotivo : undefined}
+              disabled={deleteMutation.isPending || bloqueio !== null}
+              onClick={() => {
+                setDeleteError(null);
+                deleteMutation.mutate(term.id);
+              }}
+              className="px-4 py-2 bg-secondary-600 text-white rounded disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Excluir
+            </button>
+          </div>
+          {bloqueio && (
+            <p id={idDoMotivo} className="text-xs text-slate-500">
+              {bloqueio}
+            </p>
+          )}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="p-8">
