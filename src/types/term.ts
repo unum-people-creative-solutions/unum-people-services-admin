@@ -1,7 +1,11 @@
+export type TipoDeTermo = 'contratacao_servico' | 'termos_uso' | 'politica_privacidade';
+
 export interface Term {
   id: string;
   name: string;
   description: string;
+  // Vazio em termos antigos: conta como contratacao_servico (lib/termos.ts).
+  type: TipoDeTermo | '';
   is_active: boolean;
   current_version: number;
   created_at: string;
@@ -25,6 +29,7 @@ export interface TermVersion {
 export interface CreateTermInput {
   name: string;
   description: string;
+  type: TipoDeTermo;
 }
 
 export interface UpdateTermInput {
