@@ -60,7 +60,26 @@ describe('LogsPage - filtro de serviço', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Auditoria de Negócio/i }));
 
-    expect(await screen.findByText(new Date(criadoEm).toLocaleString())).toBeInTheDocument();
+    // 12:00 UTC = 09:00 em Brasília, qualquer que seja o fuso do computador.
+    expect(await screen.findByText('01/03/2026, 09:00:00')).toBeInTheDocument();
+  });
+
+  // Pedido de 06/11/2026: o Monitoramento mostrava o horário UTC do CloudWatch.
+  it('log do sistema: o @timestamp do CloudWatch aparece no horário de Brasília, na lista e no detalhe', async () => {
+    vi.mocked(tenantService.getSystemErrors).mockResolvedValue([
+      { timestamp: '2026-11-07 00:44:35.142', level: 'WARN', message: 'Google Calendar request failed', service: 'crm', request_id: 'req-warn-1' },
+    ]);
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <LogsPage />
+      </QueryClientProvider>
+    );
+    expect(await screen.findByText('06/11/2026, 21:44:35')).toBeInTheDocument();
+    expect(screen.queryByText(/07\/11\/2026, 00:44:35/)).not.toBeInTheDocument();
+
+    const linha = screen.getByText('06/11/2026, 21:44:35').closest('tr') as HTMLElement;
+    fireEvent.click(within(linha).getByRole('button'));
+    expect(await screen.findByText('// 06/11/2026, 21:44:35')).toBeInTheDocument();
   });
 });
 
