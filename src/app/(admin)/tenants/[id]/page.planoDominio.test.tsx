@@ -136,6 +136,28 @@ describe('TenantDetailsPage - plano sem domínio próprio e arrependimento em 14
     expect(alert).not.toHaveTextContent(MENSAGEM_DOMINIO_LIGADO);
   });
 
+  test('RF-F05 — 409 com outro código que não dominio_ligado mantém a mensagem da API', async () => {
+    // validation N18: o mapeamento é por status + código; só o par 409/dominio_ligado troca a mensagem.
+    vi.mocked(tenantService.changePlan).mockRejectedValue(
+      new ApiError('outro_motivo', 409, { error: 'outro_motivo' }),
+    );
+
+    renderPage();
+
+    const planSelect = await screen.findByRole('combobox', { name: /plano/i });
+    fireEvent.change(planSelect, { target: { value: 'livre' } });
+    fireEvent.change(await screen.findByLabelText(/Termo de Contratação/i), { target: { value: 'term_mock_1' } });
+    fireEvent.click(screen.getByRole('button', { name: /salvar alterações/i }));
+
+    await screen.findByText(/Confirmar Troca de Plano/i);
+    fireEvent.click(screen.getByRole('button', { name: /confirmar troca/i }));
+
+    await waitFor(() => expect(tenantService.changePlan).toHaveBeenCalled());
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('outro_motivo');
+    expect(alert).not.toHaveTextContent(MENSAGEM_DOMINIO_LIGADO);
+  });
+
   test('RF-F06 — o aviso de cancelar contrato fala em 14 dias, não em 7', async () => {
     renderPage();
 

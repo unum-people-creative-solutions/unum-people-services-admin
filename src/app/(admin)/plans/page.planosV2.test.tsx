@@ -20,6 +20,9 @@ const base = { descricao: '', activation_fee: 100, monthly_value: 99, included_s
 const semAtributos = { ...base, slug: 'captacao', nome: 'Captação' } as unknown as Plan
 const comRestricoes = { ...base, slug: 'pagina', nome: 'Página', sem_marca: true, sem_dominio_proprio: true } as unknown as Plan
 const semRestricoes = { ...base, slug: 'presenca', nome: 'Presença', sem_marca: false, sem_dominio_proprio: false } as unknown as Plan
+// Planos reais são assimétricos (sem marca, com domínio): um só atributo verdadeiro por plano (validation N17).
+const soSemMarca = { ...base, slug: 'vitrine', nome: 'Vitrine', sem_marca: true, sem_dominio_proprio: false } as unknown as Plan
+const soSemDominio = { ...base, slug: 'essencial', nome: 'Essencial', sem_marca: false, sem_dominio_proprio: true } as unknown as Plan
 
 function renderizar() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
@@ -101,5 +104,19 @@ describe('Planos — assinatura e domínio próprio por plano', () => {
     const captacao = cartaoDe('Captação')
     expect(within(captacao).queryByText('Sem assinatura')).toBeNull()
     expect(within(captacao).queryByText('Sem domínio próprio')).toBeNull()
+  })
+
+  test('T11 — atributos assimétricos: cada texto do cartão segue só o seu atributo', async () => {
+    vi.mocked(planService.listPlans).mockResolvedValue({ active: [soSemMarca, soSemDominio], inactive: [] })
+    renderizar()
+    await screen.findByRole('heading', { name: 'Vitrine' })
+
+    const vitrine = cartaoDe('Vitrine')
+    expect(within(vitrine).getByText('Sem assinatura')).toBeInTheDocument()
+    expect(within(vitrine).queryByText('Sem domínio próprio')).toBeNull()
+
+    const essencial = cartaoDe('Essencial')
+    expect(within(essencial).getByText('Sem domínio próprio')).toBeInTheDocument()
+    expect(within(essencial).queryByText('Sem assinatura')).toBeNull()
   })
 })
