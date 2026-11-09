@@ -52,6 +52,20 @@ describe('Planos — assinatura e domínio próprio por plano', () => {
     expect(vi.mocked(planService.updatePlan).mock.calls[0][1]).toMatchObject({ sem_marca: true, sem_dominio_proprio: false })
   })
 
+  test('T10 — marcar só o domínio próprio envia sem_dominio_proprio true e sem_marca false', async () => {
+    renderizar()
+    fireEvent.click(await screen.findByRole('button', { name: 'Editar Captação' }))
+    const dominio = await screen.findByLabelText(ROTULO_DOMINIO)
+    expect(dominio).not.toBeChecked()
+    fireEvent.click(dominio)
+    expect(dominio).toBeChecked()
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar Plano' }))
+    await waitFor(() => expect(planService.updatePlan).toHaveBeenCalled())
+    const payload = vi.mocked(planService.updatePlan).mock.calls[0][1]
+    expect(payload).toHaveProperty('sem_dominio_proprio', true)
+    expect(payload).toHaveProperty('sem_marca', false)
+  })
+
   test('T10 — editar plano com os dois atributos verdadeiros abre com os dois checkboxes marcados', async () => {
     renderizar()
     fireEvent.click(await screen.findByRole('button', { name: 'Editar Página' }))
