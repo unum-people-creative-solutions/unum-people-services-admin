@@ -89,6 +89,33 @@ describe('Planos — assinatura e domínio próprio por plano', () => {
     expect(payload).toHaveProperty('sem_dominio_proprio', false)
   })
 
+  // Validation M4/M5: os casos acima só passam por "Editar ..."; o formulário de
+  // criação precisa de teste próprio dos valores iniciais e do payload sem toque.
+  test('T10 — Novo Plano abre com assinatura e domínio próprio desmarcados', async () => {
+    renderizar()
+    fireEvent.click(await screen.findByRole('button', { name: 'Novo Plano' }))
+    expect(await screen.findByRole('heading', { name: 'Criar Novo Plano' })).toBeInTheDocument()
+    expect(screen.getByLabelText(ROTULO_MARCA)).not.toBeChecked()
+    expect(screen.getByLabelText(ROTULO_DOMINIO)).not.toBeChecked()
+  })
+
+  test('T10 — criar preenchendo só o obrigatório, sem tocar nos checkboxes, envia os dois como false', async () => {
+    renderizar()
+    fireEvent.click(await screen.findByRole('button', { name: 'Novo Plano' }))
+    await screen.findByRole('heading', { name: 'Criar Novo Plano' })
+    fireEvent.change(screen.getByPlaceholderText('ex: basico_mensal'), { target: { value: 'novo' } })
+    fireEvent.change(screen.getByPlaceholderText('ex: Básico Mensal'), { target: { value: 'Novo' } })
+    fireEvent.change(screen.getByLabelText('Taxa de Adesão'), { target: { value: '50' } })
+    fireEvent.change(screen.getByLabelText('Mensalidade'), { target: { value: '100' } })
+    fireEvent.change(screen.getByLabelText('Termo de Contratação'), { target: { value: 'term-1' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar Plano' }))
+    await waitFor(() => expect(planService.createPlan).toHaveBeenCalled())
+    expect(planService.updatePlan).not.toHaveBeenCalled()
+    const payload = vi.mocked(planService.createPlan).mock.calls[0][0]
+    expect(payload).toHaveProperty('sem_marca', false)
+    expect(payload).toHaveProperty('sem_dominio_proprio', false)
+  })
+
   test('T11 — o cartão mostra "Sem assinatura" e "Sem domínio próprio" só quando verdadeiros', async () => {
     renderizar()
     await screen.findByRole('heading', { name: 'Página' })
