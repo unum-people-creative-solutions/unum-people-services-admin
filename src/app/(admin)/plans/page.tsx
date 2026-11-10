@@ -349,7 +349,7 @@ export default function PlansPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <input type="checkbox" id="sem_dominio_proprio" {...register('sem_dominio_proprio')} />
-                  <label htmlFor="sem_dominio_proprio" className="text-sm font-semibold">Sem domínio próprio (só o endereço unumpeople.app)</label>
+                  <label htmlFor="sem_dominio_proprio" className="text-sm font-semibold">Sem domínio próprio (só o endereço unumpages.app)</label>
                 </div>
                 {formError && (
                   <p role="alert" className="text-red-600 text-sm">{formError}</p>

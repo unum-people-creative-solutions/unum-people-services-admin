@@ -13,7 +13,7 @@ vi.mock('@/services/planService', () => ({ planService: { listPlans: vi.fn(), cr
 vi.mock('@/services/termService', () => ({ termService: { list: vi.fn() } }))
 
 const ROTULO_MARCA = 'Esconder a assinatura Unum People na página publicada'
-const ROTULO_DOMINIO = 'Sem domínio próprio (só o endereço unumpeople.app)'
+const ROTULO_DOMINIO = 'Sem domínio próprio (só o endereço unumpages.app)'
 
 const base = { descricao: '', activation_fee: 100, monthly_value: 99, included_services: ['crm'], is_active: true, cycle: 'mensal', term_id: 'term-1', product: 'plataforma', pages_included: 0, max_usuarios: 0, destaques: [], selo: '' }
 // Plano gravado antes dos campos: chega sem os atributos (listPlans mockado não aplica defaults).
