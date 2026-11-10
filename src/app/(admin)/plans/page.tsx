@@ -59,6 +59,8 @@ export default function PlansPage() {
     max_usuarios: 0,
     destaques: '',
     selo: '',
+    sem_marca: false,
+    sem_dominio_proprio: false,
   };
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<PlanFormValues>({
@@ -129,6 +131,8 @@ export default function PlansPage() {
       max_usuarios: plan.max_usuarios ?? 0,
       destaques: (plan.destaques ?? []).join('\n'),
       selo: plan.selo ?? '',
+      sem_marca: plan.sem_marca ?? false,
+      sem_dominio_proprio: plan.sem_dominio_proprio ?? false,
     });
     setIsDrawerOpen(true);
   };
@@ -146,6 +150,8 @@ export default function PlansPage() {
       // inteiro, então omitir apagaria o que o formulário não mostrou.
       destaques: parseDestaques(data.destaques),
       selo: (data.selo ?? '').trim(),
+      sem_marca: Boolean(data.sem_marca),
+      sem_dominio_proprio: Boolean(data.sem_dominio_proprio),
     };
     if (payload.cycle === 'anual') {
       payload.monthly_value = 0;
@@ -337,6 +343,14 @@ export default function PlansPage() {
                   <input type="checkbox" id="is_active" {...register('is_active')} />
                   <label htmlFor="is_active" className="text-sm font-semibold">Ativo</label>
                 </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="sem_marca" {...register('sem_marca')} />
+                  <label htmlFor="sem_marca" className="text-sm font-semibold">Esconder a assinatura Unum People na página publicada</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="sem_dominio_proprio" {...register('sem_dominio_proprio')} />
+                  <label htmlFor="sem_dominio_proprio" className="text-sm font-semibold">Sem domínio próprio (só o endereço unumpeople.app)</label>
+                </div>
                 {formError && (
                   <p role="alert" className="text-red-600 text-sm">{formError}</p>
                 )}
@@ -371,6 +385,8 @@ export default function PlansPage() {
                 <p className="text-xs text-slate-500">
                   Usuários: {plan.max_usuarios ? plan.max_usuarios : 'sem limite'}
                 </p>
+                {plan.sem_marca && <p className="text-xs text-slate-500">Sem assinatura</p>}
+                {plan.sem_dominio_proprio && <p className="text-xs text-slate-500">Sem domínio próprio</p>}
               </div>
               <button
                 type="button"

@@ -29,6 +29,10 @@ export interface Plan {
   // plano gravado antes do campo; a leitura (planService) entrega [] e ''.
   destaques?: string[];
   selo?: string;
+  // planos-v2-marca-e-dominio RF-F01: restrições do plano. Ausentes em plano
+  // gravado antes dos campos; a leitura (planService) entrega false.
+  sem_marca?: boolean;
+  sem_dominio_proprio?: boolean;
 }
 
 export interface Contract {
