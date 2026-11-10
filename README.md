@@ -18,7 +18,7 @@ Tela `(admin)/terms` — CRUD de `Term`/`TermVersion` (o operador escreve o cont
 
 ## Tenant de teste
 
-A listagem (`(admin)/tenants`) e o detalhe do tenant mostram o selo **Teste** (nome acessível "Tenant de teste") quando `is_test_tenant` é verdadeiro; o detalhe mostra também "Cobrança no sandbox do Asaas". O flag só é escolhido na criação (`/tenants/new`) e não aparece na edição; tenant já existente só vira teste pelo comando `cmd/marcar-teste` da API (ADR-0008). A exclusão segue o fluxo normal: cancelar e, por ser de teste, excluir de imediato.
+A listagem (`(admin)/tenants`) e o detalhe do tenant mostram o selo **Teste** (nome acessível "Tenant de teste") quando `is_test_tenant` é verdadeiro; o detalhe mostra também "Cobrança no sandbox do Asaas". O flag só é escolhido na criação (`/tenants/new`) e não aparece na edição; tenant já existente só vira teste pelo comando `cmd/marcar-teste` da API (ADR-0008). A exclusão segue o fluxo normal: cancelar e, por ser de teste, excluir de imediato. Se a exclusão lógica já foi feita (status `excluindo`), o botão "Excluir Tenant" continua ativo e o modal só oferece a exclusão física, com o switch travado.
 
 ## Flags
 

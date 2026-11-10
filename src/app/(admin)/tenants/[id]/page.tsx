@@ -238,7 +238,7 @@ export default function TenantDetailsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => tenantService.delete(id, isHardDelete),
+    mutationFn: () => tenantService.delete(id, exclusaoFisica),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
       router.push('/tenants');
@@ -434,7 +434,11 @@ export default function TenantDetailsPage() {
     ? new Date((tenant.cancel_at ?? 0) * 1000).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
     : '';
   const isCancelarEnabled = !['cancelado', 'excluindo'].includes(currentStatus as string) && fimDoAcesso === '';
-  const canDelete = currentStatus === 'cancelado';
+  // Depois da exclusão lógica, o tenant de teste ainda pode ser excluído de vez;
+  // nesse caso só a exclusão física faz sentido (exclusao-guardas D-EG-1).
+  const exclusaoFisicaObrigatoria = currentStatus === 'excluindo' && !!tenant.is_test_tenant;
+  const canDelete = currentStatus === 'cancelado' || exclusaoFisicaObrigatoria;
+  const exclusaoFisica = isHardDelete || exclusaoFisicaObrigatoria;
 
 
   return (
@@ -938,28 +942,28 @@ export default function TenantDetailsPage() {
       {showDeleteModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className={`p-6 border-b flex items-center gap-3 ${isHardDelete ? 'bg-red-50 border-red-100 text-red-800' : 'bg-amber-50 border-amber-100 text-amber-800'}`}>
+            <div className={`p-6 border-b flex items-center gap-3 ${exclusaoFisica ? 'bg-red-50 border-red-100 text-red-800' : 'bg-amber-50 border-amber-100 text-amber-800'}`}>
               <AlertTriangle size={24} />
               <h3 className="text-xl font-bold">
-                {isHardDelete ? 'Confirmar Exclusão Física Imediata' : 'Confirmar Exclusão Lógica'}
+                {exclusaoFisica ? 'Confirmar Exclusão Física Imediata' : 'Confirmar Exclusão Lógica'}
               </h3>
             </div>
 
             <div className="p-8 space-y-6">
               <p className="text-slate-600 text-sm leading-relaxed">
-                {isHardDelete
+                {exclusaoFisica
                   ? 'Você está solicitando a exclusão física IMEDIATA e IRREVERSÍVEL deste tenant de teste. Todos os registros do banco e o acesso (Cognito) serão removidos agora mesmo, sem aguardar o período de retenção legal.'
                   : 'O tenant será marcado para exclusão (Soft Delete). O acesso será bloqueado e os dados serão anonimizados conforme a política de privacidade, mantendo apenas logs de auditoria legal durante o período de retenção.'}
               </p>
 
               <div className="flex items-center gap-3">
-                <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${!tenant.is_test_tenant ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'} ${isHardDelete ? 'bg-red-600' : 'bg-slate-300'}`}>
+                <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${!tenant.is_test_tenant ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'} ${exclusaoFisica ? 'bg-red-600' : 'bg-slate-300'}`}>
                   <input
                     type="checkbox"
                     id="hard_delete_toggle"
                     className="sr-only peer"
-                    checked={isHardDelete}
-                    disabled={!tenant.is_test_tenant}
+                    checked={exclusaoFisica}
+                    disabled={!tenant.is_test_tenant || exclusaoFisicaObrigatoria}
                     onChange={(e) => setIsHardDelete(e.target.checked)}
                   />
                   <div className={`h-3 w-3 ml-1 rounded-full bg-white transition-all peer-checked:translate-x-4`}></div>
@@ -972,11 +976,11 @@ export default function TenantDetailsPage() {
 
               {/* Espaço sempre reservado (evita layout jump); o texto reflete
                   a combinação tenant de teste x switch ativo/inativo. */}
-              <div className={`p-3 rounded-lg text-[10px] font-bold border ${isHardDelete ? 'bg-red-100 border-red-200 text-red-700 animate-pulse' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+              <div className={`p-3 rounded-lg text-[10px] font-bold border ${exclusaoFisica ? 'bg-red-100 border-red-200 text-red-700 animate-pulse' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
                 <AlertTriangle size={14} className="inline mr-1" />
                 {!tenant.is_test_tenant
                   ? 'Disponível apenas para tenants de teste. Tenants reais sempre respeitam os 30 dias de retenção legal antes da exclusão física.'
-                  : isHardDelete
+                  : exclusaoFisica
                     ? 'Atenção: Exclusão física imediata ativada! Isto removerá permanentemente TODOS os registros deste tenant de teste agora mesmo, sem espera.'
                     : 'Tenant de teste: ative para excluir definitivamente agora, sem aguardar o período de retenção.'}
               </div>

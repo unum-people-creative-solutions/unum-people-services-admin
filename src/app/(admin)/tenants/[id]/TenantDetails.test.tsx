@@ -1104,3 +1104,57 @@ describe('TenantDetailsPage - Histórico de acesso', () => {
     await waitFor(() => expect(acessoService.historico).toHaveBeenCalledWith('tenant-123', undefined));
   });
 });
+
+// exclusao-guardas (D-EG-1): depois da exclusão lógica o tenant de teste fica em
+// "excluindo" e ainda precisa poder ser excluído de vez; o tenant real não.
+describe('TenantDetailsPage - exclusão física depois da lógica', () => {
+  beforeEach(() => {
+    queryClient.clear();
+    vi.clearAllMocks();
+    vi.mocked(useParams).mockReturnValue({ id: 'tenant-123' });
+    vi.mocked(useRouter).mockReturnValue({ push: vi.fn() } as unknown as ReturnType<typeof useRouter>);
+  });
+
+  // AC-D1
+  test('tenant de teste em excluindo: exclui de vez com immediate=true, sem opção de exclusão lógica', async () => {
+    vi.mocked(tenantService.getById).mockResolvedValue({ ...mockTenant, status: 'EXCLUINDO', is_test_tenant: true } as unknown as Tenant);
+    vi.mocked(tenantService.delete).mockResolvedValue({ message: 'ok' });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <TenantDetailsPage />
+      </QueryClientProvider>
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /mostrar ações/i }));
+    const deleteBtn = await screen.findByRole('button', { name: /excluir tenant/i });
+    expect(deleteBtn).not.toBeDisabled();
+    fireEvent.click(deleteBtn);
+
+    expect(await screen.findByRole('heading', { name: /Confirmar Exclusão Física Imediata/i })).toBeInTheDocument();
+    const hardDeleteSwitch = screen.getByLabelText(/Hard Delete/i);
+    expect(hardDeleteSwitch).toBeChecked();
+    expect(hardDeleteSwitch).toBeDisabled();
+
+    fireEvent.change(screen.getByPlaceholderText(/digite "excluir tenant"/i), { target: { value: 'excluir tenant' } });
+    fireEvent.click(screen.getByRole('button', { name: /confirmar exclusão/i }));
+
+    await waitFor(() => {
+      expect(tenantService.delete).toHaveBeenCalledWith('tenant-123', true);
+    });
+  });
+
+  // AC-D2
+  test('tenant real em excluindo: "Excluir Tenant" desabilitado', async () => {
+    vi.mocked(tenantService.getById).mockResolvedValue({ ...mockTenant, status: 'EXCLUINDO', is_test_tenant: false } as unknown as Tenant);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <TenantDetailsPage />
+      </QueryClientProvider>
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /mostrar ações/i }));
+    expect(await screen.findByRole('button', { name: /excluir tenant/i })).toBeDisabled();
+  });
+});
