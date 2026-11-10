@@ -7,6 +7,7 @@ import { termService } from '@/services/termService';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { Tenant, ChangePlanInput } from '@/types/tenant';
+import { ApiError } from '@/lib/apiError';
 import Link from 'next/link';
 import { PlanConfigFields } from '@/components/tenants/PlanConfigFields';
 import { SiteUrlsFieldArray } from '@/components/tenants/SiteUrlsFieldArray';
@@ -209,7 +210,12 @@ export default function TenantDetailsPage() {
       setPendingPlanData(null);
     },
     onError: (err: Error) => {
-      setErrorMsg(err?.message || 'Erro ao alterar o plano. Tente novamente.');
+      // planos-v2-marca-e-dominio RF-F05: o plano novo não inclui domínio
+      // próprio e algum site do tenant tem domínio ligado (409 dominio_ligado).
+      const dominioLigado = err instanceof ApiError && err.status === 409 && err.detalhes.error === 'dominio_ligado';
+      setErrorMsg(dominioLigado
+        ? 'Este plano não inclui domínio próprio e a empresa tem um domínio ligado. Remova o domínio antes de trocar o plano.'
+        : (err?.message || 'Erro ao alterar o plano. Tente novamente.'));
       setTimeout(() => setErrorMsg(null), 5000);
       setShowChangePlanModal(false);
       setPendingPlanData(null);
@@ -859,7 +865,7 @@ export default function TenantDetailsPage() {
                               <AlertDialog.Description asChild>
                                 <div className="text-slate-600 text-sm leading-relaxed space-y-4">
                                   <p>
-                                    A assinatura é encerrada agora. Se o primeiro pagamento foi confirmado há até 7 dias, o valor é estornado e o acesso acaba na hora. Depois disso, o acesso segue até o fim do período já pago.
+                                    A assinatura é encerrada agora. Se o primeiro pagamento foi confirmado há até 14 dias, o valor é estornado e o acesso acaba na hora. Depois disso, o acesso segue até o fim do período já pago.
                                   </p>
                                   <div className="space-y-3">
                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">

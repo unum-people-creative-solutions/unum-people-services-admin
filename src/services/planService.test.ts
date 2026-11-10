@@ -128,6 +128,35 @@ describe('planService', () => {
     expect(result.active[0].selo).toBe('Mais escolhido');
   });
 
+  // planos-v2-marca-e-dominio RF-F01 — leitura tolerante de sem_marca/sem_dominio_proprio
+  it('listPlans entrega sem_marca e sem_dominio_proprio false para plano que veio sem os campos', async () => {
+    const { api } = await import('@/lib/api');
+    (api.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      active: [{ slug: 'antigo', nome: 'Antigo' }],
+      inactive: [{ slug: 'antigo-2', nome: 'Antigo 2' }],
+    });
+
+    const result = await planService.listPlans();
+
+    expect(result.active[0].sem_marca).toBe(false);
+    expect(result.active[0].sem_dominio_proprio).toBe(false);
+    expect(result.inactive[0].sem_marca).toBe(false);
+    expect(result.inactive[0].sem_dominio_proprio).toBe(false);
+  });
+
+  it('listPlans preserva sem_marca e sem_dominio_proprio true que a API devolveu', async () => {
+    const { api } = await import('@/lib/api');
+    (api.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      active: [{ slug: 'pagina', nome: 'Página', sem_marca: true, sem_dominio_proprio: true }],
+      inactive: [],
+    });
+
+    const result = await planService.listPlans();
+
+    expect(result.active[0].sem_marca).toBe(true);
+    expect(result.active[0].sem_dominio_proprio).toBe(true);
+  });
+
   it('createPlan envia product e pages_included no POST sem any', async () => {
     const { api } = await import('@/lib/api');
     (api.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({});

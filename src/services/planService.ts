@@ -25,6 +25,8 @@ function applyReadDefaults(plan: Plan): Plan {
     pages_included: resolvePagesIncluded(plan.pages_included),
     destaques: plan.destaques ?? [],
     selo: plan.selo ?? '',
+    sem_marca: plan.sem_marca ?? false,
+    sem_dominio_proprio: plan.sem_dominio_proprio ?? false,
   };
 }
 
