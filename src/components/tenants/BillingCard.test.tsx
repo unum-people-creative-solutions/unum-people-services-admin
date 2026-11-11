@@ -106,6 +106,20 @@ describe('BillingCard Component', () => {
     expect(screen.getByText(/erro ao gerar/i)).toBeInTheDocument();
   });
 
+  // TASK-FIX-F7-ADM-02: o operador cola esse link para o cliente.
+  it('"Copiar Link" escreve a URL da fatura na área de transferência', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderWithQuery(<BillingCard tenant={baseTenant} contract={createContract('disponivel')} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Copiar Link' }));
+    });
+
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(writeText).toHaveBeenCalledWith('https://asaas.com/link');
+  });
+
   it('T18 - deve fazer polling (refetch) se o estado for "gerando"', async () => {
     vi.mocked(tenantService.getById).mockResolvedValue({
       ...baseTenant,
