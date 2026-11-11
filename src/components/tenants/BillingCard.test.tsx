@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BillingCard } from './BillingCard';
 import { Tenant, Contract } from '@/types/tenant';
 import { tenantService } from '@/services/tenantService';
+import { ApiError } from '@/lib/apiError';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const createTestQueryClient = () => new QueryClient({
@@ -237,6 +238,90 @@ describe('BillingCard Component', () => {
 
       expect(screen.getByText(/aguardando confirmação do pagamento da ativação/i)).toBeInTheDocument();
       expect(screen.queryByText(/ativação paga/i)).not.toBeInTheDocument();
+    });
+  });
+
+  // cobranca-f7 (TECH-DESIGN §11 T18): o operador também reativa conta
+  // INADIMPLENTE ou SUSPENSO sem fatura vencida e sem assinatura ativa no Asaas.
+  // Fora disso a API responde 409 {"error":"conta_nao_pausada"}.
+  describe('cobranca-f7 — reativar conta em atraso', () => {
+    // O resultado da mutação chega por setTimeout do react-query; com relógio
+    // real o waitFor enxerga o alerta.
+    beforeEach(() => {
+      vi.useRealTimers();
+    });
+
+    const comStatus = (status: string): Tenant =>
+      ({ ...baseTenant, status: status as unknown as Tenant['status'] });
+
+    const AVISO_CONDICAO = 'Só funciona quando a conta não tem fatura vencida nem assinatura ativa no Asaas.';
+    const ALERTA_409 = 'Não dá para reativar: a conta tem fatura para pagar ou assinatura ativa no Asaas.';
+
+    it.each(['INADIMPLENTE', 'SUSPENSO'])(
+      'com status real "%s", mostra "Conta em atraso.", o botão e a condição',
+      async (status) => {
+        renderWithQuery(<BillingCard tenant={comStatus(status)} contract={undefined} />);
+
+        expect(screen.getByText('Conta em atraso.')).toBeInTheDocument();
+        expect(screen.getByText(AVISO_CONDICAO)).toBeInTheDocument();
+        expect(screen.queryByText('Assinatura pausada.')).not.toBeInTheDocument();
+
+        const botao = screen.getByRole('button', { name: 'Reativar assinatura' });
+        vi.mocked(tenantService.reactivateTenant).mockResolvedValue({ message: 'ok' });
+        await act(async () => {
+          fireEvent.click(botao);
+        });
+        expect(tenantService.reactivateTenant).toHaveBeenCalledWith('t-123');
+      },
+    );
+
+    it('com status real "PAUSADO", continua "Assinatura pausada." sem a linha da condição', () => {
+      renderWithQuery(<BillingCard tenant={comStatus('PAUSADO')} contract={undefined} />);
+
+      expect(screen.getByText('Assinatura pausada.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Reativar assinatura' })).toBeInTheDocument();
+      expect(screen.queryByText('Conta em atraso.')).not.toBeInTheDocument();
+      expect(screen.queryByText(AVISO_CONDICAO)).not.toBeInTheDocument();
+    });
+
+    it.each(['ATIVO', 'CANCELADO'])('com status real "%s", não mostra o botão', (status) => {
+      renderWithQuery(<BillingCard tenant={comStatus(status)} contract={undefined} />);
+
+      expect(screen.queryByRole('button', { name: /reativar/i })).not.toBeInTheDocument();
+      expect(screen.queryByText('Conta em atraso.')).not.toBeInTheDocument();
+    });
+
+    it.each(['INADIMPLENTE', 'SUSPENSO', 'PAUSADO'])(
+      'em "%s", 409 conta_nao_pausada mostra o alerta específico',
+      async (status) => {
+        renderWithQuery(<BillingCard tenant={comStatus(status)} contract={undefined} />);
+        vi.mocked(tenantService.reactivateTenant).mockRejectedValue(
+          new ApiError('conta_nao_pausada', 409, { error: 'conta_nao_pausada' }),
+        );
+
+        await act(async () => {
+          fireEvent.click(screen.getByRole('button', { name: 'Reativar assinatura' }));
+        });
+
+        await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(ALERTA_409));
+        expect(screen.queryByText('Falha ao reativar assinatura.')).not.toBeInTheDocument();
+      },
+    );
+
+    it.each([
+      ['500', new ApiError('Failed to reactivate tenant', 500, { error: 'Failed to reactivate tenant' })],
+      ['409 de outro motivo', new ApiError('cancellation_requested', 409, { error: 'cancellation_requested' })],
+      ['falha de rede', new Error('Network Error')],
+    ])('outro erro (%s) mostra o alerta genérico', async (_nome, erro) => {
+      renderWithQuery(<BillingCard tenant={comStatus('SUSPENSO')} contract={undefined} />);
+      vi.mocked(tenantService.reactivateTenant).mockRejectedValue(erro);
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Reativar assinatura' }));
+      });
+
+      await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Falha ao reativar assinatura.'));
+      expect(screen.queryByText(ALERTA_409)).not.toBeInTheDocument();
     });
   });
 });

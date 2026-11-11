@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tenant, Contract } from '@/types/tenant';
 import { tenantService } from '@/services/tenantService';
+import { ApiError } from '@/lib/apiError';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 
@@ -181,11 +182,17 @@ export function BillingCard({ tenant, contract }: BillingCardProps) {
   };
 
   const renderReactivate = () => {
-    if (currentStatus !== 'pausado') return null;
+    // cobranca-f7 (TECH-DESIGN §11 T18): a API também reativa conta em atraso
+    // sem fatura vencida e sem assinatura ativa no Asaas; fora disso, 409.
+    const emAtraso = currentStatus === 'inadimplente' || currentStatus === 'suspenso';
+    if (currentStatus !== 'pausado' && !emAtraso) return null;
+
+    const err = reactivateMutation.error;
+    const contaNaoPausada = err instanceof ApiError && err.status === 409 && err.detalhes.error === 'conta_nao_pausada';
 
     return (
       <div className="mb-4 pb-4 border-b">
-        <p className="text-yellow-600 mb-2">Assinatura pausada.</p>
+        <p className="text-yellow-600 mb-2">{emAtraso ? 'Conta em atraso.' : 'Assinatura pausada.'}</p>
         <button
           onClick={() => reactivateMutation.mutate()}
           disabled={reactivateMutation.isPending}
@@ -193,9 +200,16 @@ export function BillingCard({ tenant, contract }: BillingCardProps) {
         >
           {reactivateMutation.isPending ? 'Reativando...' : 'Reativar assinatura'}
         </button>
+        {emAtraso && (
+          <p className="mt-2 text-sm text-gray-600">
+            Só funciona quando a conta não tem fatura vencida nem assinatura ativa no Asaas.
+          </p>
+        )}
         {reactivateMutation.isError && (
           <div role="alert" className="mt-2 p-2 bg-red-100 text-red-700 border border-red-300 rounded">
-            Falha ao reativar assinatura.
+            {contaNaoPausada
+              ? 'Não dá para reativar: a conta tem fatura para pagar ou assinatura ativa no Asaas.'
+              : 'Falha ao reativar assinatura.'}
           </div>
         )}
       </div>
