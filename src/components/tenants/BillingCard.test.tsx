@@ -241,6 +241,35 @@ describe('BillingCard Component', () => {
     });
   });
 
+  // O cartão fica dentro do <form> do detalhe do tenant (tenants/[id]/page.tsx):
+  // os botões dele não podem enviar o formulário (PATCH do tenant).
+  describe('dentro do formulário do tenant', () => {
+    const renderNoFormulario = (ui: React.ReactElement) => {
+      const enviar = vi.fn((e: React.FormEvent) => e.preventDefault());
+      renderWithQuery(<form onSubmit={enviar}>{ui}</form>);
+      return enviar;
+    };
+
+    it.each([
+      ['Reativar assinatura', { ...baseTenant, status: 'SUSPENSO' as unknown as Tenant['status'] }, undefined],
+      ['Tentar Novamente', baseTenant, createContract('erro')],
+      ['Copiar Link', baseTenant, createContract('disponivel')],
+      ['Tentar Ativação', baseTenant, undefined],
+    ] as const)('clicar em "%s" não envia o formulário', async (nome, tenant, contract) => {
+      Object.assign(navigator, { clipboard: { writeText: vi.fn() } });
+      vi.mocked(tenantService.reactivateTenant).mockResolvedValue({ message: 'ok' });
+      vi.mocked(tenantService.retryBilling).mockResolvedValue({ message: 'ok' });
+      vi.mocked(tenantService.retryActivation).mockResolvedValue({ message: 'ok' });
+      const enviar = renderNoFormulario(<BillingCard tenant={tenant} contract={contract} />);
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: nome }));
+      });
+
+      expect(enviar).not.toHaveBeenCalled();
+    });
+  });
+
   // cobranca-f7 (TECH-DESIGN §11 T18): o operador também reativa conta
   // INADIMPLENTE ou SUSPENSO sem fatura vencida e sem assinatura ativa no Asaas.
   // Fora disso a API responde 409 {"error":"conta_nao_pausada"}.

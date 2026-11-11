@@ -101,6 +101,7 @@ export function BillingCard({ tenant, contract }: BillingCardProps) {
           <div>
             <p className="text-green-600">Link de pagamento disponível!</p>
             <button
+              type="button"
               onClick={copyToClipboard}
               className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
@@ -113,6 +114,7 @@ export function BillingCard({ tenant, contract }: BillingCardProps) {
           <div>
             <p className="text-red-600">Erro ao gerar link.</p>
             <button
+              type="button"
               onClick={handleRetry}
               disabled={isRetrying}
               className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
@@ -141,6 +143,7 @@ export function BillingCard({ tenant, contract }: BillingCardProps) {
         <div className="mb-4 pb-4 border-b">
           <p className="text-red-600">Falha ao gerar a cobrança de ativação no Asaas.</p>
           <button
+            type="button"
             onClick={handleRetryActivation}
             disabled={isRetryingActivation}
             className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
@@ -194,6 +197,7 @@ export function BillingCard({ tenant, contract }: BillingCardProps) {
       <div className="mb-4 pb-4 border-b">
         <p className="text-yellow-600 mb-2">{emAtraso ? 'Conta em atraso.' : 'Assinatura pausada.'}</p>
         <button
+          type="button"
           onClick={() => reactivateMutation.mutate()}
           disabled={reactivateMutation.isPending}
           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
