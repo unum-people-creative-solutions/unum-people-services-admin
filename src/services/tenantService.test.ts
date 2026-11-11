@@ -61,6 +61,28 @@ describe('tenantService', () => {
       await expect(chamada).rejects.toBeInstanceOf(ApiError)
       await expect(chamada).rejects.toMatchObject({ status: 409, message: 'conflito' })
     })
+
+    // cobranca-f7 (TASK-FIX-F7-ADM-01): o BillingCard decide o alerta pelo
+    // corpo do 409 em ApiError.detalhes; o corpo literal da API é
+    // {"error":"conta_nao_pausada"}.
+    it('reactivateTenant com 409 conta_nao_pausada lança ApiError com o corpo em detalhes', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        json: async () => ({ error: 'conta_nao_pausada' }),
+      })
+
+      const chamada = tenantService.reactivateTenant('t1')
+
+      await expect(chamada).rejects.toBeInstanceOf(ApiError)
+      await expect(chamada).rejects.toMatchObject({
+        status: 409,
+        detalhes: { error: 'conta_nao_pausada' },
+      })
+      const [url, options] = mockFetch.mock.calls[0]
+      expect(url).toMatch(/\/admin\/tenants\/t1\/reactivate$/)
+      expect(options).toMatchObject({ method: 'POST' })
+    })
   })
 
   describe('getStats', () => {
