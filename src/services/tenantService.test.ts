@@ -83,6 +83,67 @@ describe('tenantService', () => {
       expect(url).toMatch(/\/admin\/tenants\/t1\/reactivate$/)
       expect(options).toMatchObject({ method: 'POST' })
     })
+
+    // dados-do-negocio (TASK-FE-401): mapeamento de 422, 503 e 400 (endereco_obrigatorio)
+    it('resposta 422 asaas_recusou vira ApiError com status 422 e mensagem mapeada com detalhe', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        json: async () => ({ erro: 'asaas_recusou', detalhe: 'CEP do cliente é inválido.' }),
+      })
+
+      const chamada = tenantService.update('t1', { nome_negocio: 'Novo' })
+
+      await expect(chamada).rejects.toBeInstanceOf(ApiError)
+      await expect(chamada).rejects.toMatchObject({
+        status: 422,
+        message: 'O Asaas recusou: CEP do cliente é inválido. Confira o endereço.',
+        detalhes: { erro: 'asaas_recusou', detalhe: 'CEP do cliente é inválido.' },
+      })
+    })
+
+    it('resposta 503 asaas_indisponivel vira ApiError com status 503 e mensagem clara', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({ erro: 'asaas_indisponivel' }),
+      })
+
+      const chamada = tenantService.update('t1', { nome_negocio: 'Novo' })
+
+      await expect(chamada).rejects.toBeInstanceOf(ApiError)
+      await expect(chamada).rejects.toMatchObject({
+        status: 503,
+        message: 'Não foi possível salvar agora. Tente de novo em alguns minutos.',
+        detalhes: { erro: 'asaas_indisponivel' },
+      })
+    })
+
+    it('resposta 400 endereco_obrigatorio vira ApiError com mensagem clara', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ erro: 'endereco_obrigatorio' }),
+      })
+
+      const chamada = tenantService.create({
+        nome_negocio: 'Teste',
+        nome_admin: 'Admin',
+        email_contato: 'a@a.com',
+        documento: '12345678909',
+        nicho: 'Geral',
+        use_mcc_auth: false,
+        plan_id: 'pago',
+        plan_cycle: 'mensal',
+      })
+
+      await expect(chamada).rejects.toBeInstanceOf(ApiError)
+      await expect(chamada).rejects.toMatchObject({
+        status: 400,
+        message: 'Endereço é obrigatório para plano Pago ou Personalizado.',
+        detalhes: { erro: 'endereco_obrigatorio' },
+      })
+    })
   })
 
   describe('getStats', () => {

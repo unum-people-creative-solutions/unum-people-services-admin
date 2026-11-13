@@ -102,6 +102,10 @@ describe('NewTenantPage - Separation of Tenant and Admin', () => {
     fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tech' } });
     fireEvent.change(container.querySelector('[name="nome_admin"]')!, { target: { value: 'Admin Teste' } });
     fireEvent.change(container.querySelector('[name="email_contato"]')!, { target: { value: 'admin@teste.com' } });
+    fireEvent.change(container.querySelector('[name="endereco.cep"]')!, { target: { value: '82515000' } });
+    fireEvent.change(container.querySelector('[name="endereco.logradouro"]')!, { target: { value: 'Rua Teste' } });
+    fireEvent.change(container.querySelector('[name="endereco.numero"]')!, { target: { value: '123' } });
+    fireEvent.change(container.querySelector('[name="endereco.bairro"]')!, { target: { value: 'Centro' } });
     fireEvent.change(await screen.findByLabelText(/Termo de Contratação/i), { target: { value: 'term_mock_1' } });
 
     fireEvent.click(screen.getByRole('button', { name: /criar tenant/i }));
@@ -167,6 +171,10 @@ describe('NewTenantPage - Formulário Adaptativo por Plano (T12)', () => {
     fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tech' } });
     fireEvent.change(container.querySelector('[name="nome_admin"]')!, { target: { value: 'Admin Teste' } });
     fireEvent.change(container.querySelector('[name="email_contato"]')!, { target: { value: 'admin@teste.com' } });
+    fireEvent.change(container.querySelector('[name="endereco.cep"]')!, { target: { value: '82515000' } });
+    fireEvent.change(container.querySelector('[name="endereco.logradouro"]')!, { target: { value: 'Rua Teste' } });
+    fireEvent.change(container.querySelector('[name="endereco.numero"]')!, { target: { value: '123' } });
+    fireEvent.change(container.querySelector('[name="endereco.bairro"]')!, { target: { value: 'Centro' } });
     fireEvent.change(await screen.findByLabelText(/Termo de Contratação/i), { target: { value: 'term_mock_1' } });
 
     fireEvent.click(screen.getByRole('button', { name: /criar tenant/i }));
@@ -281,6 +289,10 @@ describe('NewTenantPage - RF-TT-03: Flag Tenant de Teste', () => {
     fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tech' } });
     fireEvent.change(container.querySelector('[name="nome_admin"]')!, { target: { value: 'Admin Teste' } });
     fireEvent.change(container.querySelector('[name="email_contato"]')!, { target: { value: 'admin@teste.com' } });
+    fireEvent.change(container.querySelector('[name="endereco.cep"]')!, { target: { value: '82515000' } });
+    fireEvent.change(container.querySelector('[name="endereco.logradouro"]')!, { target: { value: 'Rua Teste' } });
+    fireEvent.change(container.querySelector('[name="endereco.numero"]')!, { target: { value: '123' } });
+    fireEvent.change(container.querySelector('[name="endereco.bairro"]')!, { target: { value: 'Centro' } });
 
     fireEvent.click(screen.getByRole('button', { name: /criar tenant/i }));
 
@@ -301,6 +313,10 @@ describe('NewTenantPage - RF-TT-03: Flag Tenant de Teste', () => {
     fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tech' } });
     fireEvent.change(container.querySelector('[name="nome_admin"]')!, { target: { value: 'Admin Teste' } });
     fireEvent.change(container.querySelector('[name="email_contato"]')!, { target: { value: 'admin@teste.com' } });
+    fireEvent.change(container.querySelector('[name="endereco.cep"]')!, { target: { value: '82515000' } });
+    fireEvent.change(container.querySelector('[name="endereco.logradouro"]')!, { target: { value: 'Rua Teste' } });
+    fireEvent.change(container.querySelector('[name="endereco.numero"]')!, { target: { value: '123' } });
+    fireEvent.change(container.querySelector('[name="endereco.bairro"]')!, { target: { value: 'Centro' } });
 
     fireEvent.click(screen.getByRole('button', { name: /criar tenant/i }));
 

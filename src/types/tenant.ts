@@ -98,6 +98,16 @@ export interface ServiceAgreementStatus {
   updated_at?: string;
 }
 
+export interface EnderecoDoNegocio {
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento?: string;
+  bairro: string;
+  cidade?: string;
+  uf?: string;
+}
+
 export interface Tenant {
   id: string;
   api_key: string;
@@ -105,6 +115,10 @@ export interface Tenant {
   email_contato: string;
   documento: string;
   nicho: string;
+  // dados-do-negocio (RF-DNG-19, RF-DNG-22)
+  celular?: string;
+  endereco?: EnderecoDoNegocio | null;
+  endereco_pendente?: boolean;
   /** @deprecated Use `site_urls`. Mantido para convivência com leitores ainda não migrados. */
   site_url?: string;
   site_urls?: string[];
@@ -158,6 +172,15 @@ export interface CreateTenantInput {
   subscription_billing_type?: 'pix' | 'credit_card';
   is_test_tenant?: boolean;
   term_id?: string;
+  // dados-do-negocio (RF-DNG-21, RF-DNG-23)
+  postal_code?: string;
+  address?: string;
+  address_number?: string;
+  complement?: string;
+  province?: string;
+  mobile_phone?: string;
+  celular?: string;
+  endereco?: EnderecoDoNegocio | null;
 }
 
 export interface TenantUser {
