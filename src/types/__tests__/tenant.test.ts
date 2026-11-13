@@ -35,4 +35,24 @@ describe('Tenant Type Definition', () => {
     expect(asaasId).toBe('sub_12345');
     expect(delinquency).toBe('2023-02-05');
   });
+
+  it('deve permitir celular, endereco e endereco_pendente (dados-do-negocio)', () => {
+    const tenant: Partial<Tenant> = {
+      celular: '41998785535',
+      endereco: {
+        cep: '82515000',
+        logradouro: 'Rua Teste',
+        numero: '123',
+        complemento: 'Sala 1',
+        bairro: 'Bacacheri',
+        cidade: 'Curitiba',
+        uf: 'PR',
+      },
+      endereco_pendente: false,
+    };
+
+    expect(tenant.celular).toBe('41998785535');
+    expect(tenant.endereco?.cep).toBe('82515000');
+    expect(tenant.endereco_pendente).toBe(false);
+  });
 });
