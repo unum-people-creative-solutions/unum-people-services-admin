@@ -55,6 +55,11 @@ O formulário também tem **Destaques (um por linha)** (`textarea#destaques`) e 
 - **Planos:** campo "Máximo de usuários" (0 = sem limite).
 - Os erros da API aparecem na tela; `ApiError.detalhes` traz o corpo inteiro (`faltando`, `em_uso`).
 
+## Dados do negócio e endereço (`dados-do-negocio`)
+
+- **Detalhe do tenant (`/tenants/[id]`, card "Dados Institucionais"):** exibe o CPF/CNPJ formatado como texto somente leitura, o rótulo "E-mail de cobrança e login do primeiro administrador", o campo editável de Celular e o bloco `EnderecoFields` (CEP com autopreenchimento via ViaCEP em `src/lib/viaCep.ts`, Rua, Número, Complemento, Bairro, Cidade e UF). Quando `endereco_pendente` é verdadeiro, mostra o selo **"Sem endereço: a nota fiscal não sai"** ao lado do status. Erros `422` (`asaas_recusou`, com o detalhe textual do Asaas) e `503` (`asaas_indisponivel`) são exibidos como alerta no próprio card.
+- **Criar tenant (`/tenants/new`):** inclui Celular e `EnderecoFields`. Para planos `PAGO` e `PERSONALIZADO`, o endereço completo é obrigatório antes do envio (e também validado pela API com `400 endereco_obrigatorio`); para o plano `LIVRE`, o endereço continua opcional.
+
 ## Getting Started
 
 First, run the development server:
