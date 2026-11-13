@@ -11,6 +11,8 @@ import { ApiError } from '@/lib/apiError';
 import Link from 'next/link';
 import { PlanConfigFields } from '@/components/tenants/PlanConfigFields';
 import { SiteUrlsFieldArray } from '@/components/tenants/SiteUrlsFieldArray';
+import { EnderecoFields } from '@/components/tenants/EnderecoFields';
+import { formatCpfCnpj } from '@/lib/cpfCnpj';
 import { fromSiteUrlItems, toSiteUrlItems, type SiteUrlItem } from '@/lib/siteUrls';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import { 
@@ -118,6 +120,7 @@ export default function TenantDetailsPage() {
   const queryClient = useQueryClient();
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [cardErrorMsg, setCardErrorMsg] = useState<string | null>(null);
   
   // UI States
   const [showApiKey, setShowApiKey] = useState(false);
@@ -155,6 +158,16 @@ export default function TenantDetailsPage() {
         ...tenant,
         nome_negocio: tenant.nome_negocio || '',
         documento: tenant.documento || '',
+        celular: tenant.celular || '',
+        endereco: {
+          cep: tenant.endereco?.cep || '',
+          logradouro: tenant.endereco?.logradouro || '',
+          numero: tenant.endereco?.numero || '',
+          complemento: tenant.endereco?.complemento || '',
+          bairro: tenant.endereco?.bairro || '',
+          cidade: tenant.endereco?.cidade || '',
+          uf: tenant.endereco?.uf || '',
+        },
         nicho: tenant.nicho || '',
         site_urls: toSiteUrlItems(tenant.site_urls ?? (tenant.site_url ? [tenant.site_url] : [])),
         slug: tenant.slug || '',
@@ -191,12 +204,19 @@ export default function TenantDetailsPage() {
     mutationFn: (data: Partial<Tenant>) => tenantService.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenant', id] });
+      setCardErrorMsg(null);
       setSuccessMsg('Dados atualizados com sucesso!');
       setTimeout(() => setSuccessMsg(null), 3000);
     },
     onError: (err: Error) => {
-      setErrorMsg(err?.message || 'Erro ao atualizar os dados do tenant.');
-      setTimeout(() => setErrorMsg(null), 5000);
+      const isCardError = err instanceof ApiError && (err.status === 422 || err.status === 503 || err.status === 400);
+      if (isCardError) {
+        setCardErrorMsg(err.message);
+      } else {
+        setCardErrorMsg(null);
+        setErrorMsg(err?.message || 'Erro ao atualizar os dados do tenant.');
+        setTimeout(() => setErrorMsg(null), 5000);
+      }
     }
   });
 
@@ -302,6 +322,9 @@ export default function TenantDetailsPage() {
 
     if (dirtyFields.site_urls) {
       dirtyData.site_urls = fromSiteUrlItems(data.site_urls);
+    }
+    if (dirtyFields.endereco) {
+      dirtyData.endereco = data.endereco;
     }
 
     // As requested by test, always send plan_id to ensure it's preserved explicitly
@@ -410,9 +433,13 @@ export default function TenantDetailsPage() {
   const isSiteUrlsDirty =
     Array.isArray(dirtyFields.site_urls) &&
     dirtyFields.site_urls.some((v) => v != null && v.url === true);
-  const isBasicsDirty = ['nome_negocio', 'documento', 'nicho', 'slug'].some(
+  const isEnderecoDirty =
+    !!dirtyFields.endereco &&
+    typeof dirtyFields.endereco === 'object' &&
+    Object.values(dirtyFields.endereco).some((v) => v === true);
+  const isBasicsDirty = ['nome_negocio', 'documento', 'nicho', 'slug', 'celular'].some(
     field => dirtyFields[field as keyof Tenant] === true
-  ) || isSiteUrlsDirty;
+  ) || isSiteUrlsDirty || isEnderecoDirty;
   
   const isIntegrationsDirty = (
     dirtyFields.google_ads_customer_id === true || 
@@ -480,6 +507,14 @@ export default function TenantDetailsPage() {
                     </div>
                   );
                 })()}
+                {tenant.endereco_pendente ? (
+                  <span
+                    role="status"
+                    className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200"
+                  >
+                    Sem endereço: a nota fiscal não sai
+                  </span>
+                ) : null}
               </div>
               <p className="text-slate-500 text-sm">Tenant ID: <span className="font-mono">{tenant.id}</span></p>
               {tenant.is_test_tenant ? (
@@ -511,11 +546,34 @@ export default function TenantDetailsPage() {
                   <StatusLed active={isBasicsDirty} section="Dados Básicos" />
                 </div>
                 <div className="p-8 space-y-6">
+                  {cardErrorMsg && (
+                    <div role="alert" className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm">
+                      {cardErrorMsg}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700">Nome do Negócio</label>
                       <input 
                         {...register('nome_negocio')}
+                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <span className="text-sm font-semibold text-slate-700 block">CPF/CNPJ</span>
+                      <p className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 font-mono text-sm">
+                        {formatCpfCnpj(tenant.documento) || tenant.documento || 'Não informado'}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="celular" className="text-sm font-semibold text-slate-700">Celular</label>
+                      <input 
+                        id="celular"
+                        {...register('celular')}
+                        placeholder="(00) 00000-0000"
                         className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
                       />
                     </div>
@@ -539,13 +597,18 @@ export default function TenantDetailsPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700">E-mail do Proprietário (Login)</label>
+                    <label className="text-sm font-semibold text-slate-700">E-mail de cobrança e login do primeiro administrador</label>
                     <input 
                       disabled
                       value={tenant.email_contato}
                       className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-400 cursor-not-allowed italic"
                     />
                     <p className="text-[10px] text-slate-400">O e-mail é a chave de identidade e não pode ser alterado após o cadastro.</p>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100">
+                    <h3 className="text-sm font-bold text-slate-800 mb-3">Endereço</h3>
+                    <EnderecoFields />
                   </div>
                 </div>
               </div>

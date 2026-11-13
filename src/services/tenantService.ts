@@ -30,6 +30,39 @@ async function refreshAccessToken(): Promise<string | null> {
   });
 }
 
+export function mapearMensagemDeErro(status: number, errorBody: Record<string, unknown>): string {
+  const codigo = (errorBody.error as string) || (errorBody.erro as string) || '';
+  if (status === 422 || codigo === 'asaas_recusou') {
+    let detalhe = errorBody.detalhe ? String(errorBody.detalhe).trim() : '';
+    if (detalhe.endsWith('.')) {
+      detalhe = detalhe.slice(0, -1);
+    }
+    return detalhe ? `O Asaas recusou: ${detalhe}. Confira o endereço.` : 'O Asaas recusou os dados. Confira o endereço.';
+  }
+  if (status === 503 || codigo === 'asaas_indisponivel') {
+    return 'Não foi possível salvar agora. Tente de novo em alguns minutos.';
+  }
+  if (codigo === 'endereco_obrigatorio') {
+    return 'Endereço é obrigatório para plano Pago ou Personalizado.';
+  }
+  if (codigo === 'campo_invalido') {
+    const campo = errorBody.campo ? String(errorBody.campo) : '';
+    const motivo = errorBody.motivo ? String(errorBody.motivo) : '';
+    return `Campo inválido: ${campo}${motivo ? ` (${motivo})` : ''}.`;
+  }
+  return codigo || (status === 503 ? 'Não foi possível salvar agora. Tente de novo em alguns minutos.' : 'Request failed');
+}
+
+export function mapearErroNegocio(err: unknown): string {
+  if (err instanceof ApiError) {
+    return err.message;
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return 'Ocorreu um erro inesperado.';
+}
+
 // T é o formato da resposta, dado pelo tipo de retorno de cada método abaixo.
 // Corpo vazio vira null.
 async function fetchWithAuth<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -67,8 +100,9 @@ async function fetchWithAuth<T>(path: string, options: RequestInit = {}): Promis
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new ApiError(error.error || 'Request failed', response.status, error);
+    const error = (await response.json().catch(() => ({ error: 'Unknown error' }))) as Record<string, unknown>;
+    const message = mapearMensagemDeErro(response.status, error);
+    throw new ApiError(message, response.status, error);
   }
 
   // 204 No Content (DELETE) ou 201/200 sem corpo: response.json() em string vazia

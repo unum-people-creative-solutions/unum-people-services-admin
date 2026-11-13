@@ -51,6 +51,10 @@ function fillRequiredBusinessFields(container: HTMLElement) {
   fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tech' } });
   fireEvent.change(container.querySelector('[name="nome_admin"]')!, { target: { value: 'Admin Teste' } });
   fireEvent.change(container.querySelector('[name="email_contato"]')!, { target: { value: 'admin@teste.com' } });
+  fireEvent.change(container.querySelector('[name="endereco.cep"]')!, { target: { value: '82515000' } });
+  fireEvent.change(container.querySelector('[name="endereco.logradouro"]')!, { target: { value: 'Rua Teste' } });
+  fireEvent.change(container.querySelector('[name="endereco.numero"]')!, { target: { value: '123' } });
+  fireEvent.change(container.querySelector('[name="endereco.bairro"]')!, { target: { value: 'Centro' } });
 }
 
 describe('NewTenantPage - T15 site_urls (grupo repetível na criação)', () => {

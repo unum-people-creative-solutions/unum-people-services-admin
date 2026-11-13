@@ -9,9 +9,10 @@ import { useForm, useWatch, FormProvider } from 'react-hook-form';
 import { CreateTenantInput } from '@/types/tenant';
 import Link from 'next/link';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { PlanConfigFields } from '@/components/tenants/PlanConfigFields';
 import { SiteUrlsFieldArray } from '@/components/tenants/SiteUrlsFieldArray';
+import { EnderecoFields } from '@/components/tenants/EnderecoFields';
 import { fromSiteUrlItems, type SiteUrlItem } from '@/lib/siteUrls';
 
 type NewTenantFormValues = Omit<CreateTenantInput, 'site_urls'> & {
@@ -37,9 +38,21 @@ export default function NewTenantPage() {
       activation_fee: 0,
       monthly_value: 0,
       site_urls: [],
+      celular: '',
+      endereco: {
+        cep: '',
+        logradouro: '',
+        numero: '',
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        uf: '',
+      },
     }
   });
   const { register, handleSubmit, formState: { errors }, control, setValue } = methods;
+
+  const [enderecoError, setEnderecoError] = useState<string | null>(null);
 
   const selectedPlanId = useWatch({ control, name: 'plan_id' });
 
@@ -48,16 +61,34 @@ export default function NewTenantPage() {
   if (selectedPlanId === 'livre') planType = 'livre';
   else if (selectedPlanId === 'personalizado') planType = 'personalizado';
 
-
-
   const mutation = useMutation({
-    mutationFn: tenantService.create,
+    mutationFn: (payload: CreateTenantInput) => tenantService.create(payload),
     onSuccess: () => {
       router.push('/tenants');
     },
   });
 
   const onSubmit = (data: NewTenantFormValues) => {
+    if (planType !== 'livre') {
+      const cepDigits = (data.endereco?.cep || '').replace(/\D/g, '');
+      const logradouro = (data.endereco?.logradouro || '').trim();
+      const numero = (data.endereco?.numero || '').trim();
+      const bairro = (data.endereco?.bairro || '').trim();
+
+      const enderecoCompleto =
+        cepDigits.length === 8 &&
+        Boolean(logradouro) &&
+        Boolean(numero) &&
+        Boolean(bairro);
+
+      if (!enderecoCompleto) {
+        setEnderecoError('Endereço completo é obrigatório para planos pagos e personalizados.');
+        return;
+      }
+    }
+
+    setEnderecoError(null);
+
     const payload: CreateTenantInput = {
       ...data,
       site_urls: fromSiteUrlItems(data.site_urls),
@@ -106,6 +137,16 @@ export default function NewTenantPage() {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <label htmlFor="celular" className="text-sm font-semibold text-slate-700">Celular</label>
+                  <input 
+                    id="celular"
+                    {...register('celular')}
+                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500/20 bg-white"
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+
                 <SiteUrlsFieldArray />
 
                 <div className="space-y-2">
@@ -148,6 +189,28 @@ export default function NewTenantPage() {
                   </label>
                 </div>
               </div>
+            </div>
+
+            {/* Seção: Endereço do Negócio */}
+            <div className="border border-slate-100 rounded-xl p-6 bg-slate-50/50 space-y-4">
+              <div className="flex items-center justify-between pb-2">
+                <h2 className="text-lg font-bold text-slate-800">Endereço do Negócio</h2>
+                {planType !== 'livre' ? (
+                  <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                    Obrigatório para planos pagos
+                  </span>
+                ) : (
+                  <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-2.5 py-0.5 rounded">
+                    Opcional
+                  </span>
+                )}
+              </div>
+              {enderecoError && (
+                <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                  {enderecoError}
+                </div>
+              )}
+              <EnderecoFields />
             </div>
 
             {/* Seção 2: Administrador do Tenant */}
