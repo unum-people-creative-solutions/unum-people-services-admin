@@ -70,7 +70,9 @@ export interface Invoice {
 export interface Site {
   site_id: string;
   slug: string;
-  status: 'DRAFT' | 'PUBLISHED' | 'AGUARDANDO_ATIVACAO';
+  // fix-achados-2b-3-5 (2b): status derivado do tenant pela API
+  // (domain.SiteStatusForTenant), o mesmo do Portal.
+  status: 'no_ar' | 'aguardando_ativacao' | 'suspenso' | 'cancelado';
   url: string;
   layout_id: string;
   theme_id: string;
