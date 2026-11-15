@@ -36,6 +36,7 @@ import {
   resumirVisita,
   tempoPorPagina,
   notaDaEtapa,
+  DESDE_CHEGADA_NA_CONTRATACAO,
 } from './jornada';
 // JSON real de GET /admin/dashboard/jornada/funil (L-071).
 import fixtureFunilLeitura from '@/services/__fixtures__/funil-leitura.json';
@@ -807,6 +808,12 @@ describe('notaDaEtapa (MR-25)', () => {
     expect(notaDaEtapa(5, '2026-11-20')).toBeNull();
     expect(notaDaEtapa(7, '2026-11-20')).toBeNull();
     expect(notaDaEtapa(6, null)).toBeNull();
+  });
+
+  // TASK-FE-307: o lp-builder com a F4 terminou o deploy de produção em 15/11/2026 (20:10 UTC, 17:10 em Brasília).
+  it('a série conta a chegada na tela desde o deploy da F4 em produção', () => {
+    expect(DESDE_CHEGADA_NA_CONTRATACAO).toBe('2026-11-15');
+    expect(notaDaEtapa(6, DESDE_CHEGADA_NA_CONTRATACAO)).toBe('conta a chegada na tela desde 15/11');
   });
 });
 
