@@ -864,6 +864,13 @@ describe('rótulos dos 41 nomes da A1 (MR-21)', () => {
     expect(rotuloDoEvento(ev(nome, segundos))).toBe(rotulo);
   });
 
+  // §1.2 do spec: segundos é obrigatório nesses nomes (a API recusa sem). Sem ele não há rótulo:
+  // a tela mostra o nome cru, o mesmo padrão de lp_tempo_na_pagina.
+  it('campo da contratação sem segundos não ganha rótulo', () => {
+    expect(rotuloDoEvento(ev('lp_campo_contratar_email'))).toBeNull();
+    expect(rotuloDoEvento(ev('lp_campo_contratar_cep'))).toBeNull();
+  });
+
   it('a duração do campo vem de formatarDuracao', () => {
     expect(rotuloDoEvento(ev('lp_campo_contratar_email', { segundos: 12 }))).toBe('Ficou 12 s no campo E-mail');
     expect(rotuloDoEvento(ev('lp_campo_contratar_cep', { segundos: 75 }))).toBe('Ficou 1 min 15 s no campo CEP');
