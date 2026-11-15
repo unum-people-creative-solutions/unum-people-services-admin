@@ -235,6 +235,7 @@ const TABELA_CLIQUES: Record<string, string> = {
   crm_plano: 'CRM: ver o plano',
   pergunta_abrir: 'Abriu uma pergunta',
   fechamento_montar: 'Fechamento: botão principal',
+  fixo_montar: 'Botão fixo (celular): montar', // OF-306
   produto_todos_planos: 'Plano: ver todos os planos',
   produto_crm: 'Plano: conhecer o CRM',
   marca: 'Logo',
@@ -274,7 +275,7 @@ describe('rótulos da leitura (RF-3-14)', () => {
     const inicio = [
       'hero_montar', 'hero_planos', 'galeria_modelo', 'galeria_aparelho', 'galeria_montar', 'vantagens_montar',
       'plano_escolher', 'blog_conhecer', 'blog_plano', 'crm_conhecer', 'crm_plano', 'pergunta_abrir',
-      'fechamento_montar', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
+      'fechamento_montar', 'fixo_montar', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
     ];
     const produto = [
       'hero_montar', 'hero_planos', 'plano_escolher', 'pergunta_abrir', 'fechamento_montar', 'produto_todos_planos',
@@ -478,6 +479,8 @@ const TABELA_CLIQUES_CONFIGURADOR: Record<string, string> = {
   previa_contratar: 'Clicou em Contratar',
   previa_botao: 'Testou um botão da página',
   contratar_plano: 'Escolheu um plano',
+  contratar_periodo_mensal: 'Escolheu o período mensal', // OF-306
+  contratar_periodo_anual: 'Escolheu o período anual', // OF-306
   contratar_pix: 'Escolheu Pix',
   contratar_cartao: 'Escolheu cartão',
   contratar_termo_ler: 'Abriu o Termo',
@@ -551,8 +554,8 @@ const TABELA_SECOES_PREVIA: Record<string, string> = {
 };
 
 describe('rótulos do configurador (RF-4-28, CA-4-24)', () => {
-  it('tabelas completas e na ordem da spec (37 cliques, 41 erros, 13 seções, 9 rotas)', () => {
-    expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(37);
+  it('tabelas completas e na ordem da spec (39 cliques com os 2 da B1, 41 erros, 13 seções, 9 rotas)', () => {
+    expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(39);
     expect(Object.keys(TABELA_ERROS)).toHaveLength(41);
     expect(Object.keys(TABELA_SECOES_PREVIA)).toHaveLength(13);
     expect(Object.entries(ROTULOS_CLIQUE_CONFIGURADOR)).toEqual(Object.entries(TABELA_CLIQUES_CONFIGURADOR));
@@ -943,5 +946,28 @@ describe('rótulos dos 41 nomes da A1 (MR-21)', () => {
       { rotulo: 'Enviou com Pix', vezes: 1 },
       { rotulo: 'Recarregou a página', vezes: 1 },
     ]);
+  });
+});
+
+// oferta-e-primeira-tela OF-306 (T33, DV-05): os três nomes novos da B1 ganham rótulo,
+// senão somem da linha do tempo (rotuloDoEvento devolve null).
+describe('rótulos dos três nomes da B1 (OF-306)', () => {
+  it('rotuloDoEvento dá o rótulo com o prefixo de hoje da linha do tempo', () => {
+    expect(rotuloDoEvento(ev('lp_clique_fixo_montar'))).toBe('Clicou: Botão fixo (celular): montar');
+    expect(rotuloDoEvento(ev('lp_clique_contratar_periodo_mensal'))).toBe('Escolheu o período mensal');
+    expect(rotuloDoEvento(ev('lp_clique_contratar_periodo_anual'))).toBe('Escolheu o período anual');
+  });
+
+  it('fixo_montar é botão da página inicial, logo depois de fechamento_montar', () => {
+    const inicio = BOTOES_DA_PAGINA.inicio;
+    expect(inicio).toContain('fixo_montar');
+    expect(inicio.indexOf('fixo_montar')).toBe(inicio.indexOf('fechamento_montar') + 1);
+    expect(ROTULOS_CLIQUE.fixo_montar).toBe('Botão fixo (celular): montar');
+  });
+
+  it('os dois períodos vêm logo depois de contratar_plano no configurador', () => {
+    const chaves = Object.keys(ROTULOS_CLIQUE_CONFIGURADOR);
+    const plano = chaves.indexOf('contratar_plano');
+    expect(chaves.slice(plano, plano + 3)).toEqual(['contratar_plano', 'contratar_periodo_mensal', 'contratar_periodo_anual']);
   });
 });

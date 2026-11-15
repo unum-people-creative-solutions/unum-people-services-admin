@@ -27,6 +27,7 @@ function applyReadDefaults(plan: Plan): Plan {
     selo: plan.selo ?? '',
     sem_marca: plan.sem_marca ?? false,
     sem_dominio_proprio: plan.sem_dominio_proprio ?? false,
+    plano_anual: plan.plano_anual ?? '',
   };
 }
 

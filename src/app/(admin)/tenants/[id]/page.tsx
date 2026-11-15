@@ -932,7 +932,7 @@ export default function TenantDetailsPage() {
                               <AlertDialog.Description asChild>
                                 <div className="text-slate-600 text-sm leading-relaxed space-y-4">
                                   <p>
-                                    A assinatura é encerrada agora. Se o primeiro pagamento foi confirmado há até 14 dias, o valor é estornado e o acesso acaba na hora. Depois disso, o acesso segue até o fim do período já pago.
+                                    A assinatura é encerrada agora. Se o primeiro pagamento foi confirmado há até 28 dias, o valor é estornado e o acesso acaba na hora. Depois disso, o acesso segue até o fim do período já pago.
                                   </p>
                                   <div className="space-y-3">
                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">

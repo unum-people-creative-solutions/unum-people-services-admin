@@ -817,7 +817,7 @@ describe('Página Jornada: Páginas de entrada', () => {
       'Fechamento00%',
     ]);
     const cliques = linhas(secao, 'Cliques');
-    expect(cliques).toHaveLength(18);
+    expect(cliques).toHaveLength(19);
     expect(cliques.slice(0, 3)).toEqual(['Galeria: escolheu um modelo1', 'Topo: botão principal0', 'Topo: ver planos0']);
     expect(cliques).not.toContain('Logo0');
     expect(cliques).not.toContain('Plano: ver todos os planos0');

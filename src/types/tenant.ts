@@ -33,6 +33,9 @@ export interface Plan {
   // gravado antes dos campos; a leitura (planService) entrega false.
   sem_marca?: boolean;
   sem_dominio_proprio?: boolean;
+  // oferta-e-primeira-tela OF-301: slug do plano anual do mesmo degrau (só em
+  // mensal). A API sempre traz a chave; a leitura (planService) entrega ''.
+  plano_anual?: string;
 }
 
 export interface Contract {

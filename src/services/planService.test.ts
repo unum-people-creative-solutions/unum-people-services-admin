@@ -157,6 +157,32 @@ describe('planService', () => {
     expect(result.active[0].sem_dominio_proprio).toBe(true);
   });
 
+  // oferta-e-primeira-tela OF-301 (T30) — leitura tolerante de plano_anual
+  it('listPlans entrega plano_anual vazio para plano que veio sem a chave', async () => {
+    const { api } = await import('@/lib/api');
+    (api.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      active: [{ slug: 'presenca', nome: 'Plano Presença' }],
+      inactive: [{ slug: 'antigo', nome: 'Antigo' }],
+    });
+
+    const result = await planService.listPlans();
+
+    expect(result.active[0].plano_anual).toBe('');
+    expect(result.inactive[0].plano_anual).toBe('');
+  });
+
+  it('listPlans preserva o plano_anual que a API devolveu', async () => {
+    const { api } = await import('@/lib/api');
+    (api.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      active: [{ slug: 'pagina', nome: 'Plano Página', cycle: 'mensal', plano_anual: 'pagina_anual' }],
+      inactive: [],
+    });
+
+    const result = await planService.listPlans();
+
+    expect(result.active[0].plano_anual).toBe('pagina_anual');
+  });
+
   it('createPlan envia product e pages_included no POST sem any', async () => {
     const { api } = await import('@/lib/api');
     (api.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({});
