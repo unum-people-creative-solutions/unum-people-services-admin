@@ -1,12 +1,26 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from '@/lib/api';
 import { ApiError } from '@/lib/apiError';
-import type { EventoJornada, FunilJornada, LinhaLeitura, PaginaDeEntrada, VisitanteJornada } from '@/types/jornada';
+import type {
+  EventoJornada,
+  FunilJornada,
+  InstanteMs,
+  LinhaLeitura,
+  PaginaDeEntrada,
+  VisitaJornada,
+  VisitanteJornada,
+} from '@/types/jornada';
 import { jornadaService } from './jornadaService';
 // JSON real de GET /admin/dashboard/jornada/funil (api, TASK-BE-304), copiado sem edição (L-071).
 import fixtureFunilLeitura from './__fixtures__/funil-leitura.json';
 // JSON real de GET /admin/dashboard/jornada/visitantes/{v} (api, TASK-BE-405), copiado sem edição (L-071).
 import fixtureVisitanteComTempo from './__fixtures__/visitante-com-tempo.json';
+// JSON real de GET /admin/dashboard/jornada/visitas e /visitantes/{v} (api, TASK-BE-106 e TASK-BE-204),
+// copiado sem edição (L-071; medicao-e-robustez MR-20).
+import fixtureVisitasA1 from './__fixtures__/visitas-a1.json';
+import fixtureVisitanteA1 from './__fixtures__/visitante-a1.json';
 
 vi.mock('@/lib/cognito', () => ({ userPool: {} }));
 
@@ -102,4 +116,69 @@ describe('jornadaService.visitante com segundos (contrato real)', () => {
       expect(Object.keys(evento)).toEqual(['em', 'nome', 'caminho', 'visita']);
     }
   });
+});
+
+// medicao-e-robustez MR-20 (T21): JSON real dos handlers da API (TASK-BE-106 e TASK-BE-204),
+// copiado byte a byte de internal/handler/testdata/ (L-071).
+describe('jornadaService com os campos da A1 (contrato real)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  // Todas as chaves de VisitaJornada: o tipo exige cada uma e recusa chave a mais.
+  const CHAVES_DA_VISITA = {
+    visitante: true, visita: true, inicio: true, fim: true, aparelho: true, origem: true, campanha: true,
+    grupo: true, termo: true, correspondencia: true, navegador: true, pagou_em: true,
+    paginas: true, etapas: true, usos: true, teste: true, contratacao: true,
+  } satisfies Record<keyof VisitaJornada, true>;
+
+  function confereChaves(visitas: VisitaJornada[]) {
+    for (const visita of visitas) {
+      for (const chave of Object.keys(visita)) expect(Object.hasOwn(CHAVES_DA_VISITA, chave)).toBe(true);
+    }
+  }
+
+  it('visitas: os cinco campos novos chegam tipados, e só quando a API os manda', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaReal(200, JSON.stringify(fixtureVisitasA1)));
+    const visitas: VisitaJornada[] = await jornadaService.visitas(1794744000000, 1794746000000);
+    expect(visitas).toEqual(fixtureVisitasA1);
+    confereChaves(visitas);
+    const comAnuncio = visitas[0];
+    const grupo: string | undefined = comAnuncio.grupo;
+    const termo: string | undefined = comAnuncio.termo;
+    const correspondencia: string | undefined = comAnuncio.correspondencia;
+    const navegador: string | undefined = comAnuncio.navegador;
+    const pagouEm: InstanteMs | undefined = comAnuncio.pagou_em;
+    expect([grupo, termo, correspondencia, navegador, pagouEm]).toEqual([
+      '187654321098', 'criar site para psicólogo', 'p', 'chrome-android', 1794745920000,
+    ]);
+    const semNada = visitas[visitas.length - 1];
+    for (const chave of ['campanha', 'grupo', 'termo', 'correspondencia', 'navegador', 'pagou_em', 'contratacao']) {
+      expect(Object.hasOwn(semNada, chave)).toBe(false);
+    }
+  });
+
+  it('visitante: o resumo da visita traz os mesmos campos', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaReal(200, JSON.stringify(fixtureVisitanteA1)));
+    const dados: VisitanteJornada = await jornadaService.visitante(fixtureVisitanteA1.visitante);
+    expect(dados).toEqual(fixtureVisitanteA1);
+    confereChaves(dados.visitas);
+    expect(dados.visitas[0].pagou_em).toBe(1794745920000);
+    expect(dados.visitas[0].navegador).toBe('chrome-android');
+  });
+
+  // As cópias são idênticas às da API quando o workspace tem o repositório
+  // (JORNADA_API_TESTDATA aponta para outra cópia, como uma worktree). Pula por arquivo:
+  // uma pasta testdata/ sem as fixtures da A1 não pode virar falha de ENOENT.
+  const pastaDaApi =
+    process.env.JORNADA_API_TESTDATA ?? resolve(process.cwd(), '../unum-people-services-api/internal/handler/testdata');
+  const pares: Array<[string, string]> = [
+    ['visitas-a1.json', 'jornada-visitas-a1.json'],
+    ['visitante-a1.json', 'jornada-visitante-a1.json'],
+  ];
+  for (const [nossa, daApi] of pares) {
+    const copiaDaApi = resolve(pastaDaApi, daApi);
+    it.skipIf(!existsSync(copiaDaApi))(`${nossa} é cópia byte a byte de ${daApi} da API`, () => {
+      const local = readFileSync(resolve(process.cwd(), 'src/services/__fixtures__', nossa));
+      expect(local.equals(readFileSync(copiaDaApi))).toBe(true);
+    });
+  }
 });
