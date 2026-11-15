@@ -469,17 +469,23 @@ export const PASSOS_IA = {
   invalida: { evento: 'lp_ia_resposta_invalida', rotulo: 'Resposta não lida' },
 } as const;
 
-export type GrupoOrigem = 'google' | 'campanha' | 'site' | 'direto';
+export type GrupoOrigem = 'google' | 'campanha' | 'assinatura' | 'site' | 'direto';
 
+// A ordem das chaves é a do menu de origem (medicao-e-robustez MR-22).
 export const ROTULOS_ORIGEM: Record<GrupoOrigem, string> = {
   google: 'Anúncio do Google',
   campanha: 'Outra campanha',
+  assinatura: 'Assinatura das páginas',
   site: 'Outro site',
   direto: 'Direto',
 };
 
+// MR-22: utm:assinatura é o link da assinatura nas páginas publicadas (lp-builder MR-42).
+const ORIGEM_ASSINATURA = 'utm:assinatura';
+
 export function grupoDaOrigem(origem: OrigemCrua): GrupoOrigem | null {
   if (origem === 'google_ads') return 'google';
+  if (origem === ORIGEM_ASSINATURA) return 'assinatura';
   if (origem.startsWith('utm:')) return 'campanha';
   if (origem.startsWith('ref:')) return 'site';
   if (origem === 'direto') return 'direto';

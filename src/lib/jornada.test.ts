@@ -5,6 +5,7 @@ import {
   rotuloDoEvento,
   rotuloDoAparelho,
   grupoDaOrigem,
+  rotuloDaOrigem,
   ROTULOS_ORIGEM,
   calcularFunil,
   calcularUso,
@@ -128,12 +129,22 @@ describe('grupoDaOrigem', () => {
     expect(grupoDaOrigem('ref:www.bing.com')).toBe('site');
     expect(grupoDaOrigem('direto')).toBe('direto');
     expect(grupoDaOrigem('outra')).toBeNull();
-    expect(ROTULOS_ORIGEM).toEqual({
-      google: 'Anúncio do Google',
-      campanha: 'Outra campanha',
-      site: 'Outro site',
-      direto: 'Direto',
-    });
+    // medicao-e-robustez MR-22: a ordem das chaves é a ordem do menu.
+    expect(Object.entries(ROTULOS_ORIGEM)).toEqual([
+      ['google', 'Anúncio do Google'],
+      ['campanha', 'Outra campanha'],
+      ['assinatura', 'Assinatura das páginas'],
+      ['site', 'Outro site'],
+      ['direto', 'Direto'],
+    ]);
+  });
+
+  // medicao-e-robustez MR-22 (T23).
+  it('utm:assinatura é "Assinatura das páginas"; as outras utm:* seguem "Outra campanha"', () => {
+    expect(grupoDaOrigem('utm:assinatura')).toBe('assinatura');
+    expect(grupoDaOrigem('utm:newsletter')).toBe('campanha');
+    expect(grupoDaOrigem('utm:assinaturas')).toBe('campanha');
+    expect(rotuloDaOrigem('utm:assinatura')).toBe('Assinatura das páginas');
   });
 });
 

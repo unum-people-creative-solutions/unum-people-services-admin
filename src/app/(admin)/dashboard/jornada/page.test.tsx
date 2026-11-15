@@ -293,8 +293,9 @@ describe('Página Jornada do visitante', () => {
   test('origem oferece os grupos do blueprint e aparelho as três opções', () => {
     renderizarComTodas();
     const origem = screen.getByRole('combobox', { name: 'Origem' });
+    // medicao-e-robustez MR-22: "Assinatura das páginas" entre "Outra campanha" e "Outro site".
     expect(within(origem).getAllByRole('option').map((o) => o.textContent)).toEqual([
-      'Todas', 'Anúncio do Google', 'Outra campanha', 'Outro site', 'Direto',
+      'Todas', 'Anúncio do Google', 'Outra campanha', 'Assinatura das páginas', 'Outro site', 'Direto',
     ]);
     const aparelho = screen.getByRole('combobox', { name: 'Aparelho' });
     expect(within(aparelho).getAllByRole('option').map((o) => o.textContent)).toEqual(['Todos', 'Celular', 'Computador']);
@@ -641,6 +642,41 @@ describe('Página Jornada do visitante', () => {
     expect(within(vazia).getByText('Nenhuma visita no período com esses filtros.')).toBeInTheDocument();
     expect(within(vazia).queryByText('Nenhuma visita neste período.')).not.toBeInTheDocument();
     expect(within(vazia).queryByRole('table')).not.toBeInTheDocument();
+    expect(jornadaService.visitas).toHaveBeenCalledTimes(1);
+  });
+
+  // medicao-e-robustez MR-22 (T23): utm:assinatura tem grupo próprio; as outras utm:* seguem "Outra campanha".
+  test('origem "Assinatura das páginas" deixa só a visita utm:assinatura', async () => {
+    const visitaAssinatura: VisitaJornada = {
+      ...visitaDireta,
+      visitante: 'af5b2e7a-6b8c-4dae-8f3a-4b5c6d7e8f9a',
+      visita: '4a8f9e2c-5d6e-4f7a-9b2c-1d0e9f8a7b6c',
+      inicio: 1793912400000 /* 2026-11-05T21:00:00Z */,
+      origem: 'utm:assinatura',
+      campanha: 'clinica-ana',
+    };
+    const visitaNewsletter: VisitaJornada = {
+      ...visitaDireta,
+      visitante: 'b06c3f8b-7c9d-4ebf-9a4b-5c6d7e8f9a0b',
+      visita: '5b9a0f3d-6e7f-4a8b-8c3d-2e1f0a9b8c7d',
+      inicio: 1793905200000 /* 2026-11-05T19:00:00Z */,
+      origem: 'utm:newsletter',
+    };
+    vi.mocked(jornadaService.visitas).mockResolvedValue([visitaDireta, visitaAssinatura, visitaNewsletter]);
+    renderizarComTodas();
+    await within(await screen.findByRole('region', { name: 'Visitas · 24 horas' })).findByRole('table');
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'assinatura' } });
+    expect(screen.getByRole('combobox', { name: 'Origem' })).toHaveDisplayValue('Assinatura das páginas');
+    const assinatura = screen.getByRole('region', { name: 'Visitas · 24 horas · Assinatura das páginas' });
+    const linhas = within(within(assinatura).getByRole('table')).getAllByRole('row').slice(1);
+    expect(linhas.map((l) => within(l).getAllByRole('cell')[0].textContent)).toEqual(['18:00']);
+    expect(linhas.map((l) => within(l).getAllByRole('cell')[2].textContent)).toEqual(['Assinatura das páginas']);
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'campanha' } });
+    const campanha = screen.getByRole('region', { name: 'Visitas · 24 horas · Outra campanha' });
+    const linhasCampanha = within(within(campanha).getByRole('table')).getAllByRole('row').slice(1);
+    expect(linhasCampanha.map((l) => within(l).getAllByRole('cell')[0].textContent)).toEqual(['16:00']);
     expect(jornadaService.visitas).toHaveBeenCalledTimes(1);
   });
 
