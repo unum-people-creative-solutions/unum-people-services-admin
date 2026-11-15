@@ -193,6 +193,11 @@ export default function PlansPage() {
   const inactivePlans: Plan[] = data?.inactive ?? [];
   // OF-302: opções do par = planos anuais, ativos e desativados.
   const annualPlans: Plan[] = [...activePlans, ...inactivePlans].filter((p) => p.cycle === 'anual');
+  // Par gravado que não está mais entre os anuais (anual excluído ou que virou
+  // mensal): aparece como opção marcada, senão o campo abre vazio e o PUT
+  // reenvia o valor escondido, que a API recusa com 400.
+  const parSalvo = editingPlan?.plano_anual ?? '';
+  const parForaDasOpcoes = parSalvo !== '' && !annualPlans.some((p) => p.slug === parSalvo) ? parSalvo : '';
 
   return (
     <div className="p-8">
@@ -350,6 +355,9 @@ export default function PlansPage() {
                     <label htmlFor="plano_anual" className="block text-sm font-semibold mb-1">Plano anual do mesmo degrau</label>
                     <select id="plano_anual" aria-describedby="plano_anual_ajuda" {...register('plano_anual')} className="w-full border p-2 rounded">
                       <option value="">Sem plano anual</option>
+                      {parForaDasOpcoes && (
+                        <option value={parForaDasOpcoes}>{`${parForaDasOpcoes} (não encontrado)`}</option>
+                      )}
                       {annualPlans.map((p) => (
                         <option key={p.slug} value={p.slug}>{`${p.nome} (${p.slug})`}</option>
                       ))}

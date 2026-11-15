@@ -49,6 +49,10 @@ const PLANOS = {
     plano('pagina_anual', 'Plano Página Anual', 'anual'),
     plano('presenca', 'Plano Presença', 'mensal', { included_services: ['site', 'blog'], activation_fee: 39.9, monthly_value: 39.9 }),
     plano('presenca_anual', 'Plano Presença Anual', 'anual', { included_services: ['site', 'blog'], activation_fee: 399 }),
+    // Lacuna 1 da validação F2/F3: par gravado fora das opções. O anual foi
+    // excluído (vitrine_anual) ou teve o ciclo trocado para mensal (presenca).
+    plano('vitrine', 'Plano Vitrine', 'mensal', { plano_anual: 'vitrine_anual' }),
+    plano('legado', 'Plano Legado', 'mensal', { plano_anual: 'presenca' }),
   ],
   inactive: [
     plano('captacao_anual', 'Plano Captação Anual', 'anual', { is_active: false, activation_fee: 699 }),
@@ -188,6 +192,22 @@ describe('Planos — plano anual do mesmo degrau', () => {
     expect(post.metodo).toBe('POST')
     expect(post.caminho).toMatch(/\/admin\/plans$/)
     expect(post.corpo).toHaveProperty('plano_anual', '')
+  })
+
+  test.each([
+    ['Plano Vitrine', 'vitrine_anual', 'anual excluído'],
+    ['Plano Legado', 'presenca', 'ciclo trocado para mensal'],
+  ])('editar %s com par fora das opções mostra "{slug} (não encontrado)" marcado (%s, %s)', async (nome, slug) => {
+    await editar(nome)
+    const campo = screen.getByRole('combobox', { name: ROTULO })
+    const orfa = within(campo).getByRole('option', { name: `${slug} (não encontrado)`, selected: true })
+    expect(orfa).toHaveValue(slug)
+    expect(campo).toHaveDisplayValue(`${slug} (não encontrado)`)
+    // O operador vê o valor e troca: "Sem plano anual" vai no PUT.
+    fireEvent.change(campo, { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar Plano' }))
+    await waitFor(() => expect(escritas()).toHaveLength(1))
+    expect(escritas()[0].corpo).toHaveProperty('plano_anual', '')
   })
 
   test('a recusa 400 do par aparece no alerta do formulário com a frase da API', async () => {
