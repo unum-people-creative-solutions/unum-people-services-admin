@@ -166,15 +166,19 @@ describe('jornadaService com os campos da A1 (contrato real)', () => {
   });
 
   // As cópias são idênticas às da API quando o workspace tem o repositório
-  // (JORNADA_API_TESTDATA aponta para outra cópia, como uma worktree).
+  // (JORNADA_API_TESTDATA aponta para outra cópia, como uma worktree). Pula por arquivo:
+  // uma pasta testdata/ sem as fixtures da A1 não pode virar falha de ENOENT.
   const pastaDaApi =
     process.env.JORNADA_API_TESTDATA ?? resolve(process.cwd(), '../unum-people-services-api/internal/handler/testdata');
   const pares: Array<[string, string]> = [
     ['visitas-a1.json', 'jornada-visitas-a1.json'],
     ['visitante-a1.json', 'jornada-visitante-a1.json'],
   ];
-  it.skipIf(!existsSync(pastaDaApi)).each(pares)('%s é cópia byte a byte de %s da API', (nossa, daApi) => {
-    const local = readFileSync(resolve(process.cwd(), 'src/services/__fixtures__', nossa));
-    expect(local.equals(readFileSync(resolve(pastaDaApi, daApi)))).toBe(true);
-  });
+  for (const [nossa, daApi] of pares) {
+    const copiaDaApi = resolve(pastaDaApi, daApi);
+    it.skipIf(!existsSync(copiaDaApi))(`${nossa} é cópia byte a byte de ${daApi} da API`, () => {
+      const local = readFileSync(resolve(process.cwd(), 'src/services/__fixtures__', nossa));
+      expect(local.equals(readFileSync(copiaDaApi))).toBe(true);
+    });
+  }
 });
