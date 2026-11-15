@@ -50,6 +50,8 @@ export interface Contract {
   activation_invoice_url?: string;
   subscription_invoice_url?: string;
   subscription_url_state?: 'aguardando_ativacao' | 'gerando' | 'disponivel' | 'erro';
+  // Data paga até (AAAA-MM-DD; json omitempty): ausente antes do 1º pagamento.
+  paid_until?: string;
   created_at: string;
 }
 
