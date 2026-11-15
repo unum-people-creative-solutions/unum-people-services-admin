@@ -923,7 +923,7 @@ describe('TenantDetailsPage - Refactor Requirements', () => {
       expect(screen.getByText(/Cancelamento agendado. O acesso segue até 10\/11\/2026/)).toBeInTheDocument();
     });
 
-    test('o diálogo explica o estorno em 14 dias e o fim do ciclo', async () => {
+    test('o diálogo explica o estorno em 28 dias e o fim do ciclo', async () => {
       render(
         <QueryClientProvider client={queryClient}>
           <TenantDetailsPage />
@@ -933,7 +933,8 @@ describe('TenantDetailsPage - Refactor Requirements', () => {
       fireEvent.click(await screen.findByRole('button', { name: /mostrar ações/i }));
       fireEvent.click(await screen.findByRole('button', { name: /cancelar contrato/i }));
 
-      expect(screen.getByText(/até 14 dias/i)).toBeInTheDocument();
+      expect(screen.getByText(/até 28 dias/i)).toBeInTheDocument();
+      expect(screen.queryByText(/até 14 dias/i)).toBeNull();
       expect(screen.getByText(/fim do período já pago/i)).toBeInTheDocument();
     });
 

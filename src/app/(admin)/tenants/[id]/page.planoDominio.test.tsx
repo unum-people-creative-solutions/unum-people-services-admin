@@ -87,7 +87,7 @@ function renderPage() {
   );
 }
 
-describe('TenantDetailsPage - plano sem domínio próprio e arrependimento em 14 dias', () => {
+describe('TenantDetailsPage - plano sem domínio próprio e arrependimento em 28 dias', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useParams).mockReturnValue({ id: 'tenant-123' });
@@ -158,14 +158,15 @@ describe('TenantDetailsPage - plano sem domínio próprio e arrependimento em 14
     expect(alert).not.toHaveTextContent(MENSAGEM_DOMINIO_LIGADO);
   });
 
-  test('RF-F06 — o aviso de cancelar contrato fala em 14 dias, não em 7', async () => {
+  test('OF-305 — o aviso de cancelar contrato fala em 28 dias, não em 14 nem em 7', async () => {
     renderPage();
 
     fireEvent.click(await screen.findByRole('button', { name: /mostrar ações/i }));
     fireEvent.click(await screen.findByRole('button', { name: /cancelar contrato/i }));
     await screen.findByRole('heading', { name: /cancelar contrato/i });
 
-    expect(screen.getByText(/há até 14 dias/)).toBeInTheDocument();
+    expect(screen.getByText(/há até 28 dias/)).toBeInTheDocument();
+    expect(screen.queryByText(/há até 14 dias/)).toBeNull();
     expect(screen.queryByText(/há até 7 dias/)).toBeNull();
   });
 });
