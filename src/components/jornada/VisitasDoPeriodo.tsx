@@ -165,7 +165,8 @@ export function VisitasDoPeriodo({
                                   nome={v.contratacao.nome}
                                   className="font-medium text-primary-700 hover:underline"
                                 />
-                                <SeloPagamento pago={v.contratacao.pago} />
+                                {/* medicao-e-robustez MR-24: o pagamento gravado na visita vale mesmo com a conta cancelada depois. */}
+                                <SeloPagamento pago={v.pagou_em !== undefined || v.contratacao.pago} />
                               </div>
                             ) : (
                               <span className="text-slate-400">—</span>
