@@ -23,8 +23,9 @@ export const ROTULOS_ETAPAS = [
 ] as const;
 
 // medicao-e-robustez MR-25 (divergência D6): dia (AAAA-MM-DD, Brasília) em que "Abriu a contratação"
-// passou a contar a chegada na tela (lp-builder F4 em produção). null até lá; preenchido na TASK-FE-307.
-export const DESDE_CHEGADA_NA_CONTRATACAO: string | null = null;
+// passou a contar a chegada na tela (lp-builder F4 em produção). Preenchido na TASK-FE-307: deploy de
+// produção do lp-builder terminou em 15/11/2026 às 17:10 de Brasília (lp-builder #221).
+export const DESDE_CHEGADA_NA_CONTRATACAO: string | null = '2026-11-15';
 
 const ETAPA_ABRIU_A_CONTRATACAO = 6;
 
