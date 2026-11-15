@@ -41,6 +41,8 @@ import {
 import fixtureFunilLeitura from '@/services/__fixtures__/funil-leitura.json';
 // JSON real de GET /admin/dashboard/jornada/visitantes/{v} com segundos (CA-4-16, L-071).
 import fixtureVisitanteComTempo from '@/services/__fixtures__/visitante-com-tempo.json';
+// JSON real de GET /admin/dashboard/jornada/visitantes/{v} com os 41 nomes da A1 (TASK-BE-106/BE-204, L-071).
+import fixtureVisitanteA1 from '@/services/__fixtures__/visitante-a1.json';
 
 // spec-4-detalhe RF-4-28: rotuloDoEvento recebe o evento inteiro.
 function ev(nome: string, extra: Partial<EventoJornada> = {}): EventoJornada {
@@ -802,5 +804,137 @@ describe('notaDaEtapa (MR-25)', () => {
     expect(notaDaEtapa(5, '2026-11-20')).toBeNull();
     expect(notaDaEtapa(7, '2026-11-20')).toBeNull();
     expect(notaDaEtapa(6, null)).toBeNull();
+  });
+});
+
+// medicao-e-robustez MR-21 (T22): cópia literal da tabela da seção 1.2 do spec.md, na ordem,
+// com o rótulo da tabela do MR-21. Os campos levam segundos: 12.
+const NOMES_A1: ReadonlyArray<[string, string]> = [
+  ['lp_carga_recarga', 'Recarregou a página'],
+  ['lp_carga_voltou', 'Voltou pelo navegador'],
+  ['lp_carga_descartada', 'O navegador descartou e recarregou a página'],
+  ['lp_campo_contratar_link', 'Ficou 12 s no campo Seu link'],
+  ['lp_campo_contratar_negocio', 'Ficou 12 s no campo Nome do negócio'],
+  ['lp_campo_contratar_nome', 'Ficou 12 s no campo Seu nome'],
+  ['lp_campo_contratar_email', 'Ficou 12 s no campo E-mail'],
+  ['lp_campo_contratar_documento', 'Ficou 12 s no campo CPF ou CNPJ'],
+  ['lp_campo_contratar_celular', 'Ficou 12 s no campo Celular'],
+  ['lp_campo_contratar_nicho', 'Ficou 12 s no campo Ramo'],
+  ['lp_campo_contratar_cep', 'Ficou 12 s no campo CEP'],
+  ['lp_campo_contratar_endereco', 'Ficou 12 s no campo Endereço'],
+  ['lp_campo_contratar_numero', 'Ficou 12 s no campo Número'],
+  ['lp_campo_contratar_bairro', 'Ficou 12 s no campo Bairro'],
+  ['lp_campo_contratar_complemento', 'Ficou 12 s no campo Complemento'],
+  ['lp_envio_contratar_pix', 'Enviou com Pix'],
+  ['lp_envio_contratar_cartao', 'Enviou com cartão'],
+  ['lp_envio_contratar_plano_pagina', 'Enviou com o plano Página'],
+  ['lp_envio_contratar_plano_presenca', 'Enviou com o plano Presença'],
+  ['lp_envio_contratar_plano_captacao', 'Enviou com o plano Captação'],
+  ['lp_envio_contratar_plano_pagina_anual', 'Enviou com o plano Página anual'],
+  ['lp_envio_contratar_plano_presenca_anual', 'Enviou com o plano Presença anual'],
+  ['lp_envio_contratar_plano_captacao_anual', 'Enviou com o plano Captação anual'],
+  ['lp_envio_contratar_plano_outro', 'Enviou com o plano outro'],
+  ['lp_sucesso_voltou', 'Voltou da fatura'],
+  ['lp_sucesso_publicada', 'Viu a página no ar'],
+  ['lp_mini_topo_rolagem_25', 'Rolou 25% na miniatura do topo'],
+  ['lp_mini_topo_rolagem_50', 'Rolou 50% na miniatura do topo'],
+  ['lp_mini_topo_rolagem_75', 'Rolou 75% na miniatura do topo'],
+  ['lp_mini_topo_rolagem_100', 'Rolou até o fim na miniatura do topo'],
+  ['lp_mini_topo_toque', 'Tocou na miniatura do topo'],
+  ['lp_mini_galeria_rolagem_25', 'Rolou 25% na miniatura da galeria'],
+  ['lp_mini_galeria_rolagem_50', 'Rolou 50% na miniatura da galeria'],
+  ['lp_mini_galeria_rolagem_75', 'Rolou 75% na miniatura da galeria'],
+  ['lp_mini_galeria_rolagem_100', 'Rolou até o fim na miniatura da galeria'],
+  ['lp_mini_galeria_toque', 'Tocou na miniatura da galeria'],
+  ['lp_mini_saude_rolagem_25', 'Rolou 25% na miniatura da Saúde'],
+  ['lp_mini_saude_rolagem_50', 'Rolou 50% na miniatura da Saúde'],
+  ['lp_mini_saude_rolagem_75', 'Rolou 75% na miniatura da Saúde'],
+  ['lp_mini_saude_rolagem_100', 'Rolou até o fim na miniatura da Saúde'],
+  ['lp_mini_saude_toque', 'Tocou na miniatura da Saúde'],
+];
+
+describe('rótulos dos 41 nomes da A1 (MR-21)', () => {
+  it('a lista literal tem os 41 nomes, sem repetição', () => {
+    expect(NOMES_A1).toHaveLength(41);
+    expect(new Set(NOMES_A1.map(([nome]) => nome)).size).toBe(41);
+  });
+
+  it.each(NOMES_A1)('%s vira "%s"', (nome, rotulo) => {
+    const segundos = nome.startsWith('lp_campo_contratar_') ? { segundos: 12 } : {};
+    expect(rotuloDoEvento(ev(nome, segundos))).toBe(rotulo);
+  });
+
+  it('a duração do campo vem de formatarDuracao', () => {
+    expect(rotuloDoEvento(ev('lp_campo_contratar_email', { segundos: 12 }))).toBe('Ficou 12 s no campo E-mail');
+    expect(rotuloDoEvento(ev('lp_campo_contratar_cep', { segundos: 75 }))).toBe('Ficou 1 min 15 s no campo CEP');
+    expect(rotuloDoEvento(ev('lp_mini_saude_rolagem_100'))).toBe('Rolou até o fim na miniatura da Saúde');
+  });
+
+  it('nome parecido fora da lista continua null (a tela mostra cru)', () => {
+    expect(rotuloDoEvento(ev('lp_campo_contratar_senha', { segundos: 12 }))).toBeNull();
+    expect(rotuloDoEvento(ev('lp_envio_contratar_plano_xpto'))).toBeNull();
+    expect(rotuloDoEvento(ev('lp_mini_topo_rolagem_30'))).toBeNull();
+    expect(rotuloDoEvento(ev('lp_mini_rodape_toque'))).toBeNull();
+    expect(rotuloDoEvento(ev('lp_carga_<b>'))).toBeNull();
+  });
+
+  it('com o JSON real da API: os 41 nomes estão lá e cada um tem o rótulo da tabela', () => {
+    const dados = JSON.parse(JSON.stringify(fixtureVisitanteA1)) as VisitanteJornada;
+    const tabela = new Map(NOMES_A1);
+    const daA1 = dados.eventos.filter((e) => tabela.has(e.nome));
+    expect(new Set(daA1.map((e) => e.nome)).size).toBe(41);
+    for (const evento of daA1) {
+      const esperado = evento.nome.startsWith('lp_campo_contratar_')
+        ? tabela.get(evento.nome)!.replace('Ficou 12 s', `Ficou ${formatarDuracao(evento.segundos!)}`)
+        : tabela.get(evento.nome);
+      expect(rotuloDoEvento(evento)).toBe(esperado);
+    }
+    const email = daA1.find((e) => e.nome === 'lp_campo_contratar_email')!;
+    expect(rotuloDoEvento(email)).toBe('Ficou 12 s no campo E-mail');
+  });
+
+  it('com o JSON real da API: resumirVisita agrupa os campos como ação "Campo <campo>"', () => {
+    const dados = JSON.parse(JSON.stringify(fixtureVisitanteA1)) as VisitanteJornada;
+    const resumo = resumirVisita(dados.eventos, dados.visitas[0].visita)!;
+    const contratar = resumo.paginas.find((p) => p.caminho === '/configurar/contratar')!;
+    expect(contratar.acoes.map((a) => a.rotulo)).toEqual([
+      'Abriu a contratação',
+      'Campo Seu link', 'Campo Nome do negócio', 'Campo Seu nome', 'Campo E-mail', 'Campo CPF ou CNPJ',
+      'Campo Celular', 'Campo Ramo', 'Campo CEP', 'Campo Endereço', 'Campo Número', 'Campo Bairro',
+      'Campo Complemento',
+      'Enviou com Pix', 'Enviou com cartão',
+      'Enviou com o plano Página', 'Enviou com o plano Presença', 'Enviou com o plano Captação',
+      'Enviou com o plano Página anual', 'Enviou com o plano Presença anual', 'Enviou com o plano Captação anual',
+      'Enviou com o plano outro',
+      'Enviou a contratação',
+    ]);
+    expect(resumo.paginas.find((p) => p.caminho === '/')!.acoes[0]).toEqual({
+      rotulo: 'Rolou 25% na miniatura do topo', vezes: 1,
+    });
+    expect(resumo.paginas.find((p) => p.caminho === '/configurar/sucesso')!.acoes.map((a) => a.rotulo)).toEqual([
+      'Voltou da fatura', 'Viu a página no ar',
+    ]);
+  });
+
+  it('resumirVisita: campos viram ação "Campo <campo>" e os outros a ação com o rótulo da tabela', () => {
+    const eventos: EventoJornada[] = [
+      ev('lp_page_view', { em: 1, caminho: '/configurar/contratar' }),
+      ev('lp_checkout_opened', { em: 2, caminho: '/configurar/contratar' }),
+      ev('lp_campo_contratar_email', { em: 3, caminho: '/configurar/contratar', segundos: 12 }),
+      ev('lp_campo_contratar_email', { em: 4, caminho: '/configurar/contratar', segundos: 3 }),
+      ev('lp_campo_contratar_cep', { em: 5, caminho: '/configurar/contratar', segundos: 8 }),
+      ev('lp_envio_contratar_plano_pagina', { em: 6, caminho: '/configurar/contratar' }),
+      ev('lp_envio_contratar_pix', { em: 7, caminho: '/configurar/contratar' }),
+      ev('lp_carga_recarga', { em: 8, caminho: '/configurar/contratar' }),
+    ];
+    const resumo = resumirVisita(eventos, 'v');
+    expect(resumo?.paginas[0].acoes).toEqual([
+      { rotulo: 'Abriu a contratação', vezes: 1 },
+      { rotulo: 'Campo E-mail', vezes: 2 },
+      { rotulo: 'Campo CEP', vezes: 1 },
+      { rotulo: 'Enviou com o plano Página', vezes: 1 },
+      { rotulo: 'Enviou com Pix', vezes: 1 },
+      { rotulo: 'Recarregou a página', vezes: 1 },
+    ]);
   });
 });

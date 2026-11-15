@@ -274,6 +274,67 @@ export const ROTULOS_SECAO_PREVIA: Record<string, string> = {
   fees: 'Valores',
 };
 
+// medicao-e-robustez MR-21: os 41 nomes da A1 (spec §1.2), em listas fechadas.
+// Campo do formulário de contratação (sem "lp_campo_contratar_") → rótulo do campo.
+const ROTULOS_CAMPO_CONTRATAR: Record<string, string> = {
+  link: 'Seu link',
+  negocio: 'Nome do negócio',
+  nome: 'Seu nome',
+  email: 'E-mail',
+  documento: 'CPF ou CNPJ',
+  celular: 'Celular',
+  nicho: 'Ramo',
+  cep: 'CEP',
+  endereco: 'Endereço',
+  numero: 'Número',
+  bairro: 'Bairro',
+  complemento: 'Complemento',
+};
+
+const PREFIXO_CAMPO_CONTRATAR = 'lp_campo_contratar_';
+
+const ROTULOS_PLANO_ENVIO: Record<string, string> = {
+  pagina: 'Página',
+  presenca: 'Presença',
+  captacao: 'Captação',
+  pagina_anual: 'Página anual',
+  presenca_anual: 'Presença anual',
+  captacao_anual: 'Captação anual',
+  outro: 'outro',
+};
+
+const LUGARES_MINIATURA: Record<string, string> = {
+  topo: 'do topo',
+  galeria: 'da galeria',
+  saude: 'da Saúde',
+};
+
+function rotulosDaMedicao(): Record<string, string> {
+  const rotulos: Record<string, string> = {
+    lp_carga_recarga: 'Recarregou a página',
+    lp_carga_voltou: 'Voltou pelo navegador',
+    lp_carga_descartada: 'O navegador descartou e recarregou a página',
+    lp_envio_contratar_pix: 'Enviou com Pix',
+    lp_envio_contratar_cartao: 'Enviou com cartão',
+  };
+  for (const [slug, plano] of Object.entries(ROTULOS_PLANO_ENVIO)) {
+    rotulos[`lp_envio_contratar_plano_${slug}`] = `Enviou com o plano ${plano}`;
+  }
+  rotulos.lp_sucesso_voltou = 'Voltou da fatura';
+  rotulos.lp_sucesso_publicada = 'Viu a página no ar';
+  for (const [lugar, rotulo] of Object.entries(LUGARES_MINIATURA)) {
+    for (const marco of [25, 50, 75]) {
+      rotulos[`lp_mini_${lugar}_rolagem_${marco}`] = `Rolou ${marco}% na miniatura ${rotulo}`;
+    }
+    rotulos[`lp_mini_${lugar}_rolagem_100`] = `Rolou até o fim na miniatura ${rotulo}`;
+    rotulos[`lp_mini_${lugar}_toque`] = `Tocou na miniatura ${rotulo}`;
+  }
+  return rotulos;
+}
+
+// Os 29 nomes da A1 que não são campo: o mesmo rótulo na linha do tempo e no resumo da visita.
+const ROTULOS_MEDICAO = rotulosDaMedicao();
+
 const TEMPO_NA_PAGINA = 'lp_tempo_na_pagina';
 
 const ROLAGEM: Record<string, 25 | 50 | 75 | 100> = {
@@ -297,6 +358,10 @@ function classificar(nome: string): { tipo: TipoDoEvento; rotulo: string } | nul
   if (nome !== 'lp_page_view' && Object.hasOwn(ROTULOS_EVENTOS, nome)) {
     return { tipo: 'acao', rotulo: ROTULOS_EVENTOS[nome] };
   }
+  // MR-21: no resumo da visita, o campo é a ação "Campo <campo>"; os outros nomes da A1, o rótulo da tabela.
+  const campo = rotuloPorPrefixo(nome, PREFIXO_CAMPO_CONTRATAR, ROTULOS_CAMPO_CONTRATAR);
+  if (campo !== null) return { tipo: 'acao', rotulo: `Campo ${campo}` };
+  if (Object.hasOwn(ROTULOS_MEDICAO, nome)) return { tipo: 'acao', rotulo: ROTULOS_MEDICAO[nome] };
   const prefixados: Array<[TipoDoEvento, string, Record<string, string>]> = [
     ['secao', 'lp_secao_', ROTULOS_SECAO],
     ['secao_previa', 'lp_previa_secao_', ROTULOS_SECAO_PREVIA],
@@ -327,6 +392,11 @@ export function rotuloDoEvento(evento: EventoJornada): string | null {
   const { nome } = evento;
   if (nome === TEMPO_NA_PAGINA) {
     return evento.segundos === undefined ? null : `Ficou ${formatarDuracao(evento.segundos)} nesta página`;
+  }
+  // MR-21: o campo da contratação leva o tempo nele (segundos é obrigatório nesses nomes).
+  const campo = rotuloPorPrefixo(nome, PREFIXO_CAMPO_CONTRATAR, ROTULOS_CAMPO_CONTRATAR);
+  if (campo !== null) {
+    return evento.segundos === undefined ? null : `Ficou ${formatarDuracao(evento.segundos)} no campo ${campo}`;
   }
   if (nome === 'lp_page_view') return ROTULOS_EVENTOS[nome];
   if (Object.hasOwn(ROTULOS_LEITURA, nome)) return ROTULOS_LEITURA[nome];
