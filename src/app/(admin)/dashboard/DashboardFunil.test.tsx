@@ -73,7 +73,7 @@ describe('Dashboard: funil da vitrine', () => {
       'Escolheu modelo e tema3025%',
       'Editou2118%',
       'Viu a página final1613%',
-      'Abriu a contratação87%',
+      'Abriu a contrataçãoconta a chegada na tela desde 15/1187%',
       'Enviou a contratação43%',
       'Contratou33%',
       'Pagou22%',
