@@ -95,6 +95,8 @@ export const ROTULOS_CLIQUE: Record<string, string> = {
   crm_plano: 'CRM: ver o plano',
   pergunta_abrir: 'Abriu uma pergunta',
   fechamento_montar: 'Fechamento: botão principal',
+  // oferta-e-primeira-tela OF-306: botão fixo da home no celular.
+  fixo_montar: 'Botão fixo (celular): montar',
   produto_todos_planos: 'Plano: ver todos os planos',
   produto_crm: 'Plano: conhecer o CRM',
   marca: 'Logo',
@@ -119,7 +121,7 @@ export const SECOES_DA_PAGINA: Record<PaginaDeEntrada, readonly string[]> = {
 const BOTOES_INICIO = [
   'hero_montar', 'hero_planos', 'galeria_modelo', 'galeria_aparelho', 'galeria_montar', 'vantagens_montar',
   'plano_escolher', 'blog_conhecer', 'blog_plano', 'crm_conhecer', 'crm_plano', 'pergunta_abrir',
-  'fechamento_montar', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
+  'fechamento_montar', 'fixo_montar', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
 ] as const;
 
 const BOTOES_PRODUTO = [
@@ -208,6 +210,9 @@ export const ROTULOS_CLIQUE_CONFIGURADOR: Record<string, string> = {
   previa_contratar: 'Clicou em Contratar',
   previa_botao: 'Testou um botão da página',
   contratar_plano: 'Escolheu um plano',
+  // oferta-e-primeira-tela OF-306: escolha de período no checkout.
+  contratar_periodo_mensal: 'Escolheu o período mensal',
+  contratar_periodo_anual: 'Escolheu o período anual',
   contratar_pix: 'Escolheu Pix',
   contratar_cartao: 'Escolheu cartão',
   contratar_termo_ler: 'Abriu o Termo',
