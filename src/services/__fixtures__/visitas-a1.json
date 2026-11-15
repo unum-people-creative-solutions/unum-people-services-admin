@@ -1,0 +1,116 @@
+[
+  {
+    "visitante": "3f2b8c1e-9d4a-4b7e-8a6f-1c2d3e4f5a6b",
+    "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+    "inicio": 1794745800000,
+    "fim": 1794745860000,
+    "aparelho": "celular",
+    "origem": "google_ads",
+    "campanha": "pagina",
+    "grupo": "187654321098",
+    "termo": "criar site para psicólogo",
+    "correspondencia": "p",
+    "navegador": "chrome-android",
+    "pagou_em": 1794745920000,
+    "paginas": 3,
+    "etapas": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "usos": [],
+    "teste": false,
+    "contratacao": {
+      "tenant_id": "t-cancelado",
+      "nome": "Consultório Ana",
+      "status": "CANCELADO",
+      "pago": false,
+      "plano": "pagina",
+      "em": 1794745850000
+    }
+  },
+  {
+    "visitante": "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e",
+    "visita": "6c7d8e9f-0a1b-4c2d-9e3f-4a5b6c7d8e9f",
+    "inicio": 1794745200000,
+    "fim": 1794745500000,
+    "aparelho": "computador",
+    "origem": "utm:assinatura",
+    "campanha": "clinica-ana",
+    "navegador": "edge-windows",
+    "paginas": 2,
+    "etapas": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "usos": [
+      "lp_menu_ia"
+    ],
+    "teste": false,
+    "contratacao": {
+      "tenant_id": "t-ativo",
+      "nome": "Clínica Ana",
+      "status": "ATIVO",
+      "pago": true,
+      "plano": "presenca",
+      "em": 1794745440000
+    }
+  },
+  {
+    "visitante": "8e9f0a1b-2c3d-4e4f-a5a6-b7c8d9e0f1a2",
+    "visita": "9f0a1b2c-3d4e-4f5a-b6b7-c8d9e0f1a2b3",
+    "inicio": 1794744600000,
+    "fim": 1794744720000,
+    "aparelho": "celular",
+    "origem": "google_ads",
+    "campanha": "saude",
+    "grupo": "187654321099",
+    "correspondencia": "b",
+    "navegador": "safari-ios",
+    "paginas": 2,
+    "etapas": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "usos": [],
+    "teste": false,
+    "contratacao": {
+      "tenant_id": "t-aguardando",
+      "nome": "Espaço Leve",
+      "status": "AGUARDANDO_ATIVACAO",
+      "pago": false,
+      "plano": "pagina",
+      "em": 1794744660000
+    }
+  },
+  {
+    "visitante": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "visita": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+    "inicio": 1794744000000,
+    "fim": 1794744000000,
+    "aparelho": "computador",
+    "origem": "direto",
+    "paginas": 1,
+    "etapas": [
+      1
+    ],
+    "usos": [],
+    "teste": false
+  }
+]
