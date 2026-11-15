@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { VisitaJornada } from '@/types/jornada';
 import {
   ROTULOS_ETAPAS,
+  dadosDaVisita,
   formatarDiaMes,
   formatarHora,
   maiorEtapa,
@@ -15,6 +16,7 @@ import { EsqueletoDaSecao, ErroDaSecao } from './EstadoDaSecao';
 import { SeloPagamento, SeloTeste, SeloUsouEditor } from './Selos';
 import { EmpresaContratante } from './EmpresaContratante';
 import { DetalheDaVisita, caminhoDoVisitante } from './DetalheDaVisita';
+import { DadosDaVisita } from './DadosDaVisita';
 
 const POR_PAGINA = 100;
 const COLUNAS = 6;
@@ -173,6 +175,12 @@ export function VisitasDoPeriodo({
                         {aberta ? (
                           <tr id={idArea}>
                             <td colSpan={COLUNAS} className="bg-slate-50/60 px-4 py-4 whitespace-normal">
+                              {/* medicao-e-robustez MR-23: os dados da visita vêm antes do detalhe. */}
+                              {dadosDaVisita(v).length > 0 ? (
+                                <div className="mb-3">
+                                  <DadosDaVisita visita={v} />
+                                </div>
+                              ) : null}
                               <DetalheDaVisita visitante={v.visitante} visita={v.visita} />
                             </td>
                           </tr>

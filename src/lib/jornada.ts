@@ -1,6 +1,14 @@
 // Cálculos e rótulos da jornada do visitante (spec-2-painel, blueprint §3 e §5).
 // Funções puras: a tela filtra e soma as linhas cruas da API sem nova chamada.
-import type { Aparelho, EventoJornada, FunilJornada, InstanteMs, OrigemCrua, PaginaDeEntrada } from '@/types/jornada';
+import type {
+  Aparelho,
+  EventoJornada,
+  FunilJornada,
+  InstanteMs,
+  OrigemCrua,
+  PaginaDeEntrada,
+  VisitaJornada,
+} from '@/types/jornada';
 
 export const ROTULOS_ETAPAS = [
   'Visitou',
@@ -566,6 +574,66 @@ export function grupoDaOrigem(origem: OrigemCrua): GrupoOrigem | null {
 export function rotuloDaOrigem(origem: OrigemCrua): string {
   const grupo = grupoDaOrigem(origem);
   return grupo ? ROTULOS_ORIGEM[grupo] : origem;
+}
+
+// medicao-e-robustez MR-23: rótulos dos dados da visita. Valor fora das listas sai cru.
+const ROTULOS_FAMILIA_NAVEGADOR: Record<string, string> = {
+  chrome: 'Chrome',
+  safari: 'Safari',
+  firefox: 'Firefox',
+  edge: 'Edge',
+  samsung: 'Samsung Internet',
+  opera: 'Opera',
+  outro: 'outro navegador',
+};
+
+const ROTULOS_SISTEMA: Record<string, string> = {
+  android: 'Android',
+  ios: 'iOS',
+  windows: 'Windows',
+  macos: 'macOS',
+  linux: 'Linux',
+  chromeos: 'ChromeOS',
+  outro: 'outro sistema',
+};
+
+// 'a' fica "(a)" até a conferência da ajuda do Google Ads (spec §5).
+const ROTULOS_CORRESPONDENCIA: Record<string, string> = {
+  e: 'exata',
+  p: 'de frase',
+  b: 'ampla',
+  a: 'a',
+};
+
+function rotuloDaLista(valor: string, rotulos: Record<string, string>): string {
+  return Object.hasOwn(rotulos, valor) ? rotulos[valor] : valor;
+}
+
+// "<familia>-<sistema>" → "Chrome no Android".
+function rotuloDoNavegador(navegador: string): string {
+  const traco = navegador.indexOf('-');
+  if (traco < 0) return navegador;
+  const familia = rotuloDaLista(navegador.slice(0, traco), ROTULOS_FAMILIA_NAVEGADOR);
+  const sistema = rotuloDaLista(navegador.slice(traco + 1), ROTULOS_SISTEMA);
+  return `${familia} no ${sistema}`;
+}
+
+// MR-23: os itens da lista "Dados da visita", na ordem; cada um só quando o dado existe.
+export function dadosDaVisita(visita: VisitaJornada): string[] {
+  const itens: string[] = [];
+  if (visita.campanha) itens.push(`Campanha: ${visita.campanha}`);
+  if (visita.grupo) itens.push(`Grupo de anúncio: ${visita.grupo}`);
+  if (visita.termo) {
+    const tipo = visita.correspondencia ? ` (${rotuloDaLista(visita.correspondencia, ROTULOS_CORRESPONDENCIA)})` : '';
+    itens.push(`Palavra-chave: ${visita.termo}${tipo}`);
+  } else if (visita.grupo || visita.correspondencia) {
+    itens.push('Palavra-chave: sem termo');
+  }
+  if (visita.navegador) itens.push(`Navegador: ${rotuloDoNavegador(visita.navegador)}`);
+  if (visita.pagou_em !== undefined) {
+    itens.push(`Pagou em ${formatarDiaMes(visita.pagou_em)} às ${formatarHora(visita.pagou_em)}`);
+  }
+  return itens;
 }
 
 export interface FiltroJornada {
