@@ -14,6 +14,19 @@ export const ROTULOS_ETAPAS = [
   'Pagou',
 ] as const;
 
+// medicao-e-robustez MR-25 (divergência D6): dia (AAAA-MM-DD, Brasília) em que "Abriu a contratação"
+// passou a contar a chegada na tela (lp-builder F4 em produção). null até lá; preenchido na TASK-FE-307.
+export const DESDE_CHEGADA_NA_CONTRATACAO: string | null = null;
+
+const ETAPA_ABRIU_A_CONTRATACAO = 6;
+
+// MR-25: nota junto do rótulo da etapa 6; null em qualquer outro caso.
+export function notaDaEtapa(etapa: number, desde: string | null): string | null {
+  if (etapa !== ETAPA_ABRIU_A_CONTRATACAO || desde === null) return null;
+  const [, mes, dia] = desde.split('-');
+  return `conta a chegada na tela desde ${Number(dia)}/${Number(mes)}`;
+}
+
 const ROTULOS_EVENTOS: Record<string, string> = {
   lp_page_view: 'Viu a página',
   lp_config_started: 'Abriu o configurador',

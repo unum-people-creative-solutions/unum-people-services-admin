@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ROTULOS_ETAPAS, taxa } from '@/lib/jornada';
+import { DESDE_CHEGADA_NA_CONTRATACAO, ROTULOS_ETAPAS, notaDaEtapa, taxa } from '@/lib/jornada';
 import { EsqueletoDaSecao, ErroDaSecao } from './EstadoDaSecao';
 
 interface FunilVitrineProps {
@@ -59,13 +59,18 @@ export function FunilVitrine({
               const sobreVisitou = i === 0 ? null : taxa(valor, visitou);
               const sobreAnterior = i === 0 ? null : taxa(valor, valores[i - 1]);
               const largura = escala > 0 ? Math.min(100, (valor / escala) * 100) : 0;
+              // medicao-e-robustez MR-25: a série da etapa 6 muda de regra a partir do dia da constante.
+              const nota = notaDaEtapa(i + 1, DESDE_CHEGADA_NA_CONTRATACAO);
               return (
                 // No celular a barra desce para uma linha própria; a ordem no DOM (rótulo, barra, número, taxa) não muda.
                 <li
                   key={rotulo}
                   className="grid grid-cols-[1fr_auto_auto] sm:grid-cols-[minmax(9rem,12rem)_1fr_3.5rem_auto] items-center gap-x-3 gap-y-1 text-sm"
                 >
-                  <span className="text-slate-700">{rotulo}</span>
+                  <span className="text-slate-700">
+                    {rotulo}
+                    {nota !== null ? <span className="block text-xs text-slate-500">{nota}</span> : null}
+                  </span>
                   <span aria-hidden="true" className="order-last col-span-3 sm:order-none sm:col-span-1 block h-3 rounded-full bg-primary-50 overflow-hidden">
                     <span className="block h-full rounded-full bg-primary-500" style={{ width: `${largura}%` }} />
                   </span>

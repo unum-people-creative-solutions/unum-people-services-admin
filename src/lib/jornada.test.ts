@@ -34,6 +34,7 @@ import {
   ROTULOS_SECAO_PREVIA,
   resumirVisita,
   tempoPorPagina,
+  notaDaEtapa,
 } from './jornada';
 // JSON real de GET /admin/dashboard/jornada/funil (L-071).
 import fixtureFunilLeitura from '@/services/__fixtures__/funil-leitura.json';
@@ -776,5 +777,19 @@ describe('tempoPorPagina (RF-4-27)', () => {
       { caminho: '/configurar/editar', segundos: 50, visitas: 2 },
       { caminho: '/configurar', segundos: 40, visitas: 1 },
     ]);
+  });
+});
+
+// medicao-e-robustez MR-25 (T26): a série de "Abriu a contratação" muda de regra na F4.
+describe('notaDaEtapa (MR-25)', () => {
+  it('etapa 6 com data dá a nota com o dia e o mês', () => {
+    expect(notaDaEtapa(6, '2026-11-20')).toBe('conta a chegada na tela desde 20/11');
+    expect(notaDaEtapa(6, '2026-12-05')).toBe('conta a chegada na tela desde 5/12');
+  });
+
+  it('outra etapa ou sem data dá null', () => {
+    expect(notaDaEtapa(5, '2026-11-20')).toBeNull();
+    expect(notaDaEtapa(7, '2026-11-20')).toBeNull();
+    expect(notaDaEtapa(6, null)).toBeNull();
   });
 });
