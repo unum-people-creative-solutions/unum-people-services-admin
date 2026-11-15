@@ -76,6 +76,17 @@ export interface VisitaJornada {
   aparelho: Aparelho;
   origem: OrigemCrua;
   campanha?: string;
+  // medicao-e-robustez spec §1.4 (F1): dados do anúncio e do navegador, só quando a visita os trouxe.
+  // grupo: número do grupo de anúncio (utm_content), até 20 dígitos.
+  grupo?: string;
+  // termo: palavra-chave (utm_term), texto do Google.
+  termo?: string;
+  // correspondencia: tipo de correspondência (matchtype): 'e', 'p', 'b' ou 'a'.
+  correspondencia?: string;
+  // navegador: '<familia>-<sistema>' (ex.: 'chrome-android').
+  navegador?: string;
+  // spec §1.4 (F2): instante em que o pagamento foi confirmado nesta visita (atributo pagou).
+  pagou_em?: InstanteMs;
   paginas: number;
   etapas: number[];
   usos: string[];

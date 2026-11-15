@@ -1,0 +1,338 @@
+{
+  "visitante": "3f2b8c1e-9d4a-4b7e-8a6f-1c2d3e4f5a6b",
+  "visitas": [
+    {
+      "visitante": "3f2b8c1e-9d4a-4b7e-8a6f-1c2d3e4f5a6b",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "inicio": 1794745800000,
+      "fim": 1794745860000,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "campanha": "pagina",
+      "grupo": "187654321098",
+      "termo": "criar site para psicólogo",
+      "correspondencia": "p",
+      "navegador": "chrome-android",
+      "pagou_em": 1794745920000,
+      "paginas": 3,
+      "etapas": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "usos": [],
+      "teste": false
+    }
+  ],
+  "eventos": [
+    {
+      "em": 1794745800000,
+      "nome": "lp_page_view",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745801000,
+      "nome": "lp_mini_topo_rolagem_25",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745802000,
+      "nome": "lp_mini_topo_rolagem_50",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745803000,
+      "nome": "lp_mini_topo_rolagem_75",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745804000,
+      "nome": "lp_mini_topo_rolagem_100",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745805000,
+      "nome": "lp_mini_topo_toque",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745806000,
+      "nome": "lp_mini_galeria_rolagem_25",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745807000,
+      "nome": "lp_mini_galeria_rolagem_50",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745808000,
+      "nome": "lp_mini_galeria_rolagem_75",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745809000,
+      "nome": "lp_mini_galeria_rolagem_100",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745810000,
+      "nome": "lp_mini_galeria_toque",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745811000,
+      "nome": "lp_mini_saude_rolagem_25",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745812000,
+      "nome": "lp_mini_saude_rolagem_50",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745813000,
+      "nome": "lp_mini_saude_rolagem_75",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745814000,
+      "nome": "lp_mini_saude_rolagem_100",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745815000,
+      "nome": "lp_mini_saude_toque",
+      "caminho": "/",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745816000,
+      "nome": "lp_page_view",
+      "caminho": "/configurar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745817000,
+      "nome": "lp_carga_recarga",
+      "caminho": "/configurar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745818000,
+      "nome": "lp_carga_voltou",
+      "caminho": "/configurar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745819000,
+      "nome": "lp_carga_descartada",
+      "caminho": "/configurar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745820000,
+      "nome": "lp_page_view",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745821000,
+      "nome": "lp_checkout_opened",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745822000,
+      "nome": "lp_campo_contratar_link",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 3
+    },
+    {
+      "em": 1794745823000,
+      "nome": "lp_campo_contratar_negocio",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 4
+    },
+    {
+      "em": 1794745824000,
+      "nome": "lp_campo_contratar_nome",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 5
+    },
+    {
+      "em": 1794745825000,
+      "nome": "lp_campo_contratar_email",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 12
+    },
+    {
+      "em": 1794745826000,
+      "nome": "lp_campo_contratar_documento",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 7
+    },
+    {
+      "em": 1794745827000,
+      "nome": "lp_campo_contratar_celular",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 8
+    },
+    {
+      "em": 1794745828000,
+      "nome": "lp_campo_contratar_nicho",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 9
+    },
+    {
+      "em": 1794745829000,
+      "nome": "lp_campo_contratar_cep",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 10
+    },
+    {
+      "em": 1794745830000,
+      "nome": "lp_campo_contratar_endereco",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 11
+    },
+    {
+      "em": 1794745831000,
+      "nome": "lp_campo_contratar_numero",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 12
+    },
+    {
+      "em": 1794745832000,
+      "nome": "lp_campo_contratar_bairro",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 13
+    },
+    {
+      "em": 1794745833000,
+      "nome": "lp_campo_contratar_complemento",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+      "segundos": 14
+    },
+    {
+      "em": 1794745834000,
+      "nome": "lp_envio_contratar_pix",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745835000,
+      "nome": "lp_envio_contratar_cartao",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745836000,
+      "nome": "lp_envio_contratar_plano_pagina",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745837000,
+      "nome": "lp_envio_contratar_plano_presenca",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745838000,
+      "nome": "lp_envio_contratar_plano_captacao",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745839000,
+      "nome": "lp_envio_contratar_plano_pagina_anual",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745840000,
+      "nome": "lp_envio_contratar_plano_presenca_anual",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745841000,
+      "nome": "lp_envio_contratar_plano_captacao_anual",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745842000,
+      "nome": "lp_envio_contratar_plano_outro",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745843000,
+      "nome": "lp_checkout_submitted",
+      "caminho": "/configurar/contratar",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745844000,
+      "nome": "lp_page_view",
+      "caminho": "/configurar/sucesso",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745845000,
+      "nome": "lp_sucesso_voltou",
+      "caminho": "/configurar/sucesso",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    },
+    {
+      "em": 1794745846000,
+      "nome": "lp_sucesso_publicada",
+      "caminho": "/configurar/sucesso",
+      "visita": "7a1b2c3d-4e5f-4a6b-9c8d-0e1f2a3b4c5d"
+    }
+  ],
+  "contratacoes": [
+    {
+      "tenant_id": "t-cancelado",
+      "nome": "Consultório Ana",
+      "status": "CANCELADO",
+      "pago": false,
+      "plano": "pagina",
+      "em": 1794745850000
+    }
+  ]
+}

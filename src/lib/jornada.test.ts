@@ -5,6 +5,7 @@ import {
   rotuloDoEvento,
   rotuloDoAparelho,
   grupoDaOrigem,
+  rotuloDaOrigem,
   ROTULOS_ORIGEM,
   calcularFunil,
   calcularUso,
@@ -34,11 +35,14 @@ import {
   ROTULOS_SECAO_PREVIA,
   resumirVisita,
   tempoPorPagina,
+  notaDaEtapa,
 } from './jornada';
 // JSON real de GET /admin/dashboard/jornada/funil (L-071).
 import fixtureFunilLeitura from '@/services/__fixtures__/funil-leitura.json';
 // JSON real de GET /admin/dashboard/jornada/visitantes/{v} com segundos (CA-4-16, L-071).
 import fixtureVisitanteComTempo from '@/services/__fixtures__/visitante-com-tempo.json';
+// JSON real de GET /admin/dashboard/jornada/visitantes/{v} com os 41 nomes da A1 (TASK-BE-106/BE-204, L-071).
+import fixtureVisitanteA1 from '@/services/__fixtures__/visitante-a1.json';
 
 // spec-4-detalhe RF-4-28: rotuloDoEvento recebe o evento inteiro.
 function ev(nome: string, extra: Partial<EventoJornada> = {}): EventoJornada {
@@ -127,12 +131,22 @@ describe('grupoDaOrigem', () => {
     expect(grupoDaOrigem('ref:www.bing.com')).toBe('site');
     expect(grupoDaOrigem('direto')).toBe('direto');
     expect(grupoDaOrigem('outra')).toBeNull();
-    expect(ROTULOS_ORIGEM).toEqual({
-      google: 'Anúncio do Google',
-      campanha: 'Outra campanha',
-      site: 'Outro site',
-      direto: 'Direto',
-    });
+    // medicao-e-robustez MR-22: a ordem das chaves é a ordem do menu.
+    expect(Object.entries(ROTULOS_ORIGEM)).toEqual([
+      ['google', 'Anúncio do Google'],
+      ['campanha', 'Outra campanha'],
+      ['assinatura', 'Assinatura das páginas'],
+      ['site', 'Outro site'],
+      ['direto', 'Direto'],
+    ]);
+  });
+
+  // medicao-e-robustez MR-22 (T23).
+  it('utm:assinatura é "Assinatura das páginas"; as outras utm:* seguem "Outra campanha"', () => {
+    expect(grupoDaOrigem('utm:assinatura')).toBe('assinatura');
+    expect(grupoDaOrigem('utm:newsletter')).toBe('campanha');
+    expect(grupoDaOrigem('utm:assinaturas')).toBe('campanha');
+    expect(rotuloDaOrigem('utm:assinatura')).toBe('Assinatura das páginas');
   });
 });
 
@@ -221,6 +235,7 @@ const TABELA_CLIQUES: Record<string, string> = {
   crm_plano: 'CRM: ver o plano',
   pergunta_abrir: 'Abriu uma pergunta',
   fechamento_montar: 'Fechamento: botão principal',
+  fixo_montar: 'Botão fixo (celular): montar', // OF-306
   produto_todos_planos: 'Plano: ver todos os planos',
   produto_crm: 'Plano: conhecer o CRM',
   marca: 'Logo',
@@ -260,7 +275,7 @@ describe('rótulos da leitura (RF-3-14)', () => {
     const inicio = [
       'hero_montar', 'hero_planos', 'galeria_modelo', 'galeria_aparelho', 'galeria_montar', 'vantagens_montar',
       'plano_escolher', 'blog_conhecer', 'blog_plano', 'crm_conhecer', 'crm_plano', 'pergunta_abrir',
-      'fechamento_montar', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
+      'fechamento_montar', 'fixo_montar', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
     ];
     const produto = [
       'hero_montar', 'hero_planos', 'plano_escolher', 'pergunta_abrir', 'fechamento_montar', 'produto_todos_planos',
@@ -464,6 +479,8 @@ const TABELA_CLIQUES_CONFIGURADOR: Record<string, string> = {
   previa_contratar: 'Clicou em Contratar',
   previa_botao: 'Testou um botão da página',
   contratar_plano: 'Escolheu um plano',
+  contratar_periodo_mensal: 'Escolheu o período mensal', // OF-306
+  contratar_periodo_anual: 'Escolheu o período anual', // OF-306
   contratar_pix: 'Escolheu Pix',
   contratar_cartao: 'Escolheu cartão',
   contratar_termo_ler: 'Abriu o Termo',
@@ -537,8 +554,8 @@ const TABELA_SECOES_PREVIA: Record<string, string> = {
 };
 
 describe('rótulos do configurador (RF-4-28, CA-4-24)', () => {
-  it('tabelas completas e na ordem da spec (37 cliques, 41 erros, 13 seções, 9 rotas)', () => {
-    expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(37);
+  it('tabelas completas e na ordem da spec (39 cliques com os 2 da B1, 41 erros, 13 seções, 9 rotas)', () => {
+    expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(39);
     expect(Object.keys(TABELA_ERROS)).toHaveLength(41);
     expect(Object.keys(TABELA_SECOES_PREVIA)).toHaveLength(13);
     expect(Object.entries(ROTULOS_CLIQUE_CONFIGURADOR)).toEqual(Object.entries(TABELA_CLIQUES_CONFIGURADOR));
@@ -776,5 +793,181 @@ describe('tempoPorPagina (RF-4-27)', () => {
       { caminho: '/configurar/editar', segundos: 50, visitas: 2 },
       { caminho: '/configurar', segundos: 40, visitas: 1 },
     ]);
+  });
+});
+
+// medicao-e-robustez MR-25 (T26): a série de "Abriu a contratação" muda de regra na F4.
+describe('notaDaEtapa (MR-25)', () => {
+  it('etapa 6 com data dá a nota com o dia e o mês', () => {
+    expect(notaDaEtapa(6, '2026-11-20')).toBe('conta a chegada na tela desde 20/11');
+    expect(notaDaEtapa(6, '2026-12-05')).toBe('conta a chegada na tela desde 5/12');
+  });
+
+  it('outra etapa ou sem data dá null', () => {
+    expect(notaDaEtapa(5, '2026-11-20')).toBeNull();
+    expect(notaDaEtapa(7, '2026-11-20')).toBeNull();
+    expect(notaDaEtapa(6, null)).toBeNull();
+  });
+});
+
+// medicao-e-robustez MR-21 (T22): cópia literal da tabela da seção 1.2 do spec.md, na ordem,
+// com o rótulo da tabela do MR-21. Os campos levam segundos: 12.
+const NOMES_A1: ReadonlyArray<[string, string]> = [
+  ['lp_carga_recarga', 'Recarregou a página'],
+  ['lp_carga_voltou', 'Voltou pelo navegador'],
+  ['lp_carga_descartada', 'O navegador descartou e recarregou a página'],
+  ['lp_campo_contratar_link', 'Ficou 12 s no campo Seu link'],
+  ['lp_campo_contratar_negocio', 'Ficou 12 s no campo Nome do negócio'],
+  ['lp_campo_contratar_nome', 'Ficou 12 s no campo Seu nome'],
+  ['lp_campo_contratar_email', 'Ficou 12 s no campo E-mail'],
+  ['lp_campo_contratar_documento', 'Ficou 12 s no campo CPF ou CNPJ'],
+  ['lp_campo_contratar_celular', 'Ficou 12 s no campo Celular'],
+  ['lp_campo_contratar_nicho', 'Ficou 12 s no campo Ramo'],
+  ['lp_campo_contratar_cep', 'Ficou 12 s no campo CEP'],
+  ['lp_campo_contratar_endereco', 'Ficou 12 s no campo Endereço'],
+  ['lp_campo_contratar_numero', 'Ficou 12 s no campo Número'],
+  ['lp_campo_contratar_bairro', 'Ficou 12 s no campo Bairro'],
+  ['lp_campo_contratar_complemento', 'Ficou 12 s no campo Complemento'],
+  ['lp_envio_contratar_pix', 'Enviou com Pix'],
+  ['lp_envio_contratar_cartao', 'Enviou com cartão'],
+  ['lp_envio_contratar_plano_pagina', 'Enviou com o plano Página'],
+  ['lp_envio_contratar_plano_presenca', 'Enviou com o plano Presença'],
+  ['lp_envio_contratar_plano_captacao', 'Enviou com o plano Captação'],
+  ['lp_envio_contratar_plano_pagina_anual', 'Enviou com o plano Página anual'],
+  ['lp_envio_contratar_plano_presenca_anual', 'Enviou com o plano Presença anual'],
+  ['lp_envio_contratar_plano_captacao_anual', 'Enviou com o plano Captação anual'],
+  ['lp_envio_contratar_plano_outro', 'Enviou com o plano outro'],
+  ['lp_sucesso_voltou', 'Voltou da fatura'],
+  ['lp_sucesso_publicada', 'Viu a página no ar'],
+  ['lp_mini_topo_rolagem_25', 'Rolou 25% na miniatura do topo'],
+  ['lp_mini_topo_rolagem_50', 'Rolou 50% na miniatura do topo'],
+  ['lp_mini_topo_rolagem_75', 'Rolou 75% na miniatura do topo'],
+  ['lp_mini_topo_rolagem_100', 'Rolou até o fim na miniatura do topo'],
+  ['lp_mini_topo_toque', 'Tocou na miniatura do topo'],
+  ['lp_mini_galeria_rolagem_25', 'Rolou 25% na miniatura da galeria'],
+  ['lp_mini_galeria_rolagem_50', 'Rolou 50% na miniatura da galeria'],
+  ['lp_mini_galeria_rolagem_75', 'Rolou 75% na miniatura da galeria'],
+  ['lp_mini_galeria_rolagem_100', 'Rolou até o fim na miniatura da galeria'],
+  ['lp_mini_galeria_toque', 'Tocou na miniatura da galeria'],
+  ['lp_mini_saude_rolagem_25', 'Rolou 25% na miniatura da Saúde'],
+  ['lp_mini_saude_rolagem_50', 'Rolou 50% na miniatura da Saúde'],
+  ['lp_mini_saude_rolagem_75', 'Rolou 75% na miniatura da Saúde'],
+  ['lp_mini_saude_rolagem_100', 'Rolou até o fim na miniatura da Saúde'],
+  ['lp_mini_saude_toque', 'Tocou na miniatura da Saúde'],
+];
+
+describe('rótulos dos 41 nomes da A1 (MR-21)', () => {
+  it('a lista literal tem os 41 nomes, sem repetição', () => {
+    expect(NOMES_A1).toHaveLength(41);
+    expect(new Set(NOMES_A1.map(([nome]) => nome)).size).toBe(41);
+  });
+
+  it.each(NOMES_A1)('%s vira "%s"', (nome, rotulo) => {
+    const segundos = nome.startsWith('lp_campo_contratar_') ? { segundos: 12 } : {};
+    expect(rotuloDoEvento(ev(nome, segundos))).toBe(rotulo);
+  });
+
+  // §1.2 do spec: segundos é obrigatório nesses nomes (a API recusa sem). Sem ele não há rótulo:
+  // a tela mostra o nome cru, o mesmo padrão de lp_tempo_na_pagina.
+  it('campo da contratação sem segundos não ganha rótulo', () => {
+    expect(rotuloDoEvento(ev('lp_campo_contratar_email'))).toBeNull();
+    expect(rotuloDoEvento(ev('lp_campo_contratar_cep'))).toBeNull();
+  });
+
+  it('a duração do campo vem de formatarDuracao', () => {
+    expect(rotuloDoEvento(ev('lp_campo_contratar_email', { segundos: 12 }))).toBe('Ficou 12 s no campo E-mail');
+    expect(rotuloDoEvento(ev('lp_campo_contratar_cep', { segundos: 75 }))).toBe('Ficou 1 min 15 s no campo CEP');
+    expect(rotuloDoEvento(ev('lp_mini_saude_rolagem_100'))).toBe('Rolou até o fim na miniatura da Saúde');
+  });
+
+  it('nome parecido fora da lista continua null (a tela mostra cru)', () => {
+    expect(rotuloDoEvento(ev('lp_campo_contratar_senha', { segundos: 12 }))).toBeNull();
+    expect(rotuloDoEvento(ev('lp_envio_contratar_plano_xpto'))).toBeNull();
+    expect(rotuloDoEvento(ev('lp_mini_topo_rolagem_30'))).toBeNull();
+    expect(rotuloDoEvento(ev('lp_mini_rodape_toque'))).toBeNull();
+    expect(rotuloDoEvento(ev('lp_carga_<b>'))).toBeNull();
+  });
+
+  it('com o JSON real da API: os 41 nomes estão lá e cada um tem o rótulo da tabela', () => {
+    const dados = JSON.parse(JSON.stringify(fixtureVisitanteA1)) as VisitanteJornada;
+    const tabela = new Map(NOMES_A1);
+    const daA1 = dados.eventos.filter((e) => tabela.has(e.nome));
+    expect(new Set(daA1.map((e) => e.nome)).size).toBe(41);
+    for (const evento of daA1) {
+      const esperado = evento.nome.startsWith('lp_campo_contratar_')
+        ? tabela.get(evento.nome)!.replace('Ficou 12 s', `Ficou ${formatarDuracao(evento.segundos!)}`)
+        : tabela.get(evento.nome);
+      expect(rotuloDoEvento(evento)).toBe(esperado);
+    }
+    const email = daA1.find((e) => e.nome === 'lp_campo_contratar_email')!;
+    expect(rotuloDoEvento(email)).toBe('Ficou 12 s no campo E-mail');
+  });
+
+  it('com o JSON real da API: resumirVisita agrupa os campos como ação "Campo <campo>"', () => {
+    const dados = JSON.parse(JSON.stringify(fixtureVisitanteA1)) as VisitanteJornada;
+    const resumo = resumirVisita(dados.eventos, dados.visitas[0].visita)!;
+    const contratar = resumo.paginas.find((p) => p.caminho === '/configurar/contratar')!;
+    expect(contratar.acoes.map((a) => a.rotulo)).toEqual([
+      'Abriu a contratação',
+      'Campo Seu link', 'Campo Nome do negócio', 'Campo Seu nome', 'Campo E-mail', 'Campo CPF ou CNPJ',
+      'Campo Celular', 'Campo Ramo', 'Campo CEP', 'Campo Endereço', 'Campo Número', 'Campo Bairro',
+      'Campo Complemento',
+      'Enviou com Pix', 'Enviou com cartão',
+      'Enviou com o plano Página', 'Enviou com o plano Presença', 'Enviou com o plano Captação',
+      'Enviou com o plano Página anual', 'Enviou com o plano Presença anual', 'Enviou com o plano Captação anual',
+      'Enviou com o plano outro',
+      'Enviou a contratação',
+    ]);
+    expect(resumo.paginas.find((p) => p.caminho === '/')!.acoes[0]).toEqual({
+      rotulo: 'Rolou 25% na miniatura do topo', vezes: 1,
+    });
+    expect(resumo.paginas.find((p) => p.caminho === '/configurar/sucesso')!.acoes.map((a) => a.rotulo)).toEqual([
+      'Voltou da fatura', 'Viu a página no ar',
+    ]);
+  });
+
+  it('resumirVisita: campos viram ação "Campo <campo>" e os outros a ação com o rótulo da tabela', () => {
+    const eventos: EventoJornada[] = [
+      ev('lp_page_view', { em: 1, caminho: '/configurar/contratar' }),
+      ev('lp_checkout_opened', { em: 2, caminho: '/configurar/contratar' }),
+      ev('lp_campo_contratar_email', { em: 3, caminho: '/configurar/contratar', segundos: 12 }),
+      ev('lp_campo_contratar_email', { em: 4, caminho: '/configurar/contratar', segundos: 3 }),
+      ev('lp_campo_contratar_cep', { em: 5, caminho: '/configurar/contratar', segundos: 8 }),
+      ev('lp_envio_contratar_plano_pagina', { em: 6, caminho: '/configurar/contratar' }),
+      ev('lp_envio_contratar_pix', { em: 7, caminho: '/configurar/contratar' }),
+      ev('lp_carga_recarga', { em: 8, caminho: '/configurar/contratar' }),
+    ];
+    const resumo = resumirVisita(eventos, 'v');
+    expect(resumo?.paginas[0].acoes).toEqual([
+      { rotulo: 'Abriu a contratação', vezes: 1 },
+      { rotulo: 'Campo E-mail', vezes: 2 },
+      { rotulo: 'Campo CEP', vezes: 1 },
+      { rotulo: 'Enviou com o plano Página', vezes: 1 },
+      { rotulo: 'Enviou com Pix', vezes: 1 },
+      { rotulo: 'Recarregou a página', vezes: 1 },
+    ]);
+  });
+});
+
+// oferta-e-primeira-tela OF-306 (T33, DV-05): os três nomes novos da B1 ganham rótulo,
+// senão somem da linha do tempo (rotuloDoEvento devolve null).
+describe('rótulos dos três nomes da B1 (OF-306)', () => {
+  it('rotuloDoEvento dá o rótulo com o prefixo de hoje da linha do tempo', () => {
+    expect(rotuloDoEvento(ev('lp_clique_fixo_montar'))).toBe('Clicou: Botão fixo (celular): montar');
+    expect(rotuloDoEvento(ev('lp_clique_contratar_periodo_mensal'))).toBe('Escolheu o período mensal');
+    expect(rotuloDoEvento(ev('lp_clique_contratar_periodo_anual'))).toBe('Escolheu o período anual');
+  });
+
+  it('fixo_montar é botão da página inicial, logo depois de fechamento_montar', () => {
+    const inicio = BOTOES_DA_PAGINA.inicio;
+    expect(inicio).toContain('fixo_montar');
+    expect(inicio.indexOf('fixo_montar')).toBe(inicio.indexOf('fechamento_montar') + 1);
+    expect(ROTULOS_CLIQUE.fixo_montar).toBe('Botão fixo (celular): montar');
+  });
+
+  it('os dois períodos vêm logo depois de contratar_plano no configurador', () => {
+    const chaves = Object.keys(ROTULOS_CLIQUE_CONFIGURADOR);
+    const plano = chaves.indexOf('contratar_plano');
+    expect(chaves.slice(plano, plano + 3)).toEqual(['contratar_plano', 'contratar_periodo_mensal', 'contratar_periodo_anual']);
   });
 });

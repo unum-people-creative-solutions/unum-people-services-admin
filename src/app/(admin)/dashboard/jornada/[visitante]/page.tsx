@@ -8,6 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 import { jornadaService } from '@/services/jornadaService';
 import { ApiError } from '@/lib/apiError';
 import {
+  dadosDaVisita,
   formatarDiaMes,
   formatarDuracao,
   formatarHora,
@@ -23,6 +24,7 @@ import { EsqueletoDaSecao, ErroDaSecao } from '@/components/jornada/EstadoDaSeca
 import { SeloPagamento, SeloTeste } from '@/components/jornada/Selos';
 import { EmpresaContratante } from '@/components/jornada/EmpresaContratante';
 import { ResumoDaVisita } from '@/components/jornada/DetalheDaVisita';
+import { DadosDaVisita } from '@/components/jornada/DadosDaVisita';
 import type { EventoJornada, VisitaJornada, VisitanteJornada } from '@/types/jornada';
 
 // spec-2-painel RF-2-08; blueprint §4; spec-4-detalhe RF-4-27.
@@ -187,6 +189,12 @@ export default function VisitantePage() {
                       </h2>
                       {grupo.resumo?.teste ? <SeloTeste /> : null}
                     </div>
+                    {/* medicao-e-robustez MR-23: dados da visita junto do resumo. */}
+                    {grupo.resumo && dadosDaVisita(grupo.resumo).length > 0 ? (
+                      <div className="px-4 pt-4">
+                        <DadosDaVisita visita={grupo.resumo} />
+                      </div>
+                    ) : null}
                     {resumo ? (
                       <div className="p-4 border-b border-slate-100">
                         <ResumoDaVisita resumo={resumo} />

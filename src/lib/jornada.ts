@@ -1,6 +1,14 @@
 // Cálculos e rótulos da jornada do visitante (spec-2-painel, blueprint §3 e §5).
 // Funções puras: a tela filtra e soma as linhas cruas da API sem nova chamada.
-import type { Aparelho, EventoJornada, FunilJornada, InstanteMs, OrigemCrua, PaginaDeEntrada } from '@/types/jornada';
+import type {
+  Aparelho,
+  EventoJornada,
+  FunilJornada,
+  InstanteMs,
+  OrigemCrua,
+  PaginaDeEntrada,
+  VisitaJornada,
+} from '@/types/jornada';
 
 export const ROTULOS_ETAPAS = [
   'Visitou',
@@ -13,6 +21,19 @@ export const ROTULOS_ETAPAS = [
   'Contratou',
   'Pagou',
 ] as const;
+
+// medicao-e-robustez MR-25 (divergência D6): dia (AAAA-MM-DD, Brasília) em que "Abriu a contratação"
+// passou a contar a chegada na tela (lp-builder F4 em produção). null até lá; preenchido na TASK-FE-307.
+export const DESDE_CHEGADA_NA_CONTRATACAO: string | null = null;
+
+const ETAPA_ABRIU_A_CONTRATACAO = 6;
+
+// MR-25: nota junto do rótulo da etapa 6; null em qualquer outro caso.
+export function notaDaEtapa(etapa: number, desde: string | null): string | null {
+  if (etapa !== ETAPA_ABRIU_A_CONTRATACAO || desde === null) return null;
+  const [, mes, dia] = desde.split('-');
+  return `conta a chegada na tela desde ${Number(dia)}/${Number(mes)}`;
+}
 
 const ROTULOS_EVENTOS: Record<string, string> = {
   lp_page_view: 'Viu a página',
@@ -74,6 +95,8 @@ export const ROTULOS_CLIQUE: Record<string, string> = {
   crm_plano: 'CRM: ver o plano',
   pergunta_abrir: 'Abriu uma pergunta',
   fechamento_montar: 'Fechamento: botão principal',
+  // oferta-e-primeira-tela OF-306: botão fixo da home no celular.
+  fixo_montar: 'Botão fixo (celular): montar',
   produto_todos_planos: 'Plano: ver todos os planos',
   produto_crm: 'Plano: conhecer o CRM',
   marca: 'Logo',
@@ -98,7 +121,7 @@ export const SECOES_DA_PAGINA: Record<PaginaDeEntrada, readonly string[]> = {
 const BOTOES_INICIO = [
   'hero_montar', 'hero_planos', 'galeria_modelo', 'galeria_aparelho', 'galeria_montar', 'vantagens_montar',
   'plano_escolher', 'blog_conhecer', 'blog_plano', 'crm_conhecer', 'crm_plano', 'pergunta_abrir',
-  'fechamento_montar', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
+  'fechamento_montar', 'fixo_montar', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
 ] as const;
 
 const BOTOES_PRODUTO = [
@@ -187,6 +210,9 @@ export const ROTULOS_CLIQUE_CONFIGURADOR: Record<string, string> = {
   previa_contratar: 'Clicou em Contratar',
   previa_botao: 'Testou um botão da página',
   contratar_plano: 'Escolheu um plano',
+  // oferta-e-primeira-tela OF-306: escolha de período no checkout.
+  contratar_periodo_mensal: 'Escolheu o período mensal',
+  contratar_periodo_anual: 'Escolheu o período anual',
   contratar_pix: 'Escolheu Pix',
   contratar_cartao: 'Escolheu cartão',
   contratar_termo_ler: 'Abriu o Termo',
@@ -261,6 +287,67 @@ export const ROTULOS_SECAO_PREVIA: Record<string, string> = {
   fees: 'Valores',
 };
 
+// medicao-e-robustez MR-21: os 41 nomes da A1 (spec §1.2), em listas fechadas.
+// Campo do formulário de contratação (sem "lp_campo_contratar_") → rótulo do campo.
+const ROTULOS_CAMPO_CONTRATAR: Record<string, string> = {
+  link: 'Seu link',
+  negocio: 'Nome do negócio',
+  nome: 'Seu nome',
+  email: 'E-mail',
+  documento: 'CPF ou CNPJ',
+  celular: 'Celular',
+  nicho: 'Ramo',
+  cep: 'CEP',
+  endereco: 'Endereço',
+  numero: 'Número',
+  bairro: 'Bairro',
+  complemento: 'Complemento',
+};
+
+const PREFIXO_CAMPO_CONTRATAR = 'lp_campo_contratar_';
+
+const ROTULOS_PLANO_ENVIO: Record<string, string> = {
+  pagina: 'Página',
+  presenca: 'Presença',
+  captacao: 'Captação',
+  pagina_anual: 'Página anual',
+  presenca_anual: 'Presença anual',
+  captacao_anual: 'Captação anual',
+  outro: 'outro',
+};
+
+const LUGARES_MINIATURA: Record<string, string> = {
+  topo: 'do topo',
+  galeria: 'da galeria',
+  saude: 'da Saúde',
+};
+
+function rotulosDaMedicao(): Record<string, string> {
+  const rotulos: Record<string, string> = {
+    lp_carga_recarga: 'Recarregou a página',
+    lp_carga_voltou: 'Voltou pelo navegador',
+    lp_carga_descartada: 'O navegador descartou e recarregou a página',
+    lp_envio_contratar_pix: 'Enviou com Pix',
+    lp_envio_contratar_cartao: 'Enviou com cartão',
+  };
+  for (const [slug, plano] of Object.entries(ROTULOS_PLANO_ENVIO)) {
+    rotulos[`lp_envio_contratar_plano_${slug}`] = `Enviou com o plano ${plano}`;
+  }
+  rotulos.lp_sucesso_voltou = 'Voltou da fatura';
+  rotulos.lp_sucesso_publicada = 'Viu a página no ar';
+  for (const [lugar, rotulo] of Object.entries(LUGARES_MINIATURA)) {
+    for (const marco of [25, 50, 75]) {
+      rotulos[`lp_mini_${lugar}_rolagem_${marco}`] = `Rolou ${marco}% na miniatura ${rotulo}`;
+    }
+    rotulos[`lp_mini_${lugar}_rolagem_100`] = `Rolou até o fim na miniatura ${rotulo}`;
+    rotulos[`lp_mini_${lugar}_toque`] = `Tocou na miniatura ${rotulo}`;
+  }
+  return rotulos;
+}
+
+// Os 29 nomes da A1 que não são campo: o mesmo rótulo na linha do tempo e no resumo da visita.
+const ROTULOS_MEDICAO = rotulosDaMedicao();
+
 const TEMPO_NA_PAGINA = 'lp_tempo_na_pagina';
 
 const ROLAGEM: Record<string, 25 | 50 | 75 | 100> = {
@@ -284,6 +371,10 @@ function classificar(nome: string): { tipo: TipoDoEvento; rotulo: string } | nul
   if (nome !== 'lp_page_view' && Object.hasOwn(ROTULOS_EVENTOS, nome)) {
     return { tipo: 'acao', rotulo: ROTULOS_EVENTOS[nome] };
   }
+  // MR-21: no resumo da visita, o campo é a ação "Campo <campo>"; os outros nomes da A1, o rótulo da tabela.
+  const campo = rotuloPorPrefixo(nome, PREFIXO_CAMPO_CONTRATAR, ROTULOS_CAMPO_CONTRATAR);
+  if (campo !== null) return { tipo: 'acao', rotulo: `Campo ${campo}` };
+  if (Object.hasOwn(ROTULOS_MEDICAO, nome)) return { tipo: 'acao', rotulo: ROTULOS_MEDICAO[nome] };
   const prefixados: Array<[TipoDoEvento, string, Record<string, string>]> = [
     ['secao', 'lp_secao_', ROTULOS_SECAO],
     ['secao_previa', 'lp_previa_secao_', ROTULOS_SECAO_PREVIA],
@@ -314,6 +405,11 @@ export function rotuloDoEvento(evento: EventoJornada): string | null {
   const { nome } = evento;
   if (nome === TEMPO_NA_PAGINA) {
     return evento.segundos === undefined ? null : `Ficou ${formatarDuracao(evento.segundos)} nesta página`;
+  }
+  // MR-21: o campo da contratação leva o tempo nele (segundos é obrigatório nesses nomes).
+  const campo = rotuloPorPrefixo(nome, PREFIXO_CAMPO_CONTRATAR, ROTULOS_CAMPO_CONTRATAR);
+  if (campo !== null) {
+    return evento.segundos === undefined ? null : `Ficou ${formatarDuracao(evento.segundos)} no campo ${campo}`;
   }
   if (nome === 'lp_page_view') return ROTULOS_EVENTOS[nome];
   if (Object.hasOwn(ROTULOS_LEITURA, nome)) return ROTULOS_LEITURA[nome];
@@ -456,17 +552,23 @@ export const PASSOS_IA = {
   invalida: { evento: 'lp_ia_resposta_invalida', rotulo: 'Resposta não lida' },
 } as const;
 
-export type GrupoOrigem = 'google' | 'campanha' | 'site' | 'direto';
+export type GrupoOrigem = 'google' | 'campanha' | 'assinatura' | 'site' | 'direto';
 
+// A ordem das chaves é a do menu de origem (medicao-e-robustez MR-22).
 export const ROTULOS_ORIGEM: Record<GrupoOrigem, string> = {
   google: 'Anúncio do Google',
   campanha: 'Outra campanha',
+  assinatura: 'Assinatura das páginas',
   site: 'Outro site',
   direto: 'Direto',
 };
 
+// MR-22: utm:assinatura é o link da assinatura nas páginas publicadas (lp-builder MR-42).
+const ORIGEM_ASSINATURA = 'utm:assinatura';
+
 export function grupoDaOrigem(origem: OrigemCrua): GrupoOrigem | null {
   if (origem === 'google_ads') return 'google';
+  if (origem === ORIGEM_ASSINATURA) return 'assinatura';
   if (origem.startsWith('utm:')) return 'campanha';
   if (origem.startsWith('ref:')) return 'site';
   if (origem === 'direto') return 'direto';
@@ -477,6 +579,66 @@ export function grupoDaOrigem(origem: OrigemCrua): GrupoOrigem | null {
 export function rotuloDaOrigem(origem: OrigemCrua): string {
   const grupo = grupoDaOrigem(origem);
   return grupo ? ROTULOS_ORIGEM[grupo] : origem;
+}
+
+// medicao-e-robustez MR-23: rótulos dos dados da visita. Valor fora das listas sai cru.
+const ROTULOS_FAMILIA_NAVEGADOR: Record<string, string> = {
+  chrome: 'Chrome',
+  safari: 'Safari',
+  firefox: 'Firefox',
+  edge: 'Edge',
+  samsung: 'Samsung Internet',
+  opera: 'Opera',
+  outro: 'outro navegador',
+};
+
+const ROTULOS_SISTEMA: Record<string, string> = {
+  android: 'Android',
+  ios: 'iOS',
+  windows: 'Windows',
+  macos: 'macOS',
+  linux: 'Linux',
+  chromeos: 'ChromeOS',
+  outro: 'outro sistema',
+};
+
+// 'a' fica "(a)" até a conferência da ajuda do Google Ads (spec §5).
+const ROTULOS_CORRESPONDENCIA: Record<string, string> = {
+  e: 'exata',
+  p: 'de frase',
+  b: 'ampla',
+  a: 'a',
+};
+
+function rotuloDaLista(valor: string, rotulos: Record<string, string>): string {
+  return Object.hasOwn(rotulos, valor) ? rotulos[valor] : valor;
+}
+
+// "<familia>-<sistema>" → "Chrome no Android".
+function rotuloDoNavegador(navegador: string): string {
+  const traco = navegador.indexOf('-');
+  if (traco < 0) return navegador;
+  const familia = rotuloDaLista(navegador.slice(0, traco), ROTULOS_FAMILIA_NAVEGADOR);
+  const sistema = rotuloDaLista(navegador.slice(traco + 1), ROTULOS_SISTEMA);
+  return `${familia} no ${sistema}`;
+}
+
+// MR-23: os itens da lista "Dados da visita", na ordem; cada um só quando o dado existe.
+export function dadosDaVisita(visita: VisitaJornada): string[] {
+  const itens: string[] = [];
+  if (visita.campanha) itens.push(`Campanha: ${visita.campanha}`);
+  if (visita.grupo) itens.push(`Grupo de anúncio: ${visita.grupo}`);
+  if (visita.termo) {
+    const tipo = visita.correspondencia ? ` (${rotuloDaLista(visita.correspondencia, ROTULOS_CORRESPONDENCIA)})` : '';
+    itens.push(`Palavra-chave: ${visita.termo}${tipo}`);
+  } else if (visita.grupo || visita.correspondencia) {
+    itens.push('Palavra-chave: sem termo');
+  }
+  if (visita.navegador) itens.push(`Navegador: ${rotuloDoNavegador(visita.navegador)}`);
+  if (visita.pagou_em !== undefined) {
+    itens.push(`Pagou em ${formatarDiaMes(visita.pagou_em)} às ${formatarHora(visita.pagou_em)}`);
+  }
+  return itens;
 }
 
 export interface FiltroJornada {

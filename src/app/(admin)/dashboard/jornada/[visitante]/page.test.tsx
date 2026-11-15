@@ -8,6 +8,8 @@ import { ApiError } from '@/lib/apiError';
 import type { EventoJornada, VisitanteJornada } from '@/types/jornada';
 // JSON real de GET /admin/dashboard/jornada/visitantes/{v} com segundos (CA-4-16, L-071).
 import fixtureVisitanteComTempo from '@/services/__fixtures__/visitante-com-tempo.json';
+// JSON real de GET /admin/dashboard/jornada/visitantes/{v} da A1 (TASK-BE-106 e TASK-BE-204, L-071).
+import fixtureVisitanteA1 from '@/services/__fixtures__/visitante-a1.json';
 
 // spec-2-painel RF-2-08, CA-2-08, CA-2-09, CA-2-10; blueprint §4 e §5.
 
@@ -206,11 +208,11 @@ describe('Página do visitante: tempo por página e resumo por visita', () => {
     renderizar();
     const visitas = await screen.findAllByRole('region', { name: /^Visita de/ });
     expect(visitas).toHaveLength(2);
-    for (const visita of visitas) {
-      const listas = within(visita).getAllByRole('list').map((l) => l.getAttribute('aria-label'));
-      expect(listas).toEqual(['Páginas da visita', 'Linha do tempo']);
-    }
     const [noite, tarde] = visitas;
+    const listas = (secao: HTMLElement) => within(secao).getAllByRole('list').map((l) => l.getAttribute('aria-label'));
+    expect(listas(noite)).toEqual(['Páginas da visita', 'Linha do tempo']);
+    // medicao-e-robustez MR-23: a visita da tarde tem campanha, então "Dados da visita" vem antes do resumo.
+    expect(listas(tarde)).toEqual(['Dados da visita', 'Páginas da visita', 'Linha do tempo']);
     const linhasDasPaginas = (secao: HTMLElement) =>
       within(within(secao).getByRole('list', { name: 'Páginas da visita' }))
         .getAllByRole('listitem')
@@ -243,5 +245,43 @@ describe('Página do visitante: tempo por página e resumo por visita', () => {
     expect(within(linhaDoTempo).getByText('Ficou 42 s nesta página').textContent).toBe('Ficou 42 s nesta página');
     const bloco = screen.getByRole('region', { name: 'Tempo por página' });
     expect(within(bloco).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Editor · 42 s · 1 visita']);
+  });
+});
+
+// medicao-e-robustez MR-23 (T24): cada visita mostra os dados da visita, com o JSON real da API.
+describe('Página do visitante: dados da visita (MR-23)', () => {
+  const dados = JSON.parse(JSON.stringify(fixtureVisitanteA1)) as VisitanteJornada;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useParams).mockReturnValue({ visitante: dados.visitante });
+    vi.mocked(jornadaService.visitante).mockResolvedValue(dados);
+  });
+
+  test('a visita mostra campanha, grupo, palavra-chave, navegador e pagamento, e a linha do tempo traz os nomes da A1', async () => {
+    renderizar();
+    const [visita] = await screen.findAllByRole('region', { name: /^Visita de/ });
+    const lista = within(visita).getByRole('list', { name: 'Dados da visita' });
+    expect(within(lista).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Campanha: pagina',
+      'Grupo de anúncio: 187654321098',
+      'Palavra-chave: criar site para psicólogo (de frase)',
+      'Navegador: Chrome no Android',
+      'Pagou em 15/11 às 09:32',
+    ]);
+    const linhaDoTempo = within(visita).getByRole('list', { name: 'Linha do tempo' });
+    expect(within(linhaDoTempo).getByText('Ficou 12 s no campo E-mail')).toBeInTheDocument();
+  });
+
+  test('visita sem nenhum dos campos não mostra a lista', async () => {
+    vi.mocked(jornadaService.visitante).mockResolvedValue(resposta);
+    vi.mocked(useParams).mockReturnValue({ visitante: ID });
+    renderizar();
+    const visitas = await screen.findAllByRole('region', { name: /^Visita de/ });
+    // A visita da noite (direto) não tem nenhum campo; a da tarde tem campanha.
+    expect(within(visitas[0]).queryByRole('list', { name: 'Dados da visita' })).toBeNull();
+    expect(within(within(visitas[1]).getByRole('list', { name: 'Dados da visita' })).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Campanha: vitrine-novembro',
+    ]);
   });
 });
