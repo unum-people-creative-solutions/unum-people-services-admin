@@ -37,6 +37,14 @@ import {
   tempoPorPagina,
   notaDaEtapa,
   DESDE_CHEGADA_NA_CONTRATACAO,
+  DESDE_ENTRADA_COM_IA,
+  ROTULOS_ETAPAS_ENTRADA_COM_IA,
+  ETAPAS_COMPARAVEIS,
+  calcularFunilEntradaComIa,
+  medianaDaMontagem,
+  inicioDoDiaEmBrasilia,
+  dividirPelaEntradaComIa,
+  compararSeries,
 } from './jornada';
 // JSON real de GET /admin/dashboard/jornada/funil (L-071).
 import fixtureFunilLeitura from '@/services/__fixtures__/funil-leitura.json';
@@ -44,6 +52,8 @@ import fixtureFunilLeitura from '@/services/__fixtures__/funil-leitura.json';
 import fixtureVisitanteComTempo from '@/services/__fixtures__/visitante-com-tempo.json';
 // JSON real de GET /admin/dashboard/jornada/visitantes/{v} com os 41 nomes da A1 (TASK-BE-106/BE-204, L-071).
 import fixtureVisitanteA1 from '@/services/__fixtures__/visitante-a1.json';
+// Resposta do funil da A2 (configurador-com-ia spec §3.7, TASK-API-210), copiada sem edição.
+import fixtureFunilA2 from '@/services/__fixtures__/funil-a2.json';
 
 // spec-4-detalhe RF-4-28: rotuloDoEvento recebe o evento inteiro.
 function ev(nome: string, extra: Partial<EventoJornada> = {}): EventoJornada {
@@ -976,5 +986,129 @@ describe('rótulos dos três nomes da B1 (OF-306)', () => {
     const chaves = Object.keys(ROTULOS_CLIQUE_CONFIGURADOR);
     const plano = chaves.indexOf('contratar_plano');
     expect(chaves.slice(plano, plano + 3)).toEqual(['contratar_plano', 'contratar_periodo_mensal', 'contratar_periodo_anual']);
+  });
+});
+
+// configurador-com-ia TASK-ADM-303 (spec §3.7; blueprint §9.1 com D-C-01, D-C-03, D-C-28).
+describe('série "Entrada com IA" (A2)', () => {
+  const todos = { origem: 'todas', aparelho: 'todos' } as const;
+  const funilA2 = fixtureFunilA2 as FunilJornada;
+
+  it('DESDE_ENTRADA_COM_IA fica null até a flag ligar (OPS-09)', () => {
+    expect(DESDE_ENTRADA_COM_IA).toBeNull();
+  });
+
+  it('dez rótulos na ordem do blueprint §9.1', () => {
+    expect(ROTULOS_ETAPAS_ENTRADA_COM_IA).toEqual([
+      'Visitou',
+      'Começou',
+      'Enviou os dados',
+      'Viu o site montado',
+      'Editou',
+      'Viu a página final',
+      'Abriu a contratação',
+      'Enviou a contratação',
+      'Contratou',
+      'Pagou',
+    ]);
+  });
+
+  it('T31 — com a fixture da A2, as dez etapas valem 1 (etapas 1, 10, 11, 12, 4 a 8 e Pagou)', () => {
+    expect(calcularFunilEntradaComIa(funilA2, todos)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+  });
+
+  it('lê cada etapa do seu número e Pagou de pagou; respeita o filtro', () => {
+    const f: FunilJornada = {
+      etapas: [
+        { etapa: 1, aparelho: 'celular', origem: 'google_ads', visitas: 100 },
+        { etapa: 1, aparelho: 'computador', origem: 'direto', visitas: 50 },
+        { etapa: 2, aparelho: 'celular', origem: 'google_ads', visitas: 99 },
+        { etapa: 3, aparelho: 'celular', origem: 'google_ads', visitas: 98 },
+        { etapa: 10, aparelho: 'celular', origem: 'google_ads', visitas: 80 },
+        { etapa: 11, aparelho: 'celular', origem: 'google_ads', visitas: 60 },
+        { etapa: 12, aparelho: 'celular', origem: 'google_ads', visitas: 55 },
+        { etapa: 4, aparelho: 'celular', origem: 'google_ads', visitas: 40 },
+        { etapa: 5, aparelho: 'celular', origem: 'google_ads', visitas: 20 },
+        { etapa: 6, aparelho: 'celular', origem: 'google_ads', visitas: 10 },
+        { etapa: 7, aparelho: 'celular', origem: 'google_ads', visitas: 5 },
+        { etapa: 8, aparelho: 'celular', origem: 'google_ads', visitas: 4 },
+        { etapa: 9, aparelho: 'celular', origem: 'google_ads', visitas: 3 },
+      ],
+      uso: [],
+      pagou: [
+        { aparelho: 'celular', origem: 'google_ads', visitas: 3 },
+        { aparelho: 'computador', origem: 'direto', visitas: 1 },
+      ],
+      leitura: [],
+    };
+    expect(calcularFunilEntradaComIa(f, todos)).toEqual([150, 80, 60, 55, 40, 20, 10, 5, 4, 4]);
+    expect(calcularFunilEntradaComIa(f, { origem: 'direto', aparelho: 'todos' })).toEqual([50, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+  });
+
+  it('calcularFunil de hoje continua com as nove etapas e ignora 10, 11 e 12', () => {
+    expect(calcularFunil(funilA2, todos)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(ROTULOS_ETAPAS).toHaveLength(9);
+  });
+
+  it('medianaDaMontagem: faixas {14: 1, mais: 1} → 14 (metade arredondada para cima)', () => {
+    expect(medianaDaMontagem(calcularUso(funilA2, todos))).toBe(14);
+    expect(medianaDaMontagem({ lp_site_montado_s_14: 1, lp_site_montado_s_mais: 1 })).toBe(14);
+  });
+
+  it('medianaDaMontagem: sem nenhuma faixa → null; só outras chaves de uso → null', () => {
+    expect(medianaDaMontagem({})).toBeNull();
+    expect(medianaDaMontagem({ lp_site_montado_ia: 3, lp_topo_comecou: 2 })).toBeNull();
+  });
+
+  it('medianaDaMontagem: a faixa final devolve "mais de 30"; as faixas vão de 1 a 30', () => {
+    expect(medianaDaMontagem({ lp_site_montado_s_mais: 2, lp_site_montado_s_3: 1 })).toBe('mais de 30');
+    expect(medianaDaMontagem({ lp_site_montado_s_1: 1, lp_site_montado_s_30: 1, lp_site_montado_s_mais: 1 })).toBe(30);
+    expect(medianaDaMontagem({ lp_site_montado_s_5: 3, lp_site_montado_s_20: 1 })).toBe(5);
+    expect(medianaDaMontagem({ lp_site_montado_s_31: 4 })).toBeNull();
+  });
+
+  it('ETAPAS_COMPARAVEIS: as cinco etapas que existem nas duas séries', () => {
+    expect(ETAPAS_COMPARAVEIS).toEqual(['Visitou', 'Editou', 'Viu a página final', 'Abriu a contratação', 'Pagou']);
+    for (const rotulo of ETAPAS_COMPARAVEIS) {
+      expect(ROTULOS_ETAPAS).toContain(rotulo);
+      expect(ROTULOS_ETAPAS_ENTRADA_COM_IA).toContain(rotulo);
+    }
+  });
+
+  it('compararSeries: cada etapa comum em "de cada 100 visitas" de cada série', () => {
+    const antiga = [200, 100, 80, 50, 30, 20, 10, 6, 4];
+    const nova = [100, 70, 60, 55, 40, 25, 12, 8, 6, 5];
+    expect(compararSeries(antiga, nova)).toEqual([
+      { rotulo: 'Visitou', antiga: 100, nova: 100 },
+      { rotulo: 'Editou', antiga: 25, nova: 40 },
+      { rotulo: 'Viu a página final', antiga: 15, nova: 25 },
+      { rotulo: 'Abriu a contratação', antiga: 10, nova: 12 },
+      { rotulo: 'Pagou', antiga: 2, nova: 5 },
+    ]);
+    expect(compararSeries(new Array(9).fill(0), nova)[0]).toEqual({ rotulo: 'Visitou', antiga: null, nova: 100 });
+  });
+
+  it('inicioDoDiaEmBrasilia: meia-noite de Brasília (UTC−3) em ms', () => {
+    expect(inicioDoDiaEmBrasilia('2026-11-20')).toBe(Date.UTC(2026, 10, 20, 3, 0, 0));
+  });
+
+  it('dividirPelaEntradaComIa: sem data, só a série antiga com a janela inteira', () => {
+    expect(dividirPelaEntradaComIa(1000, 2000, null)).toEqual({ antiga: { desde: 1000, ate: 2000 }, nova: null });
+  });
+
+  it('dividirPelaEntradaComIa: janela antes, depois e cruzando a data (fim inclusivo como a API)', () => {
+    const corte = inicioDoDiaEmBrasilia('2026-11-20');
+    expect(dividirPelaEntradaComIa(corte - 5000, corte - 1, '2026-11-20')).toEqual({
+      antiga: { desde: corte - 5000, ate: corte - 1 },
+      nova: null,
+    });
+    expect(dividirPelaEntradaComIa(corte, corte + 5000, '2026-11-20')).toEqual({
+      antiga: null,
+      nova: { desde: corte, ate: corte + 5000 },
+    });
+    expect(dividirPelaEntradaComIa(corte - 5000, corte + 5000, '2026-11-20')).toEqual({
+      antiga: { desde: corte - 5000, ate: corte - 1 },
+      nova: { desde: corte, ate: corte + 5000 },
+    });
   });
 });

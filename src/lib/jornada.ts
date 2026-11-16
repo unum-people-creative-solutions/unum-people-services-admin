@@ -673,6 +673,107 @@ export function calcularFunil(funil: FunilJornada, filtro: FiltroJornada): numbe
   return valores;
 }
 
+// configurador-com-ia spec §3.7 e blueprint §9.1 (D-UI-29): dia (AAAA-MM-DD, Brasília) em que a flag
+// configurador-ia ficou ligada. Visitas desse dia em diante são da série "Entrada com IA"; antes, da
+// "Escolha de modelo". null até o dia de ligar (OPS-09): o painel fica o de hoje, sem seletor.
+export const DESDE_ENTRADA_COM_IA: string | null = null;
+
+// Blueprint §9.1, série nova, na ordem de exibição (não a dos números da API).
+export const ROTULOS_ETAPAS_ENTRADA_COM_IA = [
+  'Visitou',
+  'Começou',
+  'Enviou os dados',
+  'Viu o site montado',
+  'Editou',
+  'Viu a página final',
+  'Abriu a contratação',
+  'Enviou a contratação',
+  'Contratou',
+  'Pagou',
+] as const;
+
+// D-C-01: números da API das nove primeiras etapas da série nova; "Pagou" vem de `pagou`.
+const ETAPAS_DA_ENTRADA_COM_IA = [1, 10, 11, 12, 4, 5, 6, 7, 8] as const;
+
+// Os dez valores na ordem de ROTULOS_ETAPAS_ENTRADA_COM_IA.
+export function calcularFunilEntradaComIa(funil: FunilJornada, filtro: FiltroJornada): number[] {
+  const valores = new Array<number>(ROTULOS_ETAPAS_ENTRADA_COM_IA.length).fill(0);
+  for (const linha of funil.etapas) {
+    const i = (ETAPAS_DA_ENTRADA_COM_IA as readonly number[]).indexOf(linha.etapa);
+    if (i < 0 || !passa(linha, filtro)) continue;
+    valores[i] += linha.visitas;
+  }
+  for (const linha of funil.pagou) {
+    if (passa(linha, filtro)) valores[ETAPAS_DA_ENTRADA_COM_IA.length] += linha.visitas;
+  }
+  return valores;
+}
+
+// D-C-03: faixas de 1 s somadas como uso pela API (lp_site_montado_s_1 … _30 e _mais).
+const PREFIXO_FAIXA_DA_MONTAGEM = 'lp_site_montado_s_';
+const ULTIMA_FAIXA_DA_MONTAGEM = 30;
+
+export type MedianaDaMontagem = number | 'mais de 30';
+
+// spec §3.7 (D-C-28): a faixa em que a soma acumulada alcança metade do total (arredondada para cima).
+// null sem nenhuma faixa: a parte "· tempo mediano" some.
+export function medianaDaMontagem(uso: Record<string, number>): MedianaDaMontagem | null {
+  const faixas: Array<{ faixa: MedianaDaMontagem; visitas: number }> = [];
+  for (let s = 1; s <= ULTIMA_FAIXA_DA_MONTAGEM; s++) {
+    faixas.push({ faixa: s, visitas: uso[`${PREFIXO_FAIXA_DA_MONTAGEM}${s}`] ?? 0 });
+  }
+  faixas.push({ faixa: 'mais de 30', visitas: uso[`${PREFIXO_FAIXA_DA_MONTAGEM}mais`] ?? 0 });
+  const total = faixas.reduce((soma, f) => soma + f.visitas, 0);
+  if (total <= 0) return null;
+  const metade = Math.ceil(total / 2);
+  let acumulado = 0;
+  for (const { faixa, visitas } of faixas) {
+    acumulado += visitas;
+    if (acumulado >= metade) return faixa;
+  }
+  return null;
+}
+
+// Blueprint §9.1, bloco de comparação: só as etapas que existem nas duas séries.
+export const ETAPAS_COMPARAVEIS = ['Visitou', 'Editou', 'Viu a página final', 'Abriu a contratação', 'Pagou'] as const;
+
+export interface LinhaDaComparacao {
+  rotulo: (typeof ETAPAS_COMPARAVEIS)[number];
+  // "de cada 100 visitas" de cada série; null sem visitas na série.
+  antiga: number | null;
+  nova: number | null;
+}
+
+// antiga: os nove valores de calcularFunil; nova: os dez de calcularFunilEntradaComIa.
+export function compararSeries(antiga: number[], nova: number[]): LinhaDaComparacao[] {
+  return ETAPAS_COMPARAVEIS.map((rotulo) => ({
+    rotulo,
+    antiga: taxa(antiga[ROTULOS_ETAPAS.indexOf(rotulo)] ?? 0, antiga[0] ?? 0),
+    nova: taxa(nova[ROTULOS_ETAPAS_ENTRADA_COM_IA.indexOf(rotulo)] ?? 0, nova[0] ?? 0),
+  }));
+}
+
+// Brasília é UTC−3 o ano todo (sem horário de verão), como o fuso fixo da API.
+export function inicioDoDiaEmBrasilia(dia: string): InstanteMs {
+  return Date.parse(`${dia}T00:00:00-03:00`);
+}
+
+type JanelaMs = { desde: InstanteMs; ate: InstanteMs };
+
+// Blueprint §9.1: cada série só com as visitas do seu lado da data. A API conta as visitas que
+// começaram em [desde, ate] (fim inclusivo), então a antiga termina 1 ms antes do corte.
+export function dividirPelaEntradaComIa(
+  desde: InstanteMs,
+  ate: InstanteMs,
+  corte: string | null,
+): { antiga: JanelaMs | null; nova: JanelaMs | null } {
+  if (corte === null) return { antiga: { desde, ate }, nova: null };
+  const inicio = inicioDoDiaEmBrasilia(corte);
+  if (ate < inicio) return { antiga: { desde, ate }, nova: null };
+  if (desde >= inicio) return { antiga: null, nova: { desde, ate } };
+  return { antiga: { desde, ate: inicio - 1 }, nova: { desde: inicio, ate } };
+}
+
 export function calcularUso(funil: FunilJornada, filtro: FiltroJornada): Record<string, number> {
   const uso: Record<string, number> = {};
   for (const linha of funil.uso) {
