@@ -50,12 +50,29 @@ const ROTULOS_EVENTOS: Record<string, string> = {
   lp_menu_layout: 'Menu: Editar layout',
   lp_menu_dados: 'Menu: Dados da página',
   lp_menu_buscas: 'Menu: Buscas',
-  lp_menu_ia: 'Menu: Editar com sua IA',
+  // configurador-com-ia blueprint §9.2: "Editar com IA" e, nas quatro de copiar e colar, o sufixo.
+  lp_menu_ia: 'Menu: Editar com IA',
   lp_menu_guia: 'Menu: Como editar',
-  lp_ia_copiou: 'IA: copiou as instruções',
-  lp_ia_viu_mudancas: 'IA: viu as mudanças',
-  lp_ia_resposta_invalida: 'IA: resposta não lida',
-  lp_ia_aplicou: 'IA: aplicou as mudanças',
+  lp_ia_pedido_enviado: 'IA: pediu mudança',
+  lp_ia_mudancas_vistas: 'IA: viu as mudanças',
+  lp_ia_sem_mudancas: 'IA: resposta sem mudança',
+  lp_ia_mudancas_aplicadas: 'IA: aplicou',
+  lp_ia_fora_do_escopo: 'IA: pedido fora do assunto',
+  lp_ia_convite_exibido: 'IA: viu o convite para contratar',
+  lp_ia_copiou: 'IA: copiou as instruções (copiar e colar)',
+  lp_ia_viu_mudancas: 'IA: viu as mudanças (copiar e colar)',
+  lp_ia_resposta_invalida: 'IA: resposta não lida (copiar e colar)',
+  lp_ia_aplicou: 'IA: aplicou as mudanças (copiar e colar)',
+  // Blueprint §9.3: etapas da entrada com IA (os dois "site montado" levam os segundos, abaixo).
+  lp_topo_comecou: 'Começou no topo',
+  lp_janela_aberta: 'Abriu a janela',
+  lp_janela_enviada: 'Enviou os dados',
+};
+
+// Blueprint §9.3: "({s} s)" com os segundos do envio da janela até o site aparecer (1 a 300).
+const SITE_MONTADO: Record<string, string> = {
+  lp_site_montado_ia: 'Viu o site montado pela IA',
+  lp_site_montado_reserva: 'Viu o site no modelo reserva',
 };
 
 // spec-3-leitura RF-3-14: páginas de entrada, na ordem das abas (também a do desempate).
@@ -106,6 +123,8 @@ export const ROTULOS_CLIQUE: Record<string, string> = {
   rodape_termos: 'Rodapé: termos',
   rodape_privacidade: 'Rodapé: privacidade',
   rodape_ajuda: 'Rodapé: ajuda',
+  // configurador-com-ia A2: exemplo do campo do topo (B2).
+  hero_exemplo: 'Topo: tocou num exemplo',
 };
 
 // RF-3-05: seções na ordem da página. Saúde, CRM e Blog usam a PaginaDeProduto.
@@ -224,6 +243,10 @@ export const ROTULOS_CLIQUE_CONFIGURADOR: Record<string, string> = {
   contratar_crm_whatsapp: 'Trocou para WhatsApp',
   sucesso_fatura: 'Abriu a fatura',
   sucesso_site: 'Abriu o site no ar',
+  // configurador-com-ia A2 (spec tabela 2.10.1, nomes 13–15).
+  montagem_tentar: 'Clicou em "Tentar com a IA"',
+  editor_ia_sugestao: 'Tocou numa sugestão do Editar com IA',
+  editor_ia_contratar: 'Clicou em Contratar no convite da IA',
 };
 
 // TECH-DESIGN §4.5: nome do erro (sem "lp_erro_") → rótulo no painel. A prévia repete os do editor.
@@ -269,6 +292,15 @@ export const ROTULOS_ERRO: Record<string, string> = {
   contratar_termo_atualizado: 'Termo mudou durante o preenchimento',
   contratar_falhou: 'A contratação falhou',
   contratar_sem_rascunho: 'Contratação sem página montada',
+  // configurador-com-ia A2 (spec tabela 2.10.1, nomes 16–23; textos do blueprint §9.3).
+  janela_nome: 'nome vazio na janela',
+  janela_descricao: 'descrição vazia na janela',
+  montagem_prazo: 'montagem passou do prazo',
+  montagem_falhou: 'montagem falhou',
+  montagem_teto: 'montagem barrada pelo teto',
+  montagem_verificacao: 'verificação anti-robô',
+  montagem_entrada: 'dados da janela recusados',
+  editor_ia_falhou: 'Editar com IA falhou',
 };
 
 // spec-4-detalhe RF-4-28: seções da prévia (sem "lp_previa_secao_"), na ordem da tabela de seções.
@@ -336,6 +368,8 @@ function rotulosDaMedicao(): Record<string, string> {
   }
   rotulos.lp_sucesso_voltou = 'Voltou da fatura';
   rotulos.lp_sucesso_publicada = 'Viu a página no ar';
+  // configurador-com-ia A1 F6: volta do Asaas na tela de sucesso.
+  rotulos.lp_sucesso_retorno_asaas = 'Voltou do Asaas';
   for (const [lugar, rotulo] of Object.entries(LUGARES_MINIATURA)) {
     for (const marco of [25, 50, 75]) {
       rotulos[`lp_mini_${lugar}_rolagem_${marco}`] = `Rolou ${marco}% na miniatura ${rotulo}`;
@@ -411,6 +445,9 @@ export function rotuloDoEvento(evento: EventoJornada): string | null {
   const campo = rotuloPorPrefixo(nome, PREFIXO_CAMPO_CONTRATAR, ROTULOS_CAMPO_CONTRATAR);
   if (campo !== null) {
     return evento.segundos === undefined ? null : `Ficou ${formatarDuracao(evento.segundos)} no campo ${campo}`;
+  }
+  if (Object.hasOwn(SITE_MONTADO, nome)) {
+    return evento.segundos === undefined ? null : `${SITE_MONTADO[nome]} (${evento.segundos} s)`;
   }
   if (nome === 'lp_page_view') return ROTULOS_EVENTOS[nome];
   if (Object.hasOwn(ROTULOS_LEITURA, nome)) return ROTULOS_LEITURA[nome];
@@ -542,16 +579,25 @@ export const OPCOES_MENU: ReadonlyArray<{ evento: string; rotulo: string }> = [
   { evento: 'lp_menu_layout', rotulo: 'Editar layout' },
   { evento: 'lp_menu_dados', rotulo: 'Dados da página' },
   { evento: 'lp_menu_buscas', rotulo: 'Buscas' },
-  { evento: 'lp_menu_ia', rotulo: 'Editar com sua IA' },
+  { evento: 'lp_menu_ia', rotulo: 'Editar com IA' },
   { evento: 'lp_menu_guia', rotulo: 'Como editar' },
 ];
 
-export const PASSOS_IA = {
-  copiou: { evento: 'lp_ia_copiou', rotulo: 'Copiou as instruções' },
-  viu: { evento: 'lp_ia_viu_mudancas', rotulo: 'Viu as mudanças' },
-  aplicou: { evento: 'lp_ia_aplicou', rotulo: 'Aplicou' },
-  invalida: { evento: 'lp_ia_resposta_invalida', rotulo: 'Resposta não lida' },
-} as const;
+// configurador-com-ia blueprint §9.2: linhas da IA no cartão "Uso do editor", nesta ordem.
+// base: a linha sobre a qual a porcentagem é calculada (só no funil de copiar e colar, como antes).
+// atrito: em âmbar.
+export const LINHAS_DA_IA: ReadonlyArray<{ evento: string; rotulo: string; base?: string; atrito?: boolean }> = [
+  { evento: 'lp_ia_pedido_enviado' },
+  { evento: 'lp_ia_mudancas_vistas' },
+  { evento: 'lp_ia_sem_mudancas' },
+  { evento: 'lp_ia_mudancas_aplicadas' },
+  { evento: 'lp_ia_fora_do_escopo' },
+  { evento: 'lp_ia_convite_exibido' },
+  { evento: 'lp_ia_copiou' },
+  { evento: 'lp_ia_viu_mudancas', base: 'lp_ia_copiou' },
+  { evento: 'lp_ia_resposta_invalida', atrito: true },
+  { evento: 'lp_ia_aplicou', base: 'lp_ia_copiou' },
+].map((linha) => ({ ...linha, rotulo: ROTULOS_EVENTOS[linha.evento] }));
 
 export type GrupoOrigem = 'google' | 'campanha' | 'assinatura' | 'site' | 'direto';
 

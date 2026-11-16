@@ -284,7 +284,7 @@ describe('Página Jornada do visitante', () => {
       'Editar layout0',
       'Dados da página0',
       'Buscas0',
-      'Editar com sua IA9',
+      'Editar com IA9',
       'Como editar0',
     ]);
     expect(jornadaService.funil).toHaveBeenCalledTimes(1);
@@ -301,6 +301,8 @@ describe('Página Jornada do visitante', () => {
     expect(within(aparelho).getAllByRole('option').map((o) => o.textContent)).toEqual(['Todos', 'Celular', 'Computador']);
   });
 
+  // configurador-com-ia blueprint §9.2 (TASK-ADM-305): o rótulo da IA no menu e as linhas da IA
+  // mudaram por contrato; os números são os mesmos de antes.
   test('CA-2-07: Uso do editor mostra as seis opções e o funil da IA', async () => {
     renderizarComTodas();
     const uso = await screen.findByRole('region', { name: 'Uso do editor' });
@@ -310,15 +312,21 @@ describe('Página Jornada do visitante', () => {
       'Editar layout7',
       'Dados da página4',
       'Buscas2',
-      'Editar com sua IA9',
+      'Editar com IA9',
       'Como editar3',
     ]);
-    const ia = within(uso).getByRole('list', { name: 'Editar com sua IA' });
+    const ia = within(uso).getByRole('list', { name: 'Editar com IA' });
     expect(within(ia).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'Copiou as instruções9',
-      'Viu as mudanças556%',
-      'Aplicou333%',
-      'Resposta não lida2',
+      'IA: pediu mudança0',
+      'IA: viu as mudanças0',
+      'IA: resposta sem mudança0',
+      'IA: aplicou0',
+      'IA: pedido fora do assunto0',
+      'IA: viu o convite para contratar0',
+      'IA: copiou as instruções (copiar e colar)9',
+      'IA: viu as mudanças (copiar e colar)556%',
+      'IA: resposta não lida (copiar e colar)2',
+      'IA: aplicou as mudanças (copiar e colar)333%',
     ]);
   });
 

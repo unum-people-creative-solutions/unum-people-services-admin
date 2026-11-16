@@ -45,6 +45,8 @@ import {
   inicioDoDiaEmBrasilia,
   dividirPelaEntradaComIa,
   compararSeries,
+  OPCOES_MENU,
+  LINHAS_DA_IA,
 } from './jornada';
 // JSON real de GET /admin/dashboard/jornada/funil (L-071).
 import fixtureFunilLeitura from '@/services/__fixtures__/funil-leitura.json';
@@ -116,12 +118,13 @@ describe('rótulos', () => {
       lp_menu_layout: 'Menu: Editar layout',
       lp_menu_dados: 'Menu: Dados da página',
       lp_menu_buscas: 'Menu: Buscas',
-      lp_menu_ia: 'Menu: Editar com sua IA',
+      // configurador-com-ia blueprint §9.2: "Editar com IA" e o sufixo das quatro de copiar e colar.
+      lp_menu_ia: 'Menu: Editar com IA',
       lp_menu_guia: 'Menu: Como editar',
-      lp_ia_copiou: 'IA: copiou as instruções',
-      lp_ia_viu_mudancas: 'IA: viu as mudanças',
-      lp_ia_resposta_invalida: 'IA: resposta não lida',
-      lp_ia_aplicou: 'IA: aplicou as mudanças',
+      lp_ia_copiou: 'IA: copiou as instruções (copiar e colar)',
+      lp_ia_viu_mudancas: 'IA: viu as mudanças (copiar e colar)',
+      lp_ia_resposta_invalida: 'IA: resposta não lida (copiar e colar)',
+      lp_ia_aplicou: 'IA: aplicou as mudanças (copiar e colar)',
     };
     for (const [evento, rotulo] of Object.entries(tabela)) {
       expect(rotuloDoEvento(ev(evento))).toBe(rotulo);
@@ -255,6 +258,7 @@ const TABELA_CLIQUES: Record<string, string> = {
   rodape_termos: 'Rodapé: termos',
   rodape_privacidade: 'Rodapé: privacidade',
   rodape_ajuda: 'Rodapé: ajuda',
+  hero_exemplo: 'Topo: tocou num exemplo', // configurador-com-ia A2 (lp_clique_hero_exemplo)
 };
 
 describe('rótulos da leitura (RF-3-14)', () => {
@@ -502,6 +506,10 @@ const TABELA_CLIQUES_CONFIGURADOR: Record<string, string> = {
   contratar_crm_whatsapp: 'Trocou para WhatsApp',
   sucesso_fatura: 'Abriu a fatura',
   sucesso_site: 'Abriu o site no ar',
+  // configurador-com-ia A2 (tabela 2.10.1, nomes 13–15).
+  montagem_tentar: 'Clicou em "Tentar com a IA"',
+  editor_ia_sugestao: 'Tocou numa sugestão do Editar com IA',
+  editor_ia_contratar: 'Clicou em Contratar no convite da IA',
 };
 
 const TABELA_ERROS: Record<string, string> = {
@@ -546,6 +554,15 @@ const TABELA_ERROS: Record<string, string> = {
   contratar_termo_atualizado: 'Termo mudou durante o preenchimento',
   contratar_falhou: 'A contratação falhou',
   contratar_sem_rascunho: 'Contratação sem página montada',
+  // configurador-com-ia A2 (tabela 2.10.1, nomes 16–23; blueprint §9.3).
+  janela_nome: 'nome vazio na janela',
+  janela_descricao: 'descrição vazia na janela',
+  montagem_prazo: 'montagem passou do prazo',
+  montagem_falhou: 'montagem falhou',
+  montagem_teto: 'montagem barrada pelo teto',
+  montagem_verificacao: 'verificação anti-robô',
+  montagem_entrada: 'dados da janela recusados',
+  editor_ia_falhou: 'Editar com IA falhou',
 };
 
 const TABELA_SECOES_PREVIA: Record<string, string> = {
@@ -565,9 +582,9 @@ const TABELA_SECOES_PREVIA: Record<string, string> = {
 };
 
 describe('rótulos do configurador (RF-4-28, CA-4-24)', () => {
-  it('tabelas completas e na ordem da spec (39 cliques com os 2 da B1, 41 erros, 13 seções, 9 rotas)', () => {
-    expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(39);
-    expect(Object.keys(TABELA_ERROS)).toHaveLength(41);
+  it('tabelas completas e na ordem da spec (42 cliques com os 2 da B1 e os 3 da A2, 49 erros com os 8 da A2, 13 seções, 9 rotas)', () => {
+    expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(42);
+    expect(Object.keys(TABELA_ERROS)).toHaveLength(49);
     expect(Object.keys(TABELA_SECOES_PREVIA)).toHaveLength(13);
     expect(Object.entries(ROTULOS_CLIQUE_CONFIGURADOR)).toEqual(Object.entries(TABELA_CLIQUES_CONFIGURADOR));
     expect(Object.entries(ROTULOS_ERRO)).toEqual(Object.entries(TABELA_ERROS));
@@ -1110,5 +1127,95 @@ describe('série "Entrada com IA" (A2)', () => {
       antiga: { desde: corte - 5000, ate: corte - 1 },
       nova: { desde: corte, ate: corte + 5000 },
     });
+  });
+});
+
+// configurador-com-ia TASK-ADM-305 (blueprint §9.2 e §9.3).
+describe('rótulos da A2: uso do editor e linha do tempo', () => {
+  it('§9.2 — uso da IA nova e o sufixo das quatro de copiar e colar', () => {
+    const tabela: Array<[string, string]> = [
+      ['lp_menu_ia', 'Menu: Editar com IA'],
+      ['lp_ia_pedido_enviado', 'IA: pediu mudança'],
+      ['lp_ia_mudancas_vistas', 'IA: viu as mudanças'],
+      ['lp_ia_sem_mudancas', 'IA: resposta sem mudança'],
+      ['lp_ia_mudancas_aplicadas', 'IA: aplicou'],
+      ['lp_ia_fora_do_escopo', 'IA: pedido fora do assunto'],
+      ['lp_ia_convite_exibido', 'IA: viu o convite para contratar'],
+      ['lp_ia_copiou', 'IA: copiou as instruções (copiar e colar)'],
+      ['lp_ia_viu_mudancas', 'IA: viu as mudanças (copiar e colar)'],
+      ['lp_ia_resposta_invalida', 'IA: resposta não lida (copiar e colar)'],
+      ['lp_ia_aplicou', 'IA: aplicou as mudanças (copiar e colar)'],
+    ];
+    for (const [nome, rotulo] of tabela) expect(rotuloDoEvento(ev(nome))).toBe(rotulo);
+  });
+
+  it('§9.2 — as linhas da IA no cartão "Uso do editor", nesta ordem', () => {
+    expect(LINHAS_DA_IA.map((l) => [l.evento, l.rotulo])).toEqual([
+      ['lp_ia_pedido_enviado', 'IA: pediu mudança'],
+      ['lp_ia_mudancas_vistas', 'IA: viu as mudanças'],
+      ['lp_ia_sem_mudancas', 'IA: resposta sem mudança'],
+      ['lp_ia_mudancas_aplicadas', 'IA: aplicou'],
+      ['lp_ia_fora_do_escopo', 'IA: pedido fora do assunto'],
+      ['lp_ia_convite_exibido', 'IA: viu o convite para contratar'],
+      ['lp_ia_copiou', 'IA: copiou as instruções (copiar e colar)'],
+      ['lp_ia_viu_mudancas', 'IA: viu as mudanças (copiar e colar)'],
+      ['lp_ia_resposta_invalida', 'IA: resposta não lida (copiar e colar)'],
+      ['lp_ia_aplicou', 'IA: aplicou as mudanças (copiar e colar)'],
+    ]);
+  });
+
+  it('§9.2 — no menu "Editar", a opção da IA diz "Editar com IA"', () => {
+    expect(OPCOES_MENU.find((o) => o.evento === 'lp_menu_ia')?.rotulo).toBe('Editar com IA');
+  });
+
+  it('§9.3 — etapas da entrada com IA na linha do tempo', () => {
+    expect(rotuloDoEvento(ev('lp_topo_comecou', { caminho: '/' }))).toBe('Começou no topo');
+    expect(rotuloDoEvento(ev('lp_janela_aberta'))).toBe('Abriu a janela');
+    expect(rotuloDoEvento(ev('lp_janela_enviada'))).toBe('Enviou os dados');
+  });
+
+  it('§9.3 — site montado com os segundos; sem segundos, sem rótulo (como lp_tempo_na_pagina)', () => {
+    expect(rotuloDoEvento(ev('lp_site_montado_ia', { segundos: 14 }))).toBe('Viu o site montado pela IA (14 s)');
+    expect(rotuloDoEvento(ev('lp_site_montado_reserva', { segundos: 31 }))).toBe('Viu o site no modelo reserva (31 s)');
+    expect(rotuloDoEvento(ev('lp_site_montado_ia'))).toBeNull();
+    expect(rotuloDoEvento(ev('lp_site_montado_reserva'))).toBeNull();
+  });
+
+  it('§9.3 — erros com o prefixo de hoje', () => {
+    const erros: Array<[string, string]> = [
+      ['lp_erro_montagem_prazo', 'Erro: montagem passou do prazo'],
+      ['lp_erro_montagem_falhou', 'Erro: montagem falhou'],
+      ['lp_erro_montagem_teto', 'Erro: montagem barrada pelo teto'],
+      ['lp_erro_montagem_verificacao', 'Erro: verificação anti-robô'],
+      ['lp_erro_montagem_entrada', 'Erro: dados da janela recusados'],
+      ['lp_erro_janela_nome', 'Erro: nome vazio na janela'],
+      ['lp_erro_janela_descricao', 'Erro: descrição vazia na janela'],
+      ['lp_erro_editor_ia_falhou', 'Erro: Editar com IA falhou'],
+    ];
+    for (const [nome, rotulo] of erros) expect(rotuloDoEvento(ev(nome))).toBe(rotulo);
+  });
+
+  it('cliques novos: o do topo com "Clicou: ", os do configurador sem prefixo', () => {
+    expect(rotuloDoEvento(ev('lp_clique_hero_exemplo', { caminho: '/' }))).toBe('Clicou: Topo: tocou num exemplo');
+    expect(rotuloDoEvento(ev('lp_clique_montagem_tentar'))).toBe('Clicou em "Tentar com a IA"');
+    expect(rotuloDoEvento(ev('lp_clique_editor_ia_sugestao'))).toBe('Tocou numa sugestão do Editar com IA');
+    expect(rotuloDoEvento(ev('lp_clique_editor_ia_contratar'))).toBe('Clicou em Contratar no convite da IA');
+  });
+
+  it('A1 F6 — lp_sucesso_retorno_asaas vira "Voltou do Asaas"', () => {
+    expect(rotuloDoEvento(ev('lp_sucesso_retorno_asaas', { caminho: '/configurar/sucesso' }))).toBe('Voltou do Asaas');
+  });
+
+  it('o resumo da visita mostra as ações novas na página delas', () => {
+    const eventos: EventoJornada[] = [
+      { em: 1, nome: 'lp_page_view', caminho: '/configurar/editar', visita: 'v' },
+      { em: 2, nome: 'lp_janela_aberta', caminho: '/configurar/editar', visita: 'v' },
+      { em: 3, nome: 'lp_erro_janela_nome', caminho: '/configurar/editar', visita: 'v' },
+      { em: 4, nome: 'lp_janela_enviada', caminho: '/configurar/editar', visita: 'v' },
+      { em: 5, nome: 'lp_ia_pedido_enviado', caminho: '/configurar/editar', visita: 'v' },
+    ];
+    const resumo = resumirVisita(eventos, 'v');
+    expect(resumo?.paginas[0].acoes.map((a) => a.rotulo)).toEqual(['Abriu a janela', 'Enviou os dados', 'IA: pediu mudança']);
+    expect(resumo?.paginas[0].erros).toEqual(['nome vazio na janela']);
   });
 });
