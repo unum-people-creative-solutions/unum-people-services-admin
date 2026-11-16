@@ -21,6 +21,9 @@ import fixtureVisitanteComTempo from './__fixtures__/visitante-com-tempo.json';
 // copiado sem edição (L-071; medicao-e-robustez MR-20).
 import fixtureVisitasA1 from './__fixtures__/visitas-a1.json';
 import fixtureVisitanteA1 from './__fixtures__/visitante-a1.json';
+// Resposta de GET /admin/dashboard/jornada/funil da A2 (configurador-com-ia spec §3.7, TASK-API-210),
+// copiada sem edição de internal/handler/testdata/jornada-funil-a2.json.
+import fixtureFunilA2 from './__fixtures__/funil-a2.json';
 
 vi.mock('@/lib/cognito', () => ({ userPool: {} }));
 
@@ -173,6 +176,8 @@ describe('jornadaService com os campos da A1 (contrato real)', () => {
   const pares: Array<[string, string]> = [
     ['visitas-a1.json', 'jornada-visitas-a1.json'],
     ['visitante-a1.json', 'jornada-visitante-a1.json'],
+    // configurador-com-ia TASK-ADM-302.
+    ['funil-a2.json', 'jornada-funil-a2.json'],
   ];
   for (const [nossa, daApi] of pares) {
     const copiaDaApi = resolve(pastaDaApi, daApi);
@@ -181,4 +186,32 @@ describe('jornadaService com os campos da A1 (contrato real)', () => {
       expect(local.equals(readFileSync(copiaDaApi))).toBe(true);
     });
   }
+});
+
+// configurador-com-ia TASK-ADM-302 (spec §3.7): a fixture do funil A2 é o contrato
+// FunilJornada, sem campo novo, com as etapas 10 a 12 e os usos da entrada com IA.
+describe('jornadaService.funil com a fixture da A2 (contrato real)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('chega tipado como FunilJornada, só com as quatro listas do contrato', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(respostaReal(200, JSON.stringify(fixtureFunilA2)));
+    const funil: FunilJornada = await jornadaService.funil('2026-11-20', '2026-11-20');
+    expect(funil).toEqual(fixtureFunilA2);
+    expect(Object.keys(funil).sort()).toEqual(['etapas', 'leitura', 'pagou', 'uso']);
+  });
+
+  it('tem uma visita em cada etapa de 1 a 12 e os usos da montagem (14 s e mais de 30 s)', () => {
+    const funil: FunilJornada = fixtureFunilA2 as FunilJornada;
+    expect(funil.etapas.map((l) => l.etapa)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(funil.etapas.every((l) => l.visitas === 1)).toBe(true);
+    expect(funil.uso.map((l) => [l.evento, l.visitas])).toEqual([
+      ['lp_site_montado_ia', 1],
+      ['lp_site_montado_reserva', 1],
+      ['lp_site_montado_s_14', 1],
+      ['lp_site_montado_s_mais', 1],
+      ['lp_topo_comecou', 1],
+    ]);
+    expect(funil.pagou.map((l) => l.visitas)).toEqual([1]);
+    expect(funil.leitura).toEqual([]);
+  });
 });
