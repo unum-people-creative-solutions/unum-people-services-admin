@@ -183,6 +183,33 @@ describe('planService', () => {
     expect(result.active[0].plano_anual).toBe('pagina_anual');
   });
 
+  // configurador-com-ia TASK-ADM-300 (T30, leitura) — teto de IA por plano.
+  // A API grava com omitempty (RF-C-50): plano sem teto chega sem a chave.
+  it('listPlans entrega ia_teto_diario_centavos 0 para plano que veio sem a chave', async () => {
+    const { api } = await import('@/lib/api');
+    (api.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      active: [{ slug: 'pagina', nome: 'Plano Página' }],
+      inactive: [{ slug: 'antigo', nome: 'Antigo' }],
+    });
+
+    const result = await planService.listPlans();
+
+    expect(result.active[0].ia_teto_diario_centavos).toBe(0);
+    expect(result.inactive[0].ia_teto_diario_centavos).toBe(0);
+  });
+
+  it('listPlans preserva o ia_teto_diario_centavos que a API devolveu', async () => {
+    const { api } = await import('@/lib/api');
+    (api.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      active: [{ slug: 'pagina', nome: 'Plano Página', ia_teto_diario_centavos: 20 }],
+      inactive: [],
+    });
+
+    const result = await planService.listPlans();
+
+    expect(result.active[0].ia_teto_diario_centavos).toBe(20);
+  });
+
   it('createPlan envia product e pages_included no POST sem any', async () => {
     const { api } = await import('@/lib/api');
     (api.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({});

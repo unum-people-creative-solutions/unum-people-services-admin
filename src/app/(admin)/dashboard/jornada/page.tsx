@@ -4,16 +4,18 @@ import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { jornadaService } from '@/services/jornadaService';
-import { FunilVitrine } from '@/components/jornada/FunilVitrine';
+import { FunilEmSeries, FunilVitrine, type SeriesDoFunil } from '@/components/jornada/FunilVitrine';
 import { UsoDoEditor } from '@/components/jornada/UsoDoEditor';
 import { PaginasDeEntrada } from '@/components/jornada/PaginasDeEntrada';
 import { VisitasDoPeriodo } from '@/components/jornada/VisitasDoPeriodo';
 import {
+  DESDE_ENTRADA_COM_IA,
   PERIODOS,
   ROTULOS_ORIGEM,
   calcularFunil,
   calcularLeitura,
   calcularUso,
+  dividirPelaEntradaComIa,
   filtrarVisitas,
   formatarHora,
   janela,
@@ -21,7 +23,7 @@ import {
   type FiltroJornada,
   type GrupoOrigem,
 } from '@/lib/jornada';
-import type { Aparelho } from '@/types/jornada';
+import type { Aparelho, FunilJornada } from '@/types/jornada';
 
 // spec-2-painel RF-2-07; blueprint §3; spec-4-detalhe RF-4-21 e RF-4-22.
 
@@ -30,6 +32,17 @@ const UM_DIA_MS = 86_400_000;
 
 const GRUPOS_ORIGEM = Object.keys(ROTULOS_ORIGEM) as GrupoOrigem[];
 const APARELHOS: Aparelho[] = ['celular', 'computador'];
+
+// Os totais do funil são somas por visita (a API conta as visitas que começaram na janela), então
+// as duas partes de um período que cruza a data somam o período inteiro, sem dupla contagem.
+function somarFunis(funis: FunilJornada[]): FunilJornada {
+  return {
+    etapas: funis.flatMap((f) => f.etapas),
+    uso: funis.flatMap((f) => f.uso),
+    pagou: funis.flatMap((f) => f.pagou),
+    leitura: funis.flatMap((f) => f.leitura),
+  };
+}
 
 const classeSelect =
   'rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500';
@@ -46,10 +59,39 @@ export default function JornadaPage() {
   const { periodo, rodada } = consulta;
   const { desde, ate } = janela(periodo.ms, consulta.agora);
 
+  // configurador-com-ia (blueprint §9.1): uma chamada por série. Com DESDE_ENTRADA_COM_IA null, a
+  // série antiga é a janela inteira (a chamada de sempre); quando o período cruza a data, duas.
+  const partes = dividirPelaEntradaComIa(desde, ate, DESDE_ENTRADA_COM_IA);
   const funilQuery = useQuery({
-    queryKey: ['jornada-funil', desde, ate, rodada],
-    queryFn: () => jornadaService.funil(desde, ate),
+    queryKey: ['jornada-funil', partes.antiga?.desde, partes.antiga?.ate, rodada],
+    queryFn: () => jornadaService.funil(partes.antiga!.desde, partes.antiga!.ate),
+    enabled: partes.antiga !== null,
   });
+  const funilNovoQuery = useQuery({
+    queryKey: ['jornada-funil-entrada-com-ia', partes.nova?.desde, partes.nova?.ate, rodada],
+    queryFn: () => jornadaService.funil(partes.nova!.desde, partes.nova!.ate),
+    enabled: partes.nova !== null,
+  });
+  // As chamadas que este período usa (uma ou duas).
+  const chamadasDoFunil = [
+    ...(partes.antiga !== null ? [funilQuery] : []),
+    ...(partes.nova !== null ? [funilNovoQuery] : []),
+  ];
+  // null: a série não tem parte no período; undefined: ainda sem dados.
+  const dadosAntiga = partes.antiga === null ? null : funilQuery.data;
+  const dadosNova = partes.nova === null ? null : funilNovoQuery.data;
+  const series = useMemo<SeriesDoFunil | undefined>(
+    () => (dadosAntiga === undefined || dadosNova === undefined ? undefined : { antiga: dadosAntiga, nova: dadosNova }),
+    [dadosAntiga, dadosNova],
+  );
+  const funilDoPeriodo = useMemo(
+    () => (series ? somarFunis([series.antiga, series.nova].filter((f): f is FunilJornada => f !== null)) : undefined),
+    [series],
+  );
+  const funilErro = chamadasDoFunil.some((q) => q.isError);
+  const tentarFunil = () => {
+    for (const q of chamadasDoFunil) void q.refetch();
+  };
 
   // RF-4-19: as de teste vêm sempre; a tela filtra pelo "Mostrar visitas de teste".
   const visitasQuery = useQuery({
@@ -66,10 +108,10 @@ export default function JornadaPage() {
     [visitasDoPeriodo, filtro],
   );
 
-  const atualizando = funilQuery.isFetching || visitasQuery.isFetching;
+  const atualizando = chamadasDoFunil.some((q) => q.isFetching) || visitasQuery.isFetching;
   const atualizadoEm =
-    funilQuery.isSuccess && visitasQuery.isSuccess && !atualizando
-      ? Math.max(funilQuery.dataUpdatedAt, visitasQuery.dataUpdatedAt)
+    chamadasDoFunil.every((q) => q.isSuccess) && visitasQuery.isSuccess && !atualizando
+      ? Math.max(...chamadasDoFunil.map((q) => q.dataUpdatedAt), visitasQuery.dataUpdatedAt)
       : null;
 
   function trocarPeriodo(novo: (typeof PERIODOS)[number]) {
@@ -84,16 +126,16 @@ export default function JornadaPage() {
 
   // Filtros recalculados na tela, a partir das linhas cruas (sem nova chamada).
   const valores = useMemo(
-    () => (funilQuery.data ? calcularFunil(funilQuery.data, filtro) : undefined),
-    [funilQuery.data, filtro],
+    () => (funilDoPeriodo ? calcularFunil(funilDoPeriodo, filtro) : undefined),
+    [funilDoPeriodo, filtro],
   );
   const uso = useMemo(
-    () => (funilQuery.data ? calcularUso(funilQuery.data, filtro) : undefined),
-    [funilQuery.data, filtro],
+    () => (funilDoPeriodo ? calcularUso(funilDoPeriodo, filtro) : undefined),
+    [funilDoPeriodo, filtro],
   );
   const leitura = useMemo(
-    () => (funilQuery.data ? calcularLeitura(funilQuery.data, filtro) : undefined),
-    [funilQuery.data, filtro],
+    () => (funilDoPeriodo ? calcularLeitura(funilDoPeriodo, filtro) : undefined),
+    [funilDoPeriodo, filtro],
   );
 
   // Período e filtros no título das seções que os obedecem (blueprint §3.2; leitura §7.1).
@@ -107,7 +149,7 @@ export default function JornadaPage() {
       .filter(Boolean)
       .join(' · ');
 
-  const funilCarregando = funilQuery.isPending || (funilQuery.isError && funilQuery.isFetching);
+  const funilCarregando = chamadasDoFunil.some((q) => q.isPending || (q.isError && q.isFetching));
   const visitasCarregando = visitasQuery.isPending || (visitasQuery.isError && visitasQuery.isFetching);
 
   return (
@@ -194,30 +236,45 @@ export default function JornadaPage() {
           </div>
         </div>
 
-        <FunilVitrine
-          idTitulo="titulo-funil-jornada"
-          titulo={comFiltros('Funil')}
-          valores={valores}
-          carregando={funilCarregando}
-          erro={funilQuery.isError}
-          onTentar={() => void funilQuery.refetch()}
-          textoVazio="Nenhuma visita registrada no período."
-          comAnterior
-        />
+        {DESDE_ENTRADA_COM_IA === null ? (
+          <FunilVitrine
+            idTitulo="titulo-funil-jornada"
+            titulo={comFiltros('Funil')}
+            valores={valores}
+            carregando={funilCarregando}
+            erro={funilErro}
+            onTentar={tentarFunil}
+            textoVazio="Nenhuma visita registrada no período."
+            comAnterior
+          />
+        ) : (
+          <FunilEmSeries
+            idTitulo="titulo-funil-jornada"
+            titulo={comFiltros('Funil')}
+            corte={DESDE_ENTRADA_COM_IA}
+            series={funilErro ? undefined : series}
+            filtro={filtro}
+            carregando={funilCarregando}
+            erro={funilErro}
+            onTentar={tentarFunil}
+            textoVazio="Nenhuma visita registrada no período."
+            comAnterior
+          />
+        )}
 
         <UsoDoEditor
           uso={uso}
           carregando={funilCarregando}
-          erro={funilQuery.isError}
-          onTentar={() => void funilQuery.refetch()}
+          erro={funilErro}
+          onTentar={tentarFunil}
         />
 
         <PaginasDeEntrada
           titulo={comFiltros('Páginas de entrada')}
           leitura={leitura}
           carregando={funilCarregando}
-          erro={funilQuery.isError}
-          onTentar={() => void funilQuery.refetch()}
+          erro={funilErro}
+          onTentar={tentarFunil}
         />
 
         <VisitasDoPeriodo

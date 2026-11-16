@@ -1,0 +1,106 @@
+{
+  "etapas": [
+    {
+      "etapa": 1,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 2
+    },
+    {
+      "etapa": 4,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "etapa": 5,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "etapa": 6,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "etapa": 7,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "etapa": 8,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "etapa": 10,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 2
+    },
+    {
+      "etapa": 11,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 2
+    },
+    {
+      "etapa": 12,
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 2
+    }
+  ],
+  "uso": [
+    {
+      "evento": "lp_site_montado_ia",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "evento": "lp_site_montado_reserva",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "evento": "lp_site_montado_s_14",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "evento": "lp_site_montado_s_mais",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    },
+    {
+      "evento": "lp_topo_comecou",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    }
+  ],
+  "pagou": [
+    {
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 1
+    }
+  ],
+  "leitura": [
+    {
+      "pagina": "inicio",
+      "evento": "visita",
+      "aparelho": "celular",
+      "origem": "google_ads",
+      "visitas": 2
+    }
+  ]
+}
