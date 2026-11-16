@@ -36,6 +36,10 @@ export interface Plan {
   // oferta-e-primeira-tela OF-301: slug do plano anual do mesmo degrau (só em
   // mensal). A API sempre traz a chave; a leitura (planService) entrega ''.
   plano_anual?: string;
+  // configurador-com-ia RF-C-50: teto diário de "Editar com IA", em centavos
+  // (0 a 1000). A API grava com omitempty: ausente = 0 = plano sem IA. A
+  // leitura (planService) entrega 0.
+  ia_teto_diario_centavos?: number;
 }
 
 export interface Contract {
