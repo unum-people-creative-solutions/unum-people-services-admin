@@ -178,6 +178,8 @@ describe('jornadaService com os campos da A1 (contrato real)', () => {
     ['visitante-a1.json', 'jornada-visitante-a1.json'],
     // configurador-com-ia TASK-ADM-302.
     ['funil-a2.json', 'jornada-funil-a2.json'],
+    // configurador-com-ia D-C-45: a rota do funil por janela (?desde=/?ate=, FunilDaJanela).
+    ['funil-a2-janela.json', 'jornada-funil-a2-janela.json'],
   ];
   for (const [nossa, daApi] of pares) {
     const copiaDaApi = resolve(pastaDaApi, daApi);
