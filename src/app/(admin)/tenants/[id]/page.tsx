@@ -714,8 +714,9 @@ export default function TenantDetailsPage() {
                   <div className="mt-8 space-y-3 pt-6 border-t border-slate-100">
                     <div className="flex justify-between text-xs">
                       <span className="text-slate-500 italic">Próximo Débito:</span>
-                      <span className="font-bold text-primary-600 underline cursor-help" title={new Date(tenant.next_billing_at).toLocaleString()}>
-                        {new Date(tenant.next_billing_at).toLocaleDateString()}
+                      {/* fix-achados-2b-3-5 (3): a próxima cobrança é o paid_until do contrato (AAAA-MM-DD), não o next_billing_at. */}
+                      <span className="font-bold text-primary-600">
+                        {dataBR(tenant.contract?.paid_until) || '—'}
                       </span>
                     </div>
                     <div className="flex justify-between text-xs">

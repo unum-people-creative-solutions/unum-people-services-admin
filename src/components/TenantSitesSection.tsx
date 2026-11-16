@@ -10,16 +10,30 @@ interface TenantSitesSectionProps {
 }
 
 const statusLabels: Record<Site['status'], string> = {
-  DRAFT: 'Rascunho',
-  AGUARDANDO_ATIVACAO: 'Aguardando Ativação',
-  PUBLISHED: 'Publicado',
+  no_ar: 'No ar',
+  aguardando_ativacao: 'Aguardando ativação',
+  suspenso: 'Suspenso',
+  cancelado: 'Cancelado',
 };
 
 const statusStyles: Record<Site['status'], string> = {
-  DRAFT: 'bg-slate-50 text-slate-700 border border-slate-200',
-  AGUARDANDO_ATIVACAO: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
-  PUBLISHED: 'bg-green-50 text-green-700 border border-green-200',
+  no_ar: 'bg-green-50 text-green-700 border border-green-200',
+  aguardando_ativacao: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
+  suspenso: 'bg-orange-50 text-orange-700 border border-orange-200',
+  cancelado: 'bg-red-50 text-red-700 border border-red-200',
 };
+
+const unknownStatusStyle = 'bg-slate-50 text-slate-700 border border-slate-200';
+
+// Valor fora da lista (ex.: AGUARDANDO_ATIVACAO antes da api nova) mostra o
+// texto cru, sem chip vazio.
+function statusLabel(status: string): string {
+  return Object.hasOwn(statusLabels, status) ? statusLabels[status as Site['status']] : status;
+}
+
+function statusStyle(status: string): string {
+  return Object.hasOwn(statusStyles, status) ? statusStyles[status as Site['status']] : unknownStatusStyle;
+}
 
 export function TenantSitesSection({ tenantId }: TenantSitesSectionProps) {
   const { data: sites = [], isLoading, error } = useQuery<Site[]>({
@@ -63,8 +77,8 @@ export function TenantSitesSection({ tenantId }: TenantSitesSectionProps) {
                   <tr key={site.site_id} className="hover:bg-slate-50/50">
                     <td className="px-6 py-4 font-medium text-slate-900">{site.slug}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusStyles[site.status]}`}>
-                        {statusLabels[site.status]}
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusStyle(site.status)}`}>
+                        {statusLabel(site.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-slate-600">{site.layout_id} / {site.theme_id}</td>
