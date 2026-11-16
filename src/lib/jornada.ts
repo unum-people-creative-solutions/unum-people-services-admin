@@ -852,6 +852,39 @@ export function maiorEtapa(etapas: number[]): number | null {
   return etapas.length === 0 ? null : Math.max(...etapas);
 }
 
+// configurador-com-ia (SPEC_DEVIATION ADM-1): com as etapas 10, 11 e 12 da A2 (D-C-01), o maior número
+// não é mais o ponto mais avançado. Ordem de avanço das duas séries juntas; de 1 a 9, a mesma de antes.
+const ORDEM_DE_AVANCO: ReadonlyArray<[number, string]> = [
+  [1, 'Visitou'],
+  [2, 'Abriu o configurador'],
+  [10, 'Começou'],
+  [3, 'Escolheu modelo e tema'],
+  [11, 'Enviou os dados'],
+  [12, 'Viu o site montado'],
+  [4, 'Editou'],
+  [5, 'Viu a página final'],
+  [6, 'Abriu a contratação'],
+  [7, 'Enviou a contratação'],
+  [8, 'Contratou'],
+  [9, 'Pagou'],
+];
+
+// Rótulo da etapa mais avançada da visita; null sem etapa conhecida.
+export function ateOndeFoi(etapas: readonly number[]): string | null {
+  let rotulo: string | null = null;
+  for (const [etapa, nome] of ORDEM_DE_AVANCO) {
+    if (etapas.includes(etapa)) rotulo = nome;
+  }
+  return rotulo;
+}
+
+// RF-A2-03: o campo do topo e o site montado viram uso da visita, mas não são uso do editor.
+const USOS_QUE_NAO_SAO_DO_EDITOR = new Set(['lp_topo_comecou', 'lp_site_montado_ia', 'lp_site_montado_reserva']);
+
+export function usouOEditor(usos: readonly string[]): boolean {
+  return usos.some((u) => !USOS_QUE_NAO_SAO_DO_EDITOR.has(u) && !u.startsWith(PREFIXO_FAIXA_DA_MONTAGEM));
+}
+
 // Dias no formato AAAA-MM-DD, em UTC, como os dados.
 export function diaUtc(data: Date): string {
   return data.toISOString().slice(0, 10);
