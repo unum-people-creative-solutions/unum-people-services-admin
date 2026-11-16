@@ -53,3 +53,85 @@ describe('VisitasDoPeriodo: selo "Pagou" pelo fato (MR-24)', () => {
     expect(within(linhaDa('Espaço Leve')).queryByText('Pagou')).toBeNull();
   });
 });
+
+// configurador-com-ia SPEC_DEVIATION ADM-1: com a A2, a visita traz as etapas 10, 11 e 12
+// (D-C-01) e os usos lp_topo_comecou e lp_site_montado_* (RF-A2-03), que não são uso do editor.
+describe('VisitasDoPeriodo: visitas da entrada com IA (A2)', () => {
+  const base: VisitaJornada = {
+    visitante: '6f1c2a9e-3b7d-4c51-9a2e-8d4f0b6c1e27',
+    visita: '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
+    inicio: 1794745800000,
+    fim: 1794745860000,
+    aparelho: 'celular',
+    origem: 'google_ads',
+    paginas: 2,
+    etapas: [],
+    usos: [],
+    teste: false,
+  };
+
+  function renderizar(lista: VisitaJornada[]) {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <VisitasDoPeriodo
+          titulo="Visitas"
+          textoVazio="Nada"
+          comData={false}
+          visitas={lista}
+          carregando={false}
+          erro={false}
+          onTentar={() => {}}
+          mostrarTeste={false}
+          onMostrarTeste={() => {}}
+        />
+      </QueryClientProvider>,
+    );
+    return screen.getAllByRole('row').slice(1);
+  }
+
+  test('"Até onde foi" segue a ordem da série nova, não o maior número', () => {
+    const linhas = renderizar([
+      { ...base, visita: 'a', etapas: [1, 10, 11, 12], usos: ['lp_topo_comecou', 'lp_site_montado_ia'] },
+      { ...base, visita: 'b', etapas: [1, 10, 11, 12, 4], usos: ['lp_site_montado_reserva'] },
+      { ...base, visita: 'c', etapas: [1, 10] },
+      { ...base, visita: 'd', etapas: [1, 2, 3] },
+    ]);
+    expect(within(linhas[0]).getByText('Viu o site montado')).toBeInTheDocument();
+    expect(within(linhas[1]).getByText('Editou')).toBeInTheDocument();
+    expect(within(linhas[2]).getByText('Começou')).toBeInTheDocument();
+    expect(within(linhas[3]).getByText('Escolheu modelo e tema')).toBeInTheDocument();
+  });
+
+  test('"Usou o editor" não conta o campo do topo nem o site montado', () => {
+    const linhas = renderizar([
+      { ...base, visita: 'a', etapas: [1, 10, 11, 12], usos: ['lp_topo_comecou', 'lp_site_montado_ia'] },
+      { ...base, visita: 'b', etapas: [1, 10, 11, 12], usos: ['lp_site_montado_ia', 'lp_ia_pedido_enviado'] },
+    ]);
+    expect(within(linhas[0]).queryByText('Usou o editor')).toBeNull();
+    expect(within(linhas[1]).getByText('Usou o editor')).toBeInTheDocument();
+  });
+
+  // D-C-37: ordem 1→2→3→10→11→12→4→…; cada caso isola um vizinho da ordem.
+  test.each([
+    [[1, 2, 3, 10], 'Escolheu modelo e tema'],
+    [[1, 10, 11], 'Enviou os dados'],
+    [[1, 10, 11, 12], 'Viu o site montado'],
+    [[1, 2, 10], 'Começou'],
+  ])('D-C-37 — "Até onde foi" com as etapas %j mostra "%s"', (etapas, rotulo) => {
+    const linhas = renderizar([{ ...base, etapas }]);
+    expect(within(linhas[0]).getByText(rotulo)).toBeInTheDocument();
+  });
+
+  // D-C-37: cada uso que não é do editor, sozinho, não acende o selo.
+  test.each([
+    ['lp_topo_comecou'],
+    ['lp_site_montado_ia'],
+    ['lp_site_montado_reserva'],
+    ['lp_site_montado_s_14'],
+    ['lp_site_montado_s_mais'],
+  ])('D-C-37 — "Usou o editor" ignora %s sozinho', (uso) => {
+    const linhas = renderizar([{ ...base, etapas: [1, 10, 11, 12], usos: [uso] }]);
+    expect(within(linhas[0]).queryByText('Usou o editor')).toBeNull();
+  });
+});

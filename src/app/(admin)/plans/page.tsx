@@ -14,14 +14,31 @@ import { termosDeContratacaoAtivos } from '@/lib/termos';
 
 // Campos de texto do formulário que o backend recebe como lista/string tratada.
 // `destaques` é um textarea (uma linha = um item) e vira lista só no envio.
-type PlanFormValues = Omit<Plan, 'tenant_count' | 'created_at' | 'updated_at' | 'destaques'> & {
+// `ia_teto_diario_centavos` é texto no formulário para o campo poder ficar
+// vazio; vira número só no envio (vazio = 0).
+type PlanFormValues = Omit<Plan, 'tenant_count' | 'created_at' | 'updated_at' | 'destaques' | 'ia_teto_diario_centavos'> & {
   destaques: string;
+  ia_teto_diario_centavos: string;
 };
 
 // Uma linha = um destaque (vírgula não separa: o texto pode tê-la). Linha em
 // branco é descartada; o limite de itens/tamanho é do backend.
 function parseDestaques(texto: string | undefined): string[] {
   return (texto ?? '').split('\n').map((linha) => linha.trim()).filter(Boolean);
+}
+
+// configurador-com-ia RF-C-51: vazio vira 0 (plano sem IA). O limite de 0 a
+// 1000 é da API, que recusa com 400; a tela só converte.
+function parseTetoIa(texto: string | undefined): number {
+  const limpo = (texto ?? '').trim();
+  if (limpo === '') return 0;
+  const valor = Number(limpo);
+  return Number.isFinite(valor) ? valor : 0;
+}
+
+// Selo da lista (blueprint §9.4): 20 centavos = "R$ 0,20".
+function reaisDoTeto(centavos: number): string {
+  return (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function PlansPage() {
@@ -62,6 +79,7 @@ export default function PlansPage() {
     sem_marca: false,
     sem_dominio_proprio: false,
     plano_anual: '',
+    ia_teto_diario_centavos: '',
   };
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<PlanFormValues>({
@@ -135,6 +153,7 @@ export default function PlansPage() {
       sem_marca: plan.sem_marca ?? false,
       sem_dominio_proprio: plan.sem_dominio_proprio ?? false,
       plano_anual: plan.plano_anual ?? '',
+      ia_teto_diario_centavos: plan.ia_teto_diario_centavos ? String(plan.ia_teto_diario_centavos) : '',
     });
     setIsDrawerOpen(true);
   };
@@ -156,6 +175,8 @@ export default function PlansPage() {
       sem_dominio_proprio: Boolean(data.sem_dominio_proprio),
       // OF-303: o par anual só vale no mensal; o anual envia ''.
       plano_anual: data.cycle === 'anual' ? '' : (data.plano_anual ?? ''),
+      // Sempre presente pelo mesmo motivo dos destaques: o PUT substitui o item.
+      ia_teto_diario_centavos: parseTetoIa(data.ia_teto_diario_centavos),
     };
     if (payload.cycle === 'anual') {
       payload.monthly_value = 0;
@@ -379,6 +400,23 @@ export default function PlansPage() {
                   <input type="checkbox" id="sem_dominio_proprio" {...register('sem_dominio_proprio')} />
                   <label htmlFor="sem_dominio_proprio" className="text-sm font-semibold">Sem domínio próprio (só o endereço unumpages.app)</label>
                 </div>
+                <div>
+                  <label htmlFor="ia_teto_diario_centavos" className="block text-sm font-semibold mb-1">Editar com IA: teto por dia, em centavos</label>
+                  <input
+                    id="ia_teto_diario_centavos"
+                    type="number"
+                    min={0}
+                    max={1000}
+                    step={1}
+                    inputMode="numeric"
+                    aria-describedby="ia_teto_diario_centavos_ajuda"
+                    {...register('ia_teto_diario_centavos')}
+                    className="w-full border p-2 rounded"
+                  />
+                  <p id="ia_teto_diario_centavos_ajuda" className="text-xs text-slate-500 mt-1">
+                    Vazio ou zero: o plano não tem Editar com IA. Exemplo: 20 = R$ 0,20 por dia.
+                  </p>
+                </div>
                 {formError && (
                   <p role="alert" className="text-red-600 text-sm">{formError}</p>
                 )}
@@ -415,6 +453,9 @@ export default function PlansPage() {
                 </p>
                 {plan.sem_marca && <p className="text-xs text-slate-500">Sem assinatura</p>}
                 {plan.sem_dominio_proprio && <p className="text-xs text-slate-500">Sem domínio próprio</p>}
+                {(plan.ia_teto_diario_centavos ?? 0) > 0 && (
+                  <p className="text-xs text-slate-500">{`IA: R$ ${reaisDoTeto(plan.ia_teto_diario_centavos ?? 0)} por dia`}</p>
+                )}
               </div>
               <button
                 type="button"

@@ -4,13 +4,13 @@ import type { MouseEvent } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { VisitaJornada } from '@/types/jornada';
 import {
-  ROTULOS_ETAPAS,
+  ateOndeFoi,
   dadosDaVisita,
   formatarDiaMes,
   formatarHora,
-  maiorEtapa,
   rotuloDaOrigem,
   rotuloDoAparelho,
+  usouOEditor,
 } from '@/lib/jornada';
 import { EsqueletoDaSecao, ErroDaSecao } from './EstadoDaSecao';
 import { SeloPagamento, SeloTeste, SeloUsouEditor } from './Selos';
@@ -111,7 +111,7 @@ export function VisitasDoPeriodo({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {visitas.slice(0, limite).map((v) => {
-                    const etapa = maiorEtapa(v.etapas);
+                    const etapa = ateOndeFoi(v.etapas);
                     const aberta = abertas.has(v.visita);
                     const hora = formatarHora(v.inicio);
                     const idArea = `visita-aberta-${v.visita}`;
@@ -153,8 +153,8 @@ export function VisitasDoPeriodo({
                           <td className="px-3 py-2.5 text-right text-slate-700 tabular-nums">{v.paginas}</td>
                           <td className="px-3 py-2.5 text-slate-700">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span>{etapa !== null ? ROTULOS_ETAPAS[etapa - 1] : '—'}</span>
-                              {v.usos.length > 0 ? <SeloUsouEditor /> : null}
+                              <span>{etapa ?? '—'}</span>
+                              {usouOEditor(v.usos) ? <SeloUsouEditor /> : null}
                             </div>
                           </td>
                           <td className="px-3 py-2.5">

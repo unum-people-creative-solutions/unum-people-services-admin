@@ -1,4 +1,4 @@
-import { OPCOES_MENU, PASSOS_IA, taxa } from '@/lib/jornada';
+import { LINHAS_DA_IA, OPCOES_MENU, taxa } from '@/lib/jornada';
 import { EsqueletoDaSecao, ErroDaSecao } from './EstadoDaSecao';
 
 interface UsoDoEditorProps {
@@ -9,11 +9,11 @@ interface UsoDoEditorProps {
   onTentar: () => void;
 }
 
-// Uso do editor (blueprint §3.3): menu "Editar" e o funil da IA, lado a lado a partir de lg.
+// Uso do editor (blueprint §3.3): menu "Editar" e as linhas da IA, lado a lado a partir de lg.
+// configurador-com-ia blueprint §9.2: "Editar com IA" com as linhas novas primeiro e as quatro de
+// copiar e colar depois, com o sufixo.
 export function UsoDoEditor({ uso, carregando, erro, onTentar }: UsoDoEditorProps) {
   const contar = (evento: string) => uso?.[evento] ?? 0;
-  const copiou = contar(PASSOS_IA.copiou.evento);
-  const passosComTaxa = [PASSOS_IA.viu, PASSOS_IA.aplicou];
 
   return (
     <section
@@ -48,33 +48,26 @@ export function UsoDoEditor({ uso, carregando, erro, onTentar }: UsoDoEditorProp
             </div>
             <div className="rounded-lg border border-slate-200 p-4">
               <h3 id="titulo-editar-ia" className="mb-3 text-sm font-semibold text-slate-900">
-                Editar com sua IA
+                Editar com IA
               </h3>
               <ul aria-labelledby="titulo-editar-ia" className="flex flex-col gap-2 text-sm">
-                <li className="grid grid-cols-[1fr_3rem_3rem] items-center gap-3">
-                  <span className="text-slate-700">{PASSOS_IA.copiou.rotulo}</span>
-                  <span className="text-right font-semibold text-slate-900 tabular-nums">{copiou}</span>
-                  <span />
-                </li>
-                {passosComTaxa.map((passo) => {
-                  const valor = contar(passo.evento);
-                  const porcentagem = taxa(valor, copiou);
+                {LINHAS_DA_IA.map((linha) => {
+                  const valor = contar(linha.evento);
+                  const porcentagem = linha.base !== undefined ? taxa(valor, contar(linha.base)) : null;
                   return (
-                    <li key={passo.evento} className="grid grid-cols-[1fr_3rem_3rem] items-center gap-3">
-                      <span className="text-slate-700">{passo.rotulo}</span>
-                      <span className="text-right font-semibold text-slate-900 tabular-nums">{valor}</span>
+                    // Atrito em âmbar, sem porcentagem.
+                    <li
+                      key={linha.evento}
+                      className={`grid grid-cols-[1fr_3rem_3rem] items-center gap-3 ${linha.atrito ? 'text-amber-700' : ''}`}
+                    >
+                      <span className={linha.atrito ? '' : 'text-slate-700'}>{linha.rotulo}</span>
+                      <span className={`text-right font-semibold tabular-nums ${linha.atrito ? '' : 'text-slate-900'}`}>{valor}</span>
                       <span className="text-right text-slate-500 tabular-nums">
                         {porcentagem !== null ? `${porcentagem}%` : null}
                       </span>
                     </li>
                   );
                 })}
-                {/* Sem porcentagem e em âmbar: indica atrito. */}
-                <li className="grid grid-cols-[1fr_3rem_3rem] items-center gap-3 text-amber-700">
-                  <span>{PASSOS_IA.invalida.rotulo}</span>
-                  <span className="text-right font-semibold tabular-nums">{contar(PASSOS_IA.invalida.evento)}</span>
-                  <span />
-                </li>
               </ul>
             </div>
           </div>
