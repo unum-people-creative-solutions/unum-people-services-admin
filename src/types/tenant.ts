@@ -50,6 +50,8 @@ export interface Contract {
   activation_invoice_url?: string;
   subscription_invoice_url?: string;
   subscription_url_state?: 'aguardando_ativacao' | 'gerando' | 'disponivel' | 'erro';
+  // Data paga até (AAAA-MM-DD; json omitempty): ausente antes do 1º pagamento.
+  paid_until?: string;
   created_at: string;
 }
 
@@ -70,7 +72,9 @@ export interface Invoice {
 export interface Site {
   site_id: string;
   slug: string;
-  status: 'DRAFT' | 'PUBLISHED' | 'AGUARDANDO_ATIVACAO';
+  // fix-achados-2b-3-5 (2b): status derivado do tenant pela API
+  // (domain.SiteStatusForTenant), o mesmo do Portal.
+  status: 'no_ar' | 'aguardando_ativacao' | 'suspenso' | 'cancelado';
   url: string;
   layout_id: string;
   theme_id: string;

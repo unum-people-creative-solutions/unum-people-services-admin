@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { TenantSitesSection } from './TenantSitesSection';
 import { expect, test, vi, describe, beforeEach } from 'vitest';
 import { tenantService } from '@/services/tenantService';
@@ -41,7 +41,7 @@ describe('TenantSitesSection Component', () => {
       {
         site_id: 'lp_t1',
         slug: 'estudio-foto',
-        status: 'AGUARDANDO_ATIVACAO',
+        status: 'aguardando_ativacao',
         url: 'https://estudio-foto.unumpeople.app',
         layout_id: 'l1',
         theme_id: 't1',
@@ -52,11 +52,56 @@ describe('TenantSitesSection Component', () => {
     renderSection();
 
     expect(await screen.findByText('estudio-foto')).toBeDefined();
-    expect(screen.getByText((c, el) => el?.tagName.toLowerCase() === 'span' && el?.textContent?.trim() === 'Aguardando Ativação')).toBeDefined();
+    expect(screen.getByText((c, el) => el?.tagName.toLowerCase() === 'span' && el?.textContent?.trim() === 'Aguardando ativação')).toBeDefined();
     expect(screen.getByText('l1 / t1')).toBeDefined();
 
     const link = screen.getByRole('link', { name: /Abrir site/i });
     expect(link).toHaveAttribute('href', 'https://estudio-foto.unumpeople.app');
+  });
+
+  // fix-achados-2b-3-5, critério 5: a API devolve o status derivado do
+  // tenant (no_ar | aguardando_ativacao | suspenso | cancelado).
+  test.each([
+    ['no_ar', 'No ar'],
+    ['aguardando_ativacao', 'Aguardando ativação'],
+    ['suspenso', 'Suspenso'],
+    ['cancelado', 'Cancelado'],
+  ])('T05 - status "%s" mostra o rótulo "%s" na coluna Status', async (status, rotulo) => {
+    vi.mocked(tenantService.listSites).mockResolvedValue([
+      {
+        site_id: 'lp_t1',
+        slug: 'estudio-foto',
+        status,
+        url: 'https://estudio-foto.unumpeople.app',
+        layout_id: 'l1',
+        theme_id: 't1',
+      },
+    ] as Site[]);
+
+    renderSection();
+
+    const linha = (await screen.findByText('estudio-foto')).closest('tr') as HTMLElement;
+    const celulas = within(linha).getAllByRole('cell');
+    expect(celulas[1].textContent?.trim()).toBe(rotulo);
+  });
+
+  test('T06 - status desconhecido (AGUARDANDO_ATIVACAO da api antiga) mostra o texto cru', async () => {
+    vi.mocked(tenantService.listSites).mockResolvedValue([
+      {
+        site_id: 'lp_t1',
+        slug: 'estudio-foto',
+        status: 'AGUARDANDO_ATIVACAO',
+        url: 'https://estudio-foto.unumpeople.app',
+        layout_id: 'l1',
+        theme_id: 't1',
+      },
+    ] as unknown as Site[]);
+
+    renderSection();
+
+    const linha = (await screen.findByText('estudio-foto')).closest('tr') as HTMLElement;
+    const celulas = within(linha).getAllByRole('cell');
+    expect(celulas[1].textContent?.trim()).toBe('AGUARDANDO_ATIVACAO');
   });
 
   test('T02 - trata estado vazio sem sites', async () => {
@@ -80,7 +125,7 @@ describe('TenantSitesSection Component', () => {
       {
         site_id: 'lp_t1',
         slug: 'estudio-foto',
-        status: 'AGUARDANDO_ATIVACAO',
+        status: 'aguardando_ativacao',
         url: 'https://estudio-foto.unumpeople.app',
         layout_id: 'l1',
         theme_id: 't1',
@@ -89,7 +134,7 @@ describe('TenantSitesSection Component', () => {
     vi.mocked(tenantService.getSite).mockResolvedValue({
       site_id: 'lp_t1',
       slug: 'estudio-foto',
-      status: 'AGUARDANDO_ATIVACAO',
+      status: 'aguardando_ativacao',
       url: 'https://estudio-foto.unumpeople.app',
       layout_id: 'l1',
       theme_id: 't1',
