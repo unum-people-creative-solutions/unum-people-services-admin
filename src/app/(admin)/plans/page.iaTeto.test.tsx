@@ -18,7 +18,7 @@ const DICA = 'Vazio ou zero: o plano não tem Editar com IA. Exemplo: 20 = R$ 0,
 
 const base = { descricao: '', activation_fee: 100, monthly_value: 99, included_services: ['lp'], is_active: true, cycle: 'mensal', term_id: 'term-1', product: 'landing-page', pages_included: 1, max_usuarios: 0, destaques: [], selo: '', sem_marca: false, sem_dominio_proprio: false, plano_anual: '' }
 const semIa = { ...base, slug: 'pagina', nome: 'Página', ia_teto_diario_centavos: 0 } as unknown as Plan
-const comIa = { ...base, slug: 'presenca', nome: 'Presença', ia_teto_diario_centavos: 40 } as unknown as Plan
+const comIa = { ...base, slug: 'presenca', nome: 'Presença', ia_teto_diario_centavos: 20 } as unknown as Plan
 const tetoMaximo = { ...base, slug: 'captacao', nome: 'Captação', ia_teto_diario_centavos: 1000 } as unknown as Plan
 
 function renderizar() {
@@ -68,7 +68,7 @@ describe('Planos — teto de "Editar com IA"', () => {
     renderizar()
     fireEvent.click(await screen.findByRole('button', { name: 'Editar Presença' }))
     const campo = await screen.findByLabelText(ROTULO)
-    expect(campo).toHaveValue(40)
+    expect(campo).toHaveValue(20)
     fireEvent.change(campo, { target: { value: '' } })
     fireEvent.click(screen.getByRole('button', { name: 'Salvar Plano' }))
     await waitFor(() => expect(planService.updatePlan).toHaveBeenCalled())
@@ -98,10 +98,10 @@ describe('Planos — teto de "Editar com IA"', () => {
     expect(vi.mocked(planService.createPlan).mock.calls[0][0]).toHaveProperty('ia_teto_diario_centavos', 0)
   })
 
-  test('CA-31 — a lista mostra "IA: R$ 0,40 por dia" só no plano com teto', async () => {
+  test('CA-31 — a lista mostra "IA: R$ 0,20 por dia" só no plano com teto', async () => {
     renderizar()
     await screen.findByRole('heading', { name: 'Presença' })
-    expect(within(cartaoDe('Presença')).getByText('IA: R$ 0,40 por dia')).toBeInTheDocument()
+    expect(within(cartaoDe('Presença')).getByText('IA: R$ 0,20 por dia')).toBeInTheDocument()
     expect(within(cartaoDe('Captação')).getByText('IA: R$ 10,00 por dia')).toBeInTheDocument()
     expect(within(cartaoDe('Página')).queryByText(/^IA: R\$/)).toBeNull()
   })

@@ -111,4 +111,27 @@ describe('VisitasDoPeriodo: visitas da entrada com IA (A2)', () => {
     expect(within(linhas[0]).queryByText('Usou o editor')).toBeNull();
     expect(within(linhas[1]).getByText('Usou o editor')).toBeInTheDocument();
   });
+
+  // D-C-37: ordem 1→2→3→10→11→12→4→…; cada caso isola um vizinho da ordem.
+  test.each([
+    [[1, 2, 3, 10], 'Escolheu modelo e tema'],
+    [[1, 10, 11], 'Enviou os dados'],
+    [[1, 10, 11, 12], 'Viu o site montado'],
+    [[1, 2, 10], 'Começou'],
+  ])('D-C-37 — "Até onde foi" com as etapas %j mostra "%s"', (etapas, rotulo) => {
+    const linhas = renderizar([{ ...base, etapas }]);
+    expect(within(linhas[0]).getByText(rotulo)).toBeInTheDocument();
+  });
+
+  // D-C-37: cada uso que não é do editor, sozinho, não acende o selo.
+  test.each([
+    ['lp_topo_comecou'],
+    ['lp_site_montado_ia'],
+    ['lp_site_montado_reserva'],
+    ['lp_site_montado_s_14'],
+    ['lp_site_montado_s_mais'],
+  ])('D-C-37 — "Usou o editor" ignora %s sozinho', (uso) => {
+    const linhas = renderizar([{ ...base, etapas: [1, 10, 11, 12], usos: [uso] }]);
+    expect(within(linhas[0]).queryByText('Usou o editor')).toBeNull();
+  });
 });

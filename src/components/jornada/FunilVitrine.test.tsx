@@ -143,6 +143,17 @@ describe('FunilEmSeries: duas séries, sem misturar (A2)', () => {
     expect(within(secao).getAllByText(/pelo campo do topo|com IA:/)).toHaveLength(2);
   });
 
+  it('a linha extra de "Viu o site montado" põe cada contagem no seu lugar (IA 3, reserva 1)', () => {
+    const desigual: FunilJornada = {
+      ...FUNIL_A2,
+      uso: FUNIL_A2.uso.map((l) =>
+        l.evento === 'lp_site_montado_ia' ? { ...l, visitas: 3 } : l.evento === 'lp_site_montado_reserva' ? { ...l, visitas: 1 } : l,
+      ),
+    };
+    const secao = renderizarSeries({ antiga: null, nova: desigual });
+    expect(within(secao).getByText('com IA: 3 · modelo reserva: 1 · tempo mediano: 14 s')).toBeInTheDocument();
+  });
+
   it('sem faixas de tempo, a parte "· tempo mediano" some (D-C-28)', () => {
     const semFaixas: FunilJornada = {
       ...FUNIL_A2,
