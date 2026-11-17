@@ -721,8 +721,9 @@ export function calcularFunil(funil: FunilJornada, filtro: FiltroJornada): numbe
 
 // configurador-com-ia spec §3.7 e blueprint §9.1 (D-UI-29): dia (AAAA-MM-DD, Brasília) em que a flag
 // configurador-ia ficou ligada. Visitas desse dia em diante são da série "Entrada com IA"; antes, da
-// "Escolha de modelo". null até o dia de ligar (OPS-09): o painel fica o de hoje, sem seletor.
-export const DESDE_ENTRADA_COM_IA: string | null = null;
+// "Escolha de modelo". Preenchido no OPS-09: o dono ligou a flag para todos em 17/11/2026, por
+// volta das 16h30 de Brasília (a API pública passou a devolver configurador-ia=true).
+export const DESDE_ENTRADA_COM_IA: string | null = '2026-11-17';
 
 // Blueprint §9.1, série nova, na ordem de exibição (não a dos números da API).
 export const ROTULOS_ETAPAS_ENTRADA_COM_IA = [

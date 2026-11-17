@@ -1011,8 +1011,8 @@ describe('série "Entrada com IA" (A2)', () => {
   const todos = { origem: 'todas', aparelho: 'todos' } as const;
   const funilA2 = fixtureFunilA2 as FunilJornada;
 
-  it('DESDE_ENTRADA_COM_IA fica null até a flag ligar (OPS-09)', () => {
-    expect(DESDE_ENTRADA_COM_IA).toBeNull();
+  it('DESDE_ENTRADA_COM_IA é o dia em que a flag foi ligada para todos (OPS-09, 17/11/2026)', () => {
+    expect(DESDE_ENTRADA_COM_IA).toBe('2026-11-17');
   });
 
   it('dez rótulos na ordem do blueprint §9.1', () => {
