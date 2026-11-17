@@ -80,6 +80,7 @@ export default function PlansPage() {
     sem_dominio_proprio: false,
     plano_anual: '',
     ia_teto_diario_centavos: '',
+    metricas_de_visitas: false,
   };
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<PlanFormValues>({
@@ -154,6 +155,7 @@ export default function PlansPage() {
       sem_dominio_proprio: plan.sem_dominio_proprio ?? false,
       plano_anual: plan.plano_anual ?? '',
       ia_teto_diario_centavos: plan.ia_teto_diario_centavos ? String(plan.ia_teto_diario_centavos) : '',
+      metricas_de_visitas: plan.metricas_de_visitas ?? false,
     });
     setIsDrawerOpen(true);
   };
@@ -177,6 +179,8 @@ export default function PlansPage() {
       plano_anual: data.cycle === 'anual' ? '' : (data.plano_anual ?? ''),
       // Sempre presente pelo mesmo motivo dos destaques: o PUT substitui o item.
       ia_teto_diario_centavos: parseTetoIa(data.ia_teto_diario_centavos),
+      // metricas-de-visitas MV-80: sempre presente (o PUT substitui o item).
+      metricas_de_visitas: Boolean(data.metricas_de_visitas),
     };
     if (payload.cycle === 'anual') {
       payload.monthly_value = 0;
@@ -397,6 +401,10 @@ export default function PlansPage() {
                   <label htmlFor="sem_marca" className="text-sm font-semibold">Esconder a assinatura Unum People na página publicada</label>
                 </div>
                 <div className="flex items-center gap-2">
+                  <input type="checkbox" id="metricas_de_visitas" {...register('metricas_de_visitas')} />
+                  <label htmlFor="metricas_de_visitas" className="text-sm font-semibold">Contar visitas da página (tela Visitas no Portal)</label>
+                </div>
+                <div className="flex items-center gap-2">
                   <input type="checkbox" id="sem_dominio_proprio" {...register('sem_dominio_proprio')} />
                   <label htmlFor="sem_dominio_proprio" className="text-sm font-semibold">Sem domínio próprio (só o endereço unumpages.app)</label>
                 </div>
@@ -453,6 +461,7 @@ export default function PlansPage() {
                 </p>
                 {plan.sem_marca && <p className="text-xs text-slate-500">Sem assinatura</p>}
                 {plan.sem_dominio_proprio && <p className="text-xs text-slate-500">Sem domínio próprio</p>}
+                {plan.metricas_de_visitas && <p className="text-xs text-slate-500">Métricas de visitas</p>}
                 {(plan.ia_teto_diario_centavos ?? 0) > 0 && (
                   <p className="text-xs text-slate-500">{`IA: R$ ${reaisDoTeto(plan.ia_teto_diario_centavos ?? 0)} por dia`}</p>
                 )}
