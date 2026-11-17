@@ -99,7 +99,7 @@ describe('NewTenantPage - Separation of Tenant and Admin', () => {
     fireEvent.change(screen.getByRole('combobox', { name: /plano/i }), { target: { value: 'livre' } });
     fireEvent.change(container.querySelector('[name="nome_negocio"]')!, { target: { value: 'Empresa Teste' } });
     fireEvent.change(container.querySelector('[name="documento"]')!, { target: { value: '94.586.814/0001-01' } });
-    fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tech' } });
+    fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tecnologia e marketing' } });
     fireEvent.change(container.querySelector('[name="nome_admin"]')!, { target: { value: 'Admin Teste' } });
     fireEvent.change(container.querySelector('[name="email_contato"]')!, { target: { value: 'admin@teste.com' } });
     fireEvent.change(container.querySelector('[name="endereco.cep"]')!, { target: { value: '82515000' } });
@@ -168,7 +168,7 @@ describe('NewTenantPage - Formulário Adaptativo por Plano (T12)', () => {
 
     fireEvent.change(container.querySelector('[name="nome_negocio"]')!, { target: { value: 'Empresa Teste' } });
     fireEvent.change(container.querySelector('[name="documento"]')!, { target: { value: '94.586.814/0001-01' } });
-    fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tech' } });
+    fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tecnologia e marketing' } });
     fireEvent.change(container.querySelector('[name="nome_admin"]')!, { target: { value: 'Admin Teste' } });
     fireEvent.change(container.querySelector('[name="email_contato"]')!, { target: { value: 'admin@teste.com' } });
     fireEvent.change(container.querySelector('[name="endereco.cep"]')!, { target: { value: '82515000' } });
@@ -286,7 +286,7 @@ describe('NewTenantPage - RF-TT-03: Flag Tenant de Teste', () => {
 
     fireEvent.change(container.querySelector('[name="nome_negocio"]')!, { target: { value: 'Empresa Teste' } });
     fireEvent.change(container.querySelector('[name="documento"]')!, { target: { value: '94.586.814/0001-01' } });
-    fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tech' } });
+    fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tecnologia e marketing' } });
     fireEvent.change(container.querySelector('[name="nome_admin"]')!, { target: { value: 'Admin Teste' } });
     fireEvent.change(container.querySelector('[name="email_contato"]')!, { target: { value: 'admin@teste.com' } });
     fireEvent.change(container.querySelector('[name="endereco.cep"]')!, { target: { value: '82515000' } });
@@ -310,7 +310,7 @@ describe('NewTenantPage - RF-TT-03: Flag Tenant de Teste', () => {
 
     fireEvent.change(container.querySelector('[name="nome_negocio"]')!, { target: { value: 'Empresa Teste' } });
     fireEvent.change(container.querySelector('[name="documento"]')!, { target: { value: '94.586.814/0001-01' } });
-    fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tech' } });
+    fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tecnologia e marketing' } });
     fireEvent.change(container.querySelector('[name="nome_admin"]')!, { target: { value: 'Admin Teste' } });
     fireEvent.change(container.querySelector('[name="email_contato"]')!, { target: { value: 'admin@teste.com' } });
     fireEvent.change(container.querySelector('[name="endereco.cep"]')!, { target: { value: '82515000' } });
@@ -408,7 +408,7 @@ describe('NewTenantPage - TASK-FE-005: Termo de Contratação (Personalizado/Liv
 
     fireEvent.change(container.querySelector('[name="nome_negocio"]')!, { target: { value: 'Empresa Teste' } });
     fireEvent.change(container.querySelector('[name="documento"]')!, { target: { value: '94.586.814/0001-01' } });
-    fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tech' } });
+    fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tecnologia e marketing' } });
     fireEvent.change(container.querySelector('[name="nome_admin"]')!, { target: { value: 'Admin' } });
     fireEvent.change(container.querySelector('[name="email_contato"]')!, { target: { value: 'a@a.com' } });
 
