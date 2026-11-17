@@ -11,6 +11,7 @@ import { ApiError } from '@/lib/apiError';
 import Link from 'next/link';
 import { PlanConfigFields } from '@/components/tenants/PlanConfigFields';
 import { SiteUrlsFieldArray } from '@/components/tenants/SiteUrlsFieldArray';
+import { AreaDeAtuacaoSelect } from '@/components/tenants/AreaDeAtuacaoSelect';
 import { EnderecoFields } from '@/components/tenants/EnderecoFields';
 import { formatCpfCnpj } from '@/lib/cpfCnpj';
 import { fromSiteUrlItems, toSiteUrlItems, type SiteUrlItem } from '@/lib/siteUrls';
@@ -578,14 +579,11 @@ export default function TenantDetailsPage() {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-slate-700">Nicho de Atuação</label>
-                      <input 
-                        {...register('nicho')}
-                        placeholder="Ex: MEDICINA, VENDAS..."
-                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
-                      />
-                    </div>
+                    <AreaDeAtuacaoSelect
+                      registration={register('nicho')}
+                      valorSalvo={tenant.nicho}
+                      className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                    />
                     <SiteUrlsFieldArray />
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700">Slug do Tenant</label>

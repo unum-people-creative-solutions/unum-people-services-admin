@@ -12,6 +12,7 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { PlanConfigFields } from '@/components/tenants/PlanConfigFields';
 import { SiteUrlsFieldArray } from '@/components/tenants/SiteUrlsFieldArray';
+import { AreaDeAtuacaoSelect } from '@/components/tenants/AreaDeAtuacaoSelect';
 import { EnderecoFields } from '@/components/tenants/EnderecoFields';
 import { fromSiteUrlItems, type SiteUrlItem } from '@/lib/siteUrls';
 
@@ -128,14 +129,11 @@ export default function NewTenantPage() {
                   {errors.nome_negocio && <span className="text-red-500 text-xs">{errors.nome_negocio.message}</span>}
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Nicho / Mercado</label>
-                  <input 
-                    {...register('nicho', { required: 'Campo obrigatório' })}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500/20 bg-white"
-                    placeholder="Ex: Tecnologia, Varejo"
-                  />
-                </div>
+                <AreaDeAtuacaoSelect
+                  registration={register('nicho', { required: 'Campo obrigatório' })}
+                  erro={errors.nicho?.message}
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500/20 bg-white"
+                />
 
                 <div className="space-y-2">
                   <label htmlFor="celular" className="text-sm font-semibold text-slate-700">Celular</label>

@@ -50,7 +50,7 @@ describe('T21 — Criar Tenant com Regras de Endereço (RF-DNG-23, CA-DNG-21)', 
 
   const preencherDadosBasicos = (container: HTMLElement) => {
     fireEvent.change(container.querySelector('[name="nome_negocio"]')!, { target: { value: 'Empresa Teste' } });
-    fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tecnologia' } });
+    fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tecnologia e marketing' } });
     fireEvent.change(container.querySelector('[name="nome_admin"]')!, { target: { value: 'Admin Responsavel' } });
     fireEvent.change(container.querySelector('[name="email_contato"]')!, { target: { value: 'admin@teste.com' } });
   };

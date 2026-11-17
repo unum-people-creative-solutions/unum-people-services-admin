@@ -48,7 +48,7 @@ function renderPage() {
 function fillRequiredBusinessFields(container: HTMLElement) {
   fireEvent.change(container.querySelector('[name="nome_negocio"]')!, { target: { value: 'Empresa Teste' } });
   fireEvent.change(container.querySelector('[name="documento"]')!, { target: { value: '94.586.814/0001-01' } });
-  fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tech' } });
+  fireEvent.change(container.querySelector('[name="nicho"]')!, { target: { value: 'Tecnologia e marketing' } });
   fireEvent.change(container.querySelector('[name="nome_admin"]')!, { target: { value: 'Admin Teste' } });
   fireEvent.change(container.querySelector('[name="email_contato"]')!, { target: { value: 'admin@teste.com' } });
   fireEvent.change(container.querySelector('[name="endereco.cep"]')!, { target: { value: '82515000' } });

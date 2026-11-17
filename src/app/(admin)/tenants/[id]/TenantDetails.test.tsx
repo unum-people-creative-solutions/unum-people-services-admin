@@ -64,7 +64,7 @@ const mockTenant = {
   nome_negocio: 'Empresa Teste',
   email_contato: 'contato@teste.com',
   documento: '12345678909',
-  nicho: 'SAUDE',
+  nicho: 'Saúde',
   site_url: 'https://teste.com',
   api_key: 'up_test_key_123456789',
   enabled_services: ['site', 'blog'],
@@ -156,7 +156,7 @@ describe('TenantDetailsPage - Refactor Requirements', () => {
       </QueryClientProvider>
     );
 
-    expect(await screen.findByDisplayValue('SAUDE')).toBeDefined();
+    expect(await screen.findByDisplayValue('Saúde')).toBeDefined();
     expect(screen.getByDisplayValue('https://teste.com')).toBeDefined();
   });
 
@@ -167,7 +167,7 @@ describe('TenantDetailsPage - Refactor Requirements', () => {
       </QueryClientProvider>
     );
 
-    await screen.findByDisplayValue('SAUDE');
+    await screen.findByDisplayValue('Saúde');
     expect(screen.queryByRole('checkbox', { name: /tenant de teste/i })).toBeNull();
   });
 
