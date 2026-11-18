@@ -719,11 +719,12 @@ export function calcularFunil(funil: FunilJornada, filtro: FiltroJornada): numbe
   return valores;
 }
 
-// configurador-com-ia spec §3.7 e blueprint §9.1 (D-UI-29): dia (AAAA-MM-DD, Brasília) em que a flag
-// configurador-ia ficou ligada. Visitas desse dia em diante são da série "Entrada com IA"; antes, da
-// "Escolha de modelo". Preenchido no OPS-09: o dono ligou a flag para todos em 17/11/2026, por
-// volta das 16h30 de Brasília (a API pública passou a devolver configurador-ia=true).
-export const DESDE_ENTRADA_COM_IA: string | null = '2026-11-17';
+// configurador-com-ia spec §3.7 e blueprint §9.1 (D-UI-29): quando a flag configurador-ia ficou
+// ligada, como dia (AAAA-MM-DD, Brasília) ou instante ISO com fuso. Visitas desse ponto em diante
+// são da série "Entrada com IA"; antes, da "Escolha de modelo". OPS-09: o dono ligou a flag para
+// todos em 17/11/2026 às 16h28m34s de Brasília (atualizado_em do item FLAG#configurador-ia). O
+// instante, e não o dia, porque as visitas da manhã de 17/11 ainda viram a escolha de modelo.
+export const DESDE_ENTRADA_COM_IA: string | null = '2026-11-17T16:28:34-03:00';
 
 // Blueprint §9.1, série nova, na ordem de exibição (não a dos números da API).
 export const ROTULOS_ETAPAS_ENTRADA_COM_IA = [
@@ -815,7 +816,7 @@ export function dividirPelaEntradaComIa(
   corte: string | null,
 ): { antiga: JanelaMs | null; nova: JanelaMs | null } {
   if (corte === null) return { antiga: { desde, ate }, nova: null };
-  const inicio = inicioDoDiaEmBrasilia(corte);
+  const inicio = corte.includes('T') ? Date.parse(corte) : inicioDoDiaEmBrasilia(corte);
   if (ate < inicio) return { antiga: { desde, ate }, nova: null };
   if (desde >= inicio) return { antiga: null, nova: { desde, ate } };
   return { antiga: { desde, ate: inicio - 1 }, nova: { desde: inicio, ate } };

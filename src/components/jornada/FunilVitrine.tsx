@@ -140,7 +140,7 @@ export interface SeriesDoFunil {
 interface FunilEmSeriesProps {
   idTitulo: string;
   titulo: ReactNode;
-  // DESDE_ENTRADA_COM_IA (AAAA-MM-DD, Brasília).
+  // DESDE_ENTRADA_COM_IA (AAAA-MM-DD ou instante AAAA-MM-DDTHH:MM:SS-03:00, Brasília).
   corte: string;
   // undefined enquanto carrega ou no erro de qualquer das chamadas.
   series: SeriesDoFunil | undefined;
@@ -152,10 +152,11 @@ interface FunilEmSeriesProps {
   comAnterior?: boolean;
 }
 
-// AAAA-MM-DD → dd/mm.
+// AAAA-MM-DD → dd/mm; AAAA-MM-DDTHH:MM… (já em Brasília) → dd/mm, HHhMM.
 function diaMesDoCorte(corte: string): string {
-  const [, mes, dia] = corte.split('-');
-  return `${dia}/${mes}`;
+  const [, mes, dia] = corte.slice(0, 10).split('-');
+  if (!corte.includes('T')) return `${dia}/${mes}`;
+  return `${dia}/${mes}, ${corte.slice(11, 13)}h${corte.slice(14, 16)}`;
 }
 
 const SEM_VISITAS_ANTIGA = new Array<number>(ROTULOS_ETAPAS.length).fill(0);

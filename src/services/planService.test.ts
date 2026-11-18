@@ -210,6 +210,33 @@ describe('planService', () => {
     expect(result.active[0].ia_teto_diario_centavos).toBe(20);
   });
 
+  // metricas-de-visitas TASK-ADM-301 (T40, MV-82, spec §3.7) — plano gravado
+  // antes do atributo chega sem a chave; a leitura entrega false.
+  it('listPlans entrega metricas_de_visitas false para plano que veio sem a chave', async () => {
+    const { api } = await import('@/lib/api');
+    (api.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      active: [{ slug: 'pagina', nome: 'Plano Página' }],
+      inactive: [{ slug: 'antigo', nome: 'Antigo' }],
+    });
+
+    const result = await planService.listPlans();
+
+    expect(result.active[0].metricas_de_visitas).toBe(false);
+    expect(result.inactive[0].metricas_de_visitas).toBe(false);
+  });
+
+  it('listPlans preserva o metricas_de_visitas true que a API devolveu', async () => {
+    const { api } = await import('@/lib/api');
+    (api.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      active: [{ slug: 'presenca', nome: 'Plano Presença', metricas_de_visitas: true }],
+      inactive: [],
+    });
+
+    const result = await planService.listPlans();
+
+    expect(result.active[0].metricas_de_visitas).toBe(true);
+  });
+
   it('createPlan envia product e pages_included no POST sem any', async () => {
     const { api } = await import('@/lib/api');
     (api.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({});

@@ -133,6 +133,25 @@ describe('FunilEmSeries: duas séries, sem misturar (A2)', () => {
     expect(within(grupo).getByText('até 20/11')).toBeInTheDocument();
   });
 
+  it('com o corte num instante, as duas séries mostram dia e hora', () => {
+    render(
+      <FunilEmSeries
+        idTitulo="titulo-funil-instante"
+        titulo="Funil no instante"
+        corte="2026-11-17T16:28:34-03:00"
+        series={{ antiga: null, nova: FUNIL_A2 }}
+        filtro={TODOS}
+        carregando={false}
+        erro={false}
+        onTentar={() => {}}
+        textoVazio="Nada"
+      />,
+    );
+    const grupo = within(screen.getByRole('region', { name: 'Funil no instante' })).getByRole('radiogroup', { name: 'Série do funil' });
+    expect(within(grupo).getByText('desde 17/11, 16h28')).toBeInTheDocument();
+    expect(within(grupo).getByText('até 17/11, 16h28')).toBeInTheDocument();
+  });
+
   it('T31 — a série nova mostra as dez etapas na ordem e as duas linhas extras', () => {
     const secao = renderizarSeries({ antiga: null, nova: FUNIL_A2 });
     expect(rotulosDasEtapas(secao)).toEqual(ROTULOS_NOVOS);

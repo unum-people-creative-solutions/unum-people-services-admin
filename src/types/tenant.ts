@@ -40,6 +40,10 @@ export interface Plan {
   // (0 a 1000). A API grava com omitempty: ausente = 0 = plano sem IA. A
   // leitura (planService) entrega 0.
   ia_teto_diario_centavos?: number;
+  // metricas-de-visitas MV-82 (spec §3.7): liga a contagem de visitas das
+  // páginas e a tela Visitas no Portal. Ausente em plano gravado antes do
+  // campo; a leitura (planService) entrega false.
+  metricas_de_visitas?: boolean;
 }
 
 export interface Contract {
