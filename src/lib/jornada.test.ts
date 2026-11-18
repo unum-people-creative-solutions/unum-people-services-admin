@@ -563,6 +563,8 @@ const TABELA_ERROS: Record<string, string> = {
   montagem_verificacao: 'verificação anti-robô',
   montagem_entrada: 'dados da janela recusados',
   editor_ia_falhou: 'Editar com IA falhou',
+  // ia-montagem-parcial (spec §5, RF-MP-35).
+  montagem_fora_do_escopo: 'descrição recusada pela IA (voltou à janela)',
 };
 
 const TABELA_SECOES_PREVIA: Record<string, string> = {
@@ -582,9 +584,9 @@ const TABELA_SECOES_PREVIA: Record<string, string> = {
 };
 
 describe('rótulos do configurador (RF-4-28, CA-4-24)', () => {
-  it('tabelas completas e na ordem da spec (42 cliques com os 2 da B1 e os 3 da A2, 49 erros com os 8 da A2, 13 seções, 9 rotas)', () => {
+  it('tabelas completas e na ordem da spec (42 cliques com os 2 da B1 e os 3 da A2, 50 erros com os 8 da A2 e o 1 de ia-montagem-parcial, 13 seções, 9 rotas)', () => {
     expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(42);
-    expect(Object.keys(TABELA_ERROS)).toHaveLength(49);
+    expect(Object.keys(TABELA_ERROS)).toHaveLength(50);
     expect(Object.keys(TABELA_SECOES_PREVIA)).toHaveLength(13);
     expect(Object.entries(ROTULOS_CLIQUE_CONFIGURADOR)).toEqual(Object.entries(TABELA_CLIQUES_CONFIGURADOR));
     expect(Object.entries(ROTULOS_ERRO)).toEqual(Object.entries(TABELA_ERROS));
@@ -1204,6 +1206,7 @@ describe('rótulos da A2: uso do editor e linha do tempo', () => {
       ['lp_erro_janela_nome', 'Erro: nome vazio na janela'],
       ['lp_erro_janela_descricao', 'Erro: descrição vazia na janela'],
       ['lp_erro_editor_ia_falhou', 'Erro: Editar com IA falhou'],
+      ['lp_erro_montagem_fora_do_escopo', 'Erro: descrição recusada pela IA (voltou à janela)'],
     ];
     for (const [nome, rotulo] of erros) expect(rotuloDoEvento(ev(nome))).toBe(rotulo);
   });
