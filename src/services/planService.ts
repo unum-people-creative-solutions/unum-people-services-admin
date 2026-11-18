@@ -29,6 +29,7 @@ function applyReadDefaults(plan: Plan): Plan {
     sem_dominio_proprio: plan.sem_dominio_proprio ?? false,
     plano_anual: plan.plano_anual ?? '',
     ia_teto_diario_centavos: plan.ia_teto_diario_centavos ?? 0,
+    metricas_de_visitas: plan.metricas_de_visitas ?? false,
   };
 }
 
