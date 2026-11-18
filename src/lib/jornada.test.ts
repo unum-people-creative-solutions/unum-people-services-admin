@@ -1011,8 +1011,8 @@ describe('série "Entrada com IA" (A2)', () => {
   const todos = { origem: 'todas', aparelho: 'todos' } as const;
   const funilA2 = fixtureFunilA2 as FunilJornada;
 
-  it('DESDE_ENTRADA_COM_IA é o dia em que a flag foi ligada para todos (OPS-09, 17/11/2026)', () => {
-    expect(DESDE_ENTRADA_COM_IA).toBe('2026-11-17');
+  it('DESDE_ENTRADA_COM_IA é o instante em que a flag foi ligada para todos (OPS-09, FLAG#configurador-ia atualizado_em 2026-11-17T19:28:34Z)', () => {
+    expect(DESDE_ENTRADA_COM_IA).toBe('2026-11-17T16:28:34-03:00');
   });
 
   it('dez rótulos na ordem do blueprint §9.1', () => {
@@ -1126,6 +1126,19 @@ describe('série "Entrada com IA" (A2)', () => {
     expect(dividirPelaEntradaComIa(corte - 5000, corte + 5000, '2026-11-20')).toEqual({
       antiga: { desde: corte - 5000, ate: corte - 1 },
       nova: { desde: corte, ate: corte + 5000 },
+    });
+  });
+
+  it('dividirPelaEntradaComIa: com instante, corta na hora exata e não à meia-noite', () => {
+    const corte = Date.UTC(2026, 10, 17, 19, 28, 34);
+    const meiaNoite = inicioDoDiaEmBrasilia('2026-11-17');
+    expect(dividirPelaEntradaComIa(meiaNoite - 5000, corte + 5000, '2026-11-17T16:28:34-03:00')).toEqual({
+      antiga: { desde: meiaNoite - 5000, ate: corte - 1 },
+      nova: { desde: corte, ate: corte + 5000 },
+    });
+    expect(dividirPelaEntradaComIa(meiaNoite, corte - 1, '2026-11-17T16:28:34-03:00')).toEqual({
+      antiga: { desde: meiaNoite, ate: corte - 1 },
+      nova: null,
     });
   });
 });
