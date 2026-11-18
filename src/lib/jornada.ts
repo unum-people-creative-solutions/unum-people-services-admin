@@ -301,6 +301,8 @@ export const ROTULOS_ERRO: Record<string, string> = {
   montagem_verificacao: 'verificação anti-robô',
   montagem_entrada: 'dados da janela recusados',
   editor_ia_falhou: 'Editar com IA falhou',
+  // ia-montagem-parcial (spec §5, RF-MP-35, D-MP-26): a IA recusou a descrição inteira e a pessoa voltou à janela.
+  montagem_fora_do_escopo: 'descrição recusada pela IA (voltou à janela)',
 };
 
 // spec-4-detalhe RF-4-28: seções da prévia (sem "lp_previa_secao_"), na ordem da tabela de seções.
