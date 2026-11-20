@@ -14,6 +14,7 @@ import {
   formatarHora,
   formatarHoraComSegundos,
   resumirVisita,
+  eventosDaLinhaDoTempo,
   rotuloDaOrigem,
   rotuloDaRota,
   rotuloDoAparelho,
@@ -204,7 +205,7 @@ export default function VisitantePage() {
                       <p className="p-4 text-sm text-slate-500">Nenhum evento registrado nesta visita.</p>
                     ) : (
                       <ol aria-label="Linha do tempo" className="divide-y divide-slate-50">
-                        {grupo.eventos.map((evento, i) => {
+                        {eventosDaLinhaDoTempo(grupo.eventos).map((evento, i) => {
                           const rotulo = rotuloDoEvento(evento);
                           return (
                             <li

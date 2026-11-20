@@ -65,7 +65,7 @@ const ROTULOS_EVENTOS: Record<string, string> = {
   lp_ia_aplicou: 'IA: aplicou as mudanças (copiar e colar)',
   // Blueprint §9.3: etapas da entrada com IA (os dois "site montado" levam os segundos, abaixo).
   lp_topo_comecou: 'Começou no topo',
-  lp_janela_aberta: 'Abriu a janela',
+  lp_janela_aberta: "Viu a janela 'Vamos montar seu site'",
   lp_janela_enviada: 'Enviou os dados',
   // jornada-fluxo-atual RF-JF-05/06/07/08 (RF-JF-43): passos novos, nomes da tabela "Vale em".
   lp_site_montado_modelo_pronto: 'Viu o site montado com um modelo pronto',
@@ -480,6 +480,29 @@ export function rotuloDoEvento(evento: EventoJornada): string | null {
   return classificado ? `${PREFIXO_NA_LINHA_DO_TEMPO[classificado.tipo]}${classificado.rotulo}` : null;
 }
 
+// jornada-fluxo-atual RF-JF-47: o que "logo depois" quer dizer. Depois de lp_editor_opened, o próximo evento que não seja
+// medição passiva (rolagem, tempo) tem de ser lp_janela_aberta, no mesmo caminho e na mesma visita; um lp_page_view
+// (outra passagem) ou qualquer ação entre os dois desfaz o par. Rolagem e tempo não contam como "entre".
+function medicaoPassiva(nome: string): boolean {
+  return nome === TEMPO_NA_PAGINA || Object.hasOwn(ROTULOS_LEITURA, nome);
+}
+
+function janelaSegueOEditor(eventos: readonly EventoJornada[], i: number): boolean {
+  const editor = eventos[i];
+  for (let j = i + 1; j < eventos.length; j++) {
+    const proximo = eventos[j];
+    if (medicaoPassiva(proximo.nome)) continue;
+    return proximo.nome === 'lp_janela_aberta' && proximo.caminho === editor.caminho && proximo.visita === editor.visita;
+  }
+  return false;
+}
+
+// RF-JF-47: eventos da linha do tempo de uma visita (já em ordem) sem o lp_editor_opened que a janela absorve.
+// A linha que sobra é a da janela, com o horário dela. Não altera a lista recebida.
+export function eventosDaLinhaDoTempo(eventos: readonly EventoJornada[]): EventoJornada[] {
+  return eventos.filter((e, i) => !(e.nome === 'lp_editor_opened' && janelaSegueOEditor(eventos, i)));
+}
+
 // spec-4-detalhe RF-4-26.
 export function formatarDuracao(segundos: number): string {
   if (segundos < 60) return `${segundos} s`;
@@ -531,8 +554,10 @@ export function resumirVisita(
   visita: string,
   corte: string | null = DESDE_ENTRADA_COM_IA,
 ): ResumoDaVisita | null {
-  const daVisita = emOrdem(eventos.filter((e) => e.visita === visita));
-  if (daVisita.length === 0) return null;
+  const emOrdemDaVisita = emOrdem(eventos.filter((e) => e.visita === visita));
+  if (emOrdemDaVisita.length === 0) return null;
+  // RF-JF-47: o editor que a janela absorve não vira ação; início, fim e última página seguem os eventos todos.
+  const daVisita = eventosDaLinhaDoTempo(emOrdemDaVisita);
 
   const paginas = new Map<string, PaginaDaVisita>();
   for (const evento of daVisita) {
@@ -568,9 +593,9 @@ export function resumirVisita(
     }
   }
 
-  const inicio = daVisita[0].em;
-  const fim = daVisita[daVisita.length - 1].em;
-  const ultimaPagina = daVisita[daVisita.length - 1].caminho;
+  const inicio = emOrdemDaVisita[0].em;
+  const fim = emOrdemDaVisita[emOrdemDaVisita.length - 1].em;
+  const ultimaPagina = emOrdemDaVisita[emOrdemDaVisita.length - 1].caminho;
   const daSerieNova = corte !== null && inicio >= instanteDoCorte(corte);
   const escondeAPassagem = daSerieNova && paginas.size > 1 && ultimaPagina !== PAGINA_DE_PASSAGEM;
   if (escondeAPassagem) paginas.delete(PAGINA_DE_PASSAGEM);
