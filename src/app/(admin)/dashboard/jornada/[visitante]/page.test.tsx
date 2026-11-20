@@ -111,6 +111,48 @@ describe('Página do visitante', () => {
     ]);
   });
 
+  // jornada-fluxo-atual RF-JF-47: visita real de 20/11 (16:01:44 a 16:01:49), a janela e o editor em uma linha só.
+  test('RF-JF-47: janela logo depois do editor vira uma linha, com o horário da janela', async () => {
+    const V = '9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b';
+    const em = (hms: string) => Date.parse(`2026-11-20T${hms}-03:00`);
+    const caminho = '/configurar/editar';
+    vi.mocked(jornadaService.visitante).mockResolvedValue({
+      visitante: ID,
+      visitas: [
+        {
+          visitante: ID, visita: V, inicio: em('16:01:44'), fim: em('16:01:49'), aparelho: 'celular',
+          origem: 'direto', paginas: 1, etapas: [1], usos: [], teste: false,
+        },
+      ],
+      eventos: [
+        { em: em('16:01:44'), nome: 'lp_page_view', caminho, visita: V },
+        { em: em('16:01:45'), nome: 'lp_rolagem_25', caminho, visita: V },
+        { em: em('16:01:46'), nome: 'lp_rolagem_50', caminho, visita: V },
+        { em: em('16:01:47'), nome: 'lp_rolagem_75', caminho, visita: V },
+        { em: em('16:01:48'), nome: 'lp_rolagem_100', caminho, visita: V },
+        { em: em('16:01:48'), nome: 'lp_editor_opened', caminho, visita: V },
+        { em: em('16:01:49'), nome: 'lp_janela_aberta', caminho, visita: V },
+        { em: em('16:01:49'), nome: 'lp_tempo_na_pagina', caminho, visita: V, segundos: 4 },
+      ],
+      contratacoes: [],
+    });
+    renderizar();
+    const visita = await screen.findByRole('region', { name: /^Visita de 20\/11/ });
+    const linhas = within(within(visita).getByRole('list', { name: 'Linha do tempo' }))
+      .getAllByRole('listitem')
+      .map((li) => li.textContent);
+    expect(linhas).toEqual([
+      '16:01:44Viu a página/configurar/editar',
+      '16:01:45Rolou 25%/configurar/editar',
+      '16:01:46Rolou 50%/configurar/editar',
+      '16:01:47Rolou 75%/configurar/editar',
+      '16:01:48Rolou até o fim/configurar/editar',
+      "16:01:49Viu a janela 'Vamos montar seu site'/configurar/editar",
+      '16:01:49Ficou 4 s nesta página/configurar/editar',
+    ]);
+    expect(within(visita).queryByText('Carregou a tela do editor')).not.toBeInTheDocument();
+  });
+
   // validation-fase2 L1: JSON real da API (instantes em ms Unix), com o mesmo JSON.parse do lib/api.ts.
   test('contrato real: eventos, visitas e contratações em milissegundos', async () => {
     const real = JSON.parse(
