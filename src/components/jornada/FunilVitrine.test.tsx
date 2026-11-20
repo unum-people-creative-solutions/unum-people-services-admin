@@ -87,8 +87,6 @@ const ROTULOS_NOVOS = [
   'Começou',
   'Enviou os dados',
   'Viu o site montado',
-  'Editou',
-  'Viu a página final',
   'Abriu a contratação',
   'Enviou a contratação',
   'Contratou',
@@ -152,7 +150,7 @@ describe('FunilEmSeries: duas séries, sem misturar (A2)', () => {
     expect(within(grupo).getByText('até 17/11, 16h28')).toBeInTheDocument();
   });
 
-  it('T31 — a série nova mostra as dez etapas na ordem e as duas linhas extras', () => {
+  it('T31 — a série nova mostra as oito etapas na ordem e as linhas extras', () => {
     const secao = renderizarSeries({ antiga: null, nova: FUNIL_A2 });
     expect(rotulosDasEtapas(secao)).toEqual(ROTULOS_NOVOS);
     const lista = within(secao).getByRole('list');
@@ -160,6 +158,106 @@ describe('FunilEmSeries: duas séries, sem misturar (A2)', () => {
     expect(within(itens[1]).getByText('pelo campo do topo: 1')).toBeInTheDocument();
     expect(within(itens[3]).getByText('com IA: 1 · modelo reserva: 1 · tempo mediano: 14 s')).toBeInTheDocument();
     expect(within(secao).getAllByText(/pelo campo do topo|com IA:/)).toHaveLength(2);
+  });
+
+  // RF-JF-41: "Editou" e "Abriu a prévia" ao lado, como parcela de quem viu o site montado.
+  it('CA-JF-41 — "Editou" e "Abriu a prévia" ficam ao lado de "Viu o site montado", fora da sequência', () => {
+    const secao = renderizarSeries({ antiga: null, nova: FUNIL_A2 });
+    const itens = within(within(secao).getByRole('list')).getAllByRole('listitem');
+    expect(within(itens[3]).getByText('Editou: 1 (100% de quem viu)')).toBeInTheDocument();
+    expect(within(itens[3]).getByText('Abriu a prévia: 1 (100% de quem viu)')).toBeInTheDocument();
+    // Não são linhas da sequência.
+    expect(itens).toHaveLength(8);
+    expect(itens.some((li) => li.querySelector('span')?.firstChild?.textContent === 'Editou')).toBe(false);
+  });
+
+  it('a parcela ao lado usa os números de Editou (4) e Abriu a prévia (5) e a base "Viu o site montado" (12)', () => {
+    const desigual: FunilJornada = {
+      ...FUNIL_A2,
+      etapas: FUNIL_A2.etapas.map((l) =>
+        l.etapa === 12 ? { ...l, visitas: 10 } : l.etapa === 4 ? { ...l, visitas: 5 } : l.etapa === 5 ? { ...l, visitas: 2 } : l,
+      ),
+    };
+    const secao = renderizarSeries({ antiga: null, nova: desigual });
+    expect(within(secao).getByText('Editou: 5 (50% de quem viu)')).toBeInTheDocument();
+    expect(within(secao).getByText('Abriu a prévia: 2 (20% de quem viu)')).toBeInTheDocument();
+  });
+
+  // L-04: 12 editaram e 10 viram o site montado (a etapa 12 é de visitas distintas, a 4 não depende dela):
+  // a parcela passa de 100%, e o painel mostra 100%.
+  it('a parcela "% de quem viu" tem teto de 100%: 12 editaram e 10 viram o site montado', () => {
+    const maisEditaram: FunilJornada = {
+      ...FUNIL_A2,
+      etapas: FUNIL_A2.etapas.map((l) =>
+        l.etapa === 12 ? { ...l, visitas: 10 } : l.etapa === 4 ? { ...l, visitas: 12 } : l.etapa === 5 ? { ...l, visitas: 11 } : l,
+      ),
+    };
+    const secao = renderizarSeries({ antiga: null, nova: maisEditaram });
+    expect(within(secao).getByText('Editou: 12 (100% de quem viu)')).toBeInTheDocument();
+    expect(within(secao).getByText('Abriu a prévia: 11 (100% de quem viu)')).toBeInTheDocument();
+    expect(within(secao).queryByText(/120%|110%/)).not.toBeInTheDocument();
+  });
+
+  it('sem ninguém que viu o site montado, a parcela mostra só a contagem, sem porcentagem', () => {
+    const semVistos: FunilJornada = { ...FUNIL_A2, etapas: FUNIL_A2.etapas.filter((l) => l.etapa !== 12) };
+    const secao = renderizarSeries({ antiga: null, nova: semVistos });
+    expect(within(secao).getByText('Editou: 1')).toBeInTheDocument();
+    expect(within(secao).getByText('Abriu a prévia: 1')).toBeInTheDocument();
+  });
+
+  it('"modelo pronto" entra na divisão do "Viu o site montado" só quando houve', () => {
+    const comPronto: FunilJornada = {
+      ...FUNIL_A2,
+      uso: [...FUNIL_A2.uso, { evento: 'lp_site_montado_modelo_pronto', aparelho: 'celular', origem: 'google_ads', visitas: 2 }],
+    };
+    const secao = renderizarSeries({ antiga: null, nova: comPronto });
+    expect(within(secao).getByText('com IA: 1 · modelo reserva: 1 · modelo pronto: 2 · tempo mediano: 14 s')).toBeInTheDocument();
+  });
+
+  // RF-JF-42 / CA-JF-42.
+  it('CA-JF-42 — a nota da série nova, com o texto literal, só na série nova', () => {
+    const NOTA = "Desde 19/11 a prévia abre sozinha depois da montagem; 'Abriu a prévia' conta só quem a abre por escolha.";
+    const secao = renderizarSeries({ antiga: FUNIL_ANTIGO, nova: FUNIL_A2 });
+    expect(within(secao).getByText(NOTA)).toBeInTheDocument();
+    fireEvent.click(within(secao).getByRole('radio', { name: /^Escolha de modelo/ }));
+    expect(within(secao).queryByText(NOTA)).toBeNull();
+  });
+
+  it('CA-JF-40 — "% da anterior" na sequência nova nunca passa de 100%', () => {
+    // 5 viram o site montado, mas 8 abriram a contratação (lote recusado levou a etapa 12 de 3 visitas).
+    const sobra: FunilJornada = {
+      etapas: [
+        { etapa: 1, aparelho: 'celular', origem: 'google_ads', visitas: 10 },
+        { etapa: 10, aparelho: 'celular', origem: 'google_ads', visitas: 4 },
+        { etapa: 11, aparelho: 'celular', origem: 'google_ads', visitas: 6 },
+        { etapa: 12, aparelho: 'celular', origem: 'google_ads', visitas: 5 },
+        { etapa: 6, aparelho: 'celular', origem: 'google_ads', visitas: 8 },
+      ],
+      uso: [],
+      pagou: [],
+      leitura: [],
+    };
+    render(
+      <FunilEmSeries
+        idTitulo="titulo-funil-teto"
+        titulo="Funil do teto"
+        corte={CORTE}
+        series={{ antiga: null, nova: sobra }}
+        filtro={TODOS}
+        carregando={false}
+        erro={false}
+        onTentar={() => {}}
+        textoVazio="Nada"
+        comAnterior
+      />,
+    );
+    const secao = screen.getByRole('region', { name: 'Funil do teto' });
+    const percentuais = within(within(secao).getByRole('list'))
+      .getAllByRole('listitem')
+      .flatMap((li) => [...li.textContent!.matchAll(/(\d+)% da anterior/g)].map((m) => Number(m[1])));
+    expect(percentuais.length).toBeGreaterThan(0);
+    expect(Math.max(...percentuais)).toBeLessThanOrEqual(100);
+    expect(within(secao).getAllByText(/100% da anterior/).length).toBeGreaterThan(0);
   });
 
   it('a linha extra de "Viu o site montado" põe cada contagem no seu lugar (IA 3, reserva 1)', () => {
@@ -189,7 +287,7 @@ describe('FunilEmSeries: duas séries, sem misturar (A2)', () => {
     expect(within(secao).queryByRole('table')).toBeNull();
   });
 
-  it('T31 — período cruzando a data: a nota sob o título e a comparação com cinco etapas', () => {
+  it('T31 — período cruzando a data: a nota sob o título e a comparação com quatro etapas', () => {
     const secao = renderizarSeries({ antiga: FUNIL_ANTIGO, nova: FUNIL_A2 });
     expect(
       within(secao).getByText('O período cruza a troca da entrada (20/11). Cada série mostra só as visitas do seu lado.'),
@@ -201,11 +299,10 @@ describe('FunilEmSeries: duas séries, sem misturar (A2)', () => {
       'Entrada com IA',
     ]);
     const linhas = within(tabela).getAllByRole('row').slice(1);
-    expect(linhas.map((l) => within(l).getAllByRole('cell').length + within(l).getAllByRole('rowheader').length)).toEqual([3, 3, 3, 3, 3]);
+    expect(linhas.map((l) => within(l).getAllByRole('cell').length + within(l).getAllByRole('rowheader').length)).toEqual([3, 3, 3, 3]);
     expect(linhas.map((l) => l.textContent)).toEqual([
       'Visitou100100',
       'Editou40100',
-      'Viu a página final30100',
       'Abriu a contratação20100',
       'Pagou10100',
     ]);

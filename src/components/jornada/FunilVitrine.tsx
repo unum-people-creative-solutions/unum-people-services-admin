@@ -4,6 +4,7 @@ import {
   ROTULOS_ETAPAS,
   ROTULOS_ETAPAS_ENTRADA_COM_IA,
   calcularFunil,
+  calcularAoLadoEntradaComIa,
   calcularFunilEntradaComIa,
   calcularUso,
   compararSeries,
@@ -30,8 +31,10 @@ interface FunilVitrineProps {
   acao?: ReactNode;
   // configurador-com-ia (blueprint §9.1): rótulos da série; sem a prop, as nove etapas de hoje.
   rotulos?: readonly string[];
-  // Linha extra sob o rótulo, pelo rótulo da etapa.
-  extras?: Readonly<Partial<Record<string, string>>>;
+  // Linhas extras sob o rótulo, pelo rótulo da etapa.
+  extras?: Readonly<Partial<Record<string, string | readonly string[]>>>;
+  // RF-JF-40: "% da anterior" nunca passa de 100% (visita que pulou etapa por lote recusado não conta a mais).
+  limitarAnterior?: boolean;
   // Nota sob o título do cartão.
   notaDoTitulo?: string | null;
   // Bloco abaixo das etapas (a comparação das séries).
@@ -51,6 +54,7 @@ export function FunilVitrine({
   acao,
   rotulos = ROTULOS_ETAPAS,
   extras,
+  limitarAnterior = false,
   notaDoTitulo = null,
   depois,
 }: FunilVitrineProps) {
@@ -88,13 +92,15 @@ export function FunilVitrine({
                 {rotulos.map((rotulo, i) => {
                   const valor = valores[i] ?? 0;
                   const sobreVisitou = i === 0 ? null : taxa(valor, visitou);
-                  const sobreAnterior = i === 0 ? null : taxa(valor, valores[i - 1] ?? 0);
+                  const bruta = i === 0 ? null : taxa(valor, valores[i - 1] ?? 0);
+                  const sobreAnterior = bruta !== null && limitarAnterior ? Math.min(100, bruta) : bruta;
                   const largura = escala > 0 ? Math.min(100, (valor / escala) * 100) : 0;
                   // medicao-e-robustez MR-25: a série de "Abriu a contratação" muda de regra a partir do dia
                   // da constante. Pelo rótulo, porque na série nova a etapa não é a 6ª da lista.
                   const numeroDeHoje = (ROTULOS_ETAPAS as readonly string[]).indexOf(rotulo) + 1;
                   const nota = notaDaEtapa(numeroDeHoje, DESDE_CHEGADA_NA_CONTRATACAO);
-                  const extra = extras?.[rotulo];
+                  const extraDaLinha = extras?.[rotulo];
+                  const linhasExtras = extraDaLinha === undefined ? [] : typeof extraDaLinha === 'string' ? [extraDaLinha] : extraDaLinha;
                   return (
                     // No celular a barra desce para uma linha própria; a ordem no DOM (rótulo, barra, número, taxa) não muda.
                     <li
@@ -104,7 +110,11 @@ export function FunilVitrine({
                       <span className="text-slate-700">
                         {rotulo}
                         {nota !== null ? <span className="block text-xs text-slate-500">{nota}</span> : null}
-                        {extra !== undefined ? <span className="block text-xs text-slate-500">{extra}</span> : null}
+                        {linhasExtras.map((extra) => (
+                          <span key={extra} className="block text-xs text-slate-500">
+                            {extra}
+                          </span>
+                        ))}
                       </span>
                       <span aria-hidden="true" className="order-last col-span-3 sm:order-none sm:col-span-1 block h-3 rounded-full bg-primary-50 overflow-hidden">
                         <span className="block h-full rounded-full bg-primary-500" style={{ width: `${largura}%` }} />
@@ -161,6 +171,16 @@ function diaMesDoCorte(corte: string): string {
 
 const SEM_VISITAS_ANTIGA = new Array<number>(ROTULOS_ETAPAS.length).fill(0);
 const SEM_VISITAS_NOVA = new Array<number>(ROTULOS_ETAPAS_ENTRADA_COM_IA.length).fill(0);
+const SEM_AO_LADO = { editou: 0, abriuAPrevia: 0 };
+
+// RF-JF-42 (decisão do dono, D3): uma nota, sem terceira série. Texto literal.
+const NOTA_DA_SERIE_NOVA = "Desde 19/11 a prévia abre sozinha depois da montagem; 'Abriu a prévia' conta só quem a abre por escolha.";
+
+// RF-JF-41: contagem e, havendo quem viu o site montado, a parcela dessa base.
+function parcela(rotulo: string, valor: number, base: number): string {
+  const pct = taxa(valor, base);
+  return pct === null ? `${rotulo}: ${valor}` : `${rotulo}: ${valor} (${Math.min(100, pct)}% de quem viu)`;
+}
 const SETAS = ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'];
 
 export function FunilEmSeries({
@@ -182,6 +202,7 @@ export function FunilEmSeries({
   const valoresAntiga = series ? (series.antiga ? calcularFunil(series.antiga, filtro) : SEM_VISITAS_ANTIGA) : undefined;
   const valoresNova = series ? (series.nova ? calcularFunilEntradaComIa(series.nova, filtro) : SEM_VISITAS_NOVA) : undefined;
   const usoNova = series?.nova ? calcularUso(series.nova, filtro) : {};
+  const aoLadoNova = series?.nova ? calcularAoLadoEntradaComIa(series.nova, filtro) : SEM_AO_LADO;
 
   // Padrão: a série que tem visitas no período; se as duas têm, a nova.
   const automatica: SerieDoFunil =
@@ -246,23 +267,39 @@ export function FunilEmSeries({
     : null;
 
   const mediana = medianaDaMontagem(usoNova);
-  const extrasNova: Partial<Record<string, string>> = {
+  const viramOSite = valoresNova?.[ROTULOS_ETAPAS_ENTRADA_COM_IA.indexOf('Viu o site montado')] ?? 0;
+  // RF-JF-22: "modelo pronto" também é "Viu o site montado"; entra na divisão só quando houve.
+  const modeloPronto = usoNova.lp_site_montado_modelo_pronto ?? 0;
+  const extrasNova: Partial<Record<string, string | readonly string[]>> = {
     Começou: `pelo campo do topo: ${usoNova.lp_topo_comecou ?? 0}`,
-    'Viu o site montado':
+    'Viu o site montado': [
       `com IA: ${usoNova.lp_site_montado_ia ?? 0} · modelo reserva: ${usoNova.lp_site_montado_reserva ?? 0}` +
-      (mediana !== null ? ` · tempo mediano: ${mediana} s` : ''),
+        (modeloPronto > 0 ? ` · modelo pronto: ${modeloPronto}` : '') +
+        (mediana !== null ? ` · tempo mediano: ${mediana} s` : ''),
+      parcela('Editou', aoLadoNova.editou, viramOSite),
+      parcela('Abriu a prévia', aoLadoNova.abriuAPrevia, viramOSite),
+    ],
   };
 
   const comparacao =
-    cruza && valoresAntiga && valoresNova ? <ComparacaoDasSeries linhas={compararSeries(valoresAntiga, valoresNova)} /> : null;
+    cruza && valoresAntiga && valoresNova ? (
+      <ComparacaoDasSeries linhas={compararSeries(valoresAntiga, valoresNova, aoLadoNova)} />
+    ) : null;
 
-  const comuns = { idTitulo, titulo, carregando, erro, onTentar, textoVazio, comAnterior, acao: seletor, notaDoTitulo, depois: comparacao };
+  const comuns = { idTitulo, titulo, carregando, erro, onTentar, textoVazio, comAnterior, acao: seletor, notaDoTitulo };
 
   return serie === 'antiga' ? (
-    <FunilVitrine {...comuns} valores={valoresAntiga} />
+    <FunilVitrine {...comuns} depois={comparacao} valores={valoresAntiga} />
   ) : (
     <FunilVitrine
       {...comuns}
+      depois={
+        <>
+          <p className="mt-4 text-xs text-slate-500">{NOTA_DA_SERIE_NOVA}</p>
+          {comparacao}
+        </>
+      }
+      limitarAnterior
       valores={valoresNova}
       rotulos={ROTULOS_ETAPAS_ENTRADA_COM_IA}
       extras={series?.nova ? extrasNova : undefined}
