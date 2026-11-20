@@ -67,6 +67,17 @@ const ROTULOS_EVENTOS: Record<string, string> = {
   lp_topo_comecou: 'Começou no topo',
   lp_janela_aberta: 'Abriu a janela',
   lp_janela_enviada: 'Enviou os dados',
+  // jornada-fluxo-atual RF-JF-05/06/07/08 (RF-JF-43): passos novos, nomes da tabela "Vale em".
+  lp_site_montado_modelo_pronto: 'Viu o site montado com um modelo pronto',
+  lp_previa_chegada_vista: 'Viu o aviso de chegada na prévia',
+  lp_previa_chegada_fechada: 'Fechou o aviso de chegada na prévia',
+  lp_editor_aviso_edicao_visto: 'Viu o aviso da primeira edição',
+  lp_editor_aviso_edicao_fechado: 'Fechou o aviso da primeira edição',
+  lp_rascunho_troca_aberta: 'Rascunho: viu a confirmação de troca',
+  lp_rascunho_troca_continuar: 'Rascunho: escolheu continuar o atual',
+  lp_rascunho_troca_outra: 'Rascunho: escolheu começar outra página',
+  lp_verificacao_interacao_pedida: 'Verificação anti-robô: pediu interação',
+  lp_verificacao_liberada: 'Verificação anti-robô: liberou',
 };
 
 // Blueprint §9.3: "({s} s)" com os segundos do envio da janela até o site aparecer (1 a 300).
@@ -125,6 +136,9 @@ export const ROTULOS_CLIQUE: Record<string, string> = {
   rodape_ajuda: 'Rodapé: ajuda',
   // configurador-com-ia A2: exemplo do campo do topo (B2).
   hero_exemplo: 'Topo: tocou num exemplo',
+  // jornada-fluxo-atual RF-JF-07: "Continuar editando" na home com rascunho.
+  hero_continuar: 'Topo: continuar editando',
+  fixo_continuar: 'Botão fixo (celular): continuar editando',
 };
 
 // RF-3-05: seções na ordem da página. Saúde, CRM e Blog usam a PaginaDeProduto.
@@ -142,11 +156,16 @@ const BOTOES_INICIO = [
   'hero_montar', 'hero_planos', 'galeria_modelo', 'galeria_aparelho', 'galeria_montar', 'vantagens_montar',
   'plano_escolher', 'blog_conhecer', 'blog_plano', 'crm_conhecer', 'crm_plano', 'pergunta_abrir',
   'fechamento_montar', 'fixo_montar', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
+  // jornada-fluxo-atual RF-JF-07: "Continuar editando" (home com rascunho).
+  'hero_continuar', 'fixo_continuar',
 ] as const;
 
 const BOTOES_PRODUTO = [
   'hero_montar', 'hero_planos', 'plano_escolher', 'pergunta_abrir', 'fechamento_montar', 'produto_todos_planos',
   'produto_crm', 'marca', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
+  // jornada-fluxo-atual RF-JF-07: o "Continuar editando" do topo (HeroProduto) também vale em Saúde, CRM e Blog;
+  // o fixo é só da home.
+  'hero_continuar',
 ] as const;
 
 export const BOTOES_DA_PAGINA: Record<PaginaDeEntrada, readonly string[]> = {
@@ -247,6 +266,10 @@ export const ROTULOS_CLIQUE_CONFIGURADOR: Record<string, string> = {
   montagem_tentar: 'Clicou em "Tentar com a IA"',
   editor_ia_sugestao: 'Tocou numa sugestão do Editar com IA',
   editor_ia_contratar: 'Clicou em Contratar no convite da IA',
+  // jornada-fluxo-atual RF-JF-04: troca na gaveta do editor (e da prévia).
+  editor_layout: 'Trocou o layout no editor',
+  editor_tema: 'Trocou o tema no editor',
+  editor_botao: 'Mudou o destino do botão no editor',
 };
 
 // TECH-DESIGN §4.5: nome do erro (sem "lp_erro_") → rótulo no painel. A prévia repete os do editor.
@@ -734,18 +757,19 @@ export const ROTULOS_ETAPAS_ENTRADA_COM_IA = [
   'Começou',
   'Enviou os dados',
   'Viu o site montado',
-  'Editou',
-  'Viu a página final',
   'Abriu a contratação',
   'Enviou a contratação',
   'Contratou',
   'Pagou',
 ] as const;
 
-// D-C-01: números da API das nove primeiras etapas da série nova; "Pagou" vem de `pagou`.
-const ETAPAS_DA_ENTRADA_COM_IA = [1, 10, 11, 12, 4, 5, 6, 7, 8] as const;
+// D-C-01 e RF-JF-40: números da API das sete primeiras etapas da sequência da série nova; "Pagou" vem de `pagou`.
+// "Editou" (4) e "Abriu a prévia" (5) saem da sequência (RF-JF-41) e vão para calcularAoLadoEntradaComIa.
+const ETAPAS_DA_ENTRADA_COM_IA = [1, 10, 11, 12, 6, 7, 8] as const;
+const ETAPA_EDITOU = 4;
+const ETAPA_ABRIU_A_PREVIA = 5;
 
-// Os dez valores na ordem de ROTULOS_ETAPAS_ENTRADA_COM_IA.
+// Os oito valores na ordem de ROTULOS_ETAPAS_ENTRADA_COM_IA.
 export function calcularFunilEntradaComIa(funil: FunilJornada, filtro: FiltroJornada): number[] {
   const valores = new Array<number>(ROTULOS_ETAPAS_ENTRADA_COM_IA.length).fill(0);
   for (const linha of funil.etapas) {
@@ -757,6 +781,22 @@ export function calcularFunilEntradaComIa(funil: FunilJornada, filtro: FiltroJor
     if (passa(linha, filtro)) valores[ETAPAS_DA_ENTRADA_COM_IA.length] += linha.visitas;
   }
   return valores;
+}
+
+export interface AoLadoDaEntradaComIa {
+  editou: number;
+  abriuAPrevia: number;
+}
+
+// RF-JF-41: visitas que editaram e que abriram a prévia (na série nova, só por escolha), com o mesmo filtro.
+export function calcularAoLadoEntradaComIa(funil: FunilJornada, filtro: FiltroJornada): AoLadoDaEntradaComIa {
+  const aoLado = { editou: 0, abriuAPrevia: 0 };
+  for (const linha of funil.etapas) {
+    if (!passa(linha, filtro)) continue;
+    if (linha.etapa === ETAPA_EDITOU) aoLado.editou += linha.visitas;
+    else if (linha.etapa === ETAPA_ABRIU_A_PREVIA) aoLado.abriuAPrevia += linha.visitas;
+  }
+  return aoLado;
 }
 
 // D-C-03: faixas de 1 s somadas como uso pela API (lp_site_montado_s_1 … _30 e _mais).
@@ -784,8 +824,9 @@ export function medianaDaMontagem(uso: Record<string, number>): MedianaDaMontage
   return null;
 }
 
-// Blueprint §9.1, bloco de comparação: só as etapas que existem nas duas séries.
-export const ETAPAS_COMPARAVEIS = ['Visitou', 'Editou', 'Viu a página final', 'Abriu a contratação', 'Pagou'] as const;
+// Blueprint §9.1, bloco de comparação: só as etapas que existem nas duas séries com o mesmo sentido.
+// "Viu a página final" fica de fora: na série nova a prévia abre sozinha (D-PM-10), e "Abriu a prévia" não se compara.
+export const ETAPAS_COMPARAVEIS = ['Visitou', 'Editou', 'Abriu a contratação', 'Pagou'] as const;
 
 export interface LinhaDaComparacao {
   rotulo: (typeof ETAPAS_COMPARAVEIS)[number];
@@ -794,18 +835,25 @@ export interface LinhaDaComparacao {
   nova: number | null;
 }
 
-// antiga: os nove valores de calcularFunil; nova: os dez de calcularFunilEntradaComIa.
-export function compararSeries(antiga: number[], nova: number[]): LinhaDaComparacao[] {
+// antiga: os nove valores de calcularFunil; nova: os oito de calcularFunilEntradaComIa; aoLado: "Editou" da nova.
+export function compararSeries(antiga: number[], nova: number[], aoLado: AoLadoDaEntradaComIa): LinhaDaComparacao[] {
+  const valorNovo = (rotulo: (typeof ETAPAS_COMPARAVEIS)[number]) =>
+    rotulo === 'Editou' ? aoLado.editou : (nova[ROTULOS_ETAPAS_ENTRADA_COM_IA.indexOf(rotulo)] ?? 0);
   return ETAPAS_COMPARAVEIS.map((rotulo) => ({
     rotulo,
     antiga: taxa(antiga[ROTULOS_ETAPAS.indexOf(rotulo)] ?? 0, antiga[0] ?? 0),
-    nova: taxa(nova[ROTULOS_ETAPAS_ENTRADA_COM_IA.indexOf(rotulo)] ?? 0, nova[0] ?? 0),
+    nova: taxa(valorNovo(rotulo), nova[0] ?? 0),
   }));
 }
 
 // Brasília é UTC−3 o ano todo (sem horário de verão), como o fuso fixo da API.
 export function inicioDoDiaEmBrasilia(dia: string): InstanteMs {
   return Date.parse(`${dia}T00:00:00-03:00`);
+}
+
+// O corte da série nova (dia AAAA-MM-DD ou instante ISO com fuso) em ms.
+function instanteDoCorte(corte: string): InstanteMs {
+  return corte.includes('T') ? Date.parse(corte) : inicioDoDiaEmBrasilia(corte);
 }
 
 type JanelaMs = { desde: InstanteMs; ate: InstanteMs };
@@ -818,7 +866,7 @@ export function dividirPelaEntradaComIa(
   corte: string | null,
 ): { antiga: JanelaMs | null; nova: JanelaMs | null } {
   if (corte === null) return { antiga: { desde, ate }, nova: null };
-  const inicio = corte.includes('T') ? Date.parse(corte) : inicioDoDiaEmBrasilia(corte);
+  const inicio = instanteDoCorte(corte);
   if (ate < inicio) return { antiga: { desde, ate }, nova: null };
   if (desde >= inicio) return { antiga: null, nova: { desde, ate } };
   return { antiga: { desde, ate: inicio - 1 }, nova: { desde: inicio, ate } };
@@ -857,7 +905,7 @@ export function maiorEtapa(etapas: number[]): number | null {
 }
 
 // configurador-com-ia (SPEC_DEVIATION ADM-1): com as etapas 10, 11 e 12 da A2 (D-C-01), o maior número
-// não é mais o ponto mais avançado. Ordem de avanço das duas séries juntas; de 1 a 9, a mesma de antes.
+// não é mais o ponto mais avançado. Ordem de avanço da série antiga; de 1 a 9, a mesma de antes.
 const ORDEM_DE_AVANCO: ReadonlyArray<[number, string]> = [
   [1, 'Visitou'],
   [2, 'Abriu o configurador'],
@@ -873,17 +921,42 @@ const ORDEM_DE_AVANCO: ReadonlyArray<[number, string]> = [
   [9, 'Pagou'],
 ];
 
-// Rótulo da etapa mais avançada da visita; null sem etapa conhecida.
-export function ateOndeFoi(etapas: readonly number[]): string | null {
+// jornada-fluxo-atual RF-JF-44: ordem da série nova, a sequência de RF-JF-40. "Editou" (4) e "Abriu a prévia" (5)
+// ficam logo antes de "Viu o site montado" (12): nunca passam à frente dele; sem a 12 (lote recusado, rascunho
+// retomado), aparecem pelo nome. As etapas 2 e 3 não existem na série; ficam só para visita que cruza o corte.
+const ORDEM_DE_AVANCO_ENTRADA_COM_IA: ReadonlyArray<[number, string]> = [
+  [1, 'Visitou'],
+  [2, 'Abriu o configurador'],
+  [10, 'Começou'],
+  [3, 'Escolheu modelo e tema'],
+  [11, 'Enviou os dados'],
+  [4, 'Editou'],
+  [5, 'Abriu a prévia'],
+  [12, 'Viu o site montado'],
+  [6, 'Abriu a contratação'],
+  [7, 'Enviou a contratação'],
+  [8, 'Contratou'],
+  [9, 'Pagou'],
+];
+
+// Rótulo da etapa mais avançada da visita; null sem etapa conhecida. `inicio` (ms) da visita contra `corte`
+// (DESDE_ENTRADA_COM_IA) diz de que série ela é; sem corte, tudo é série antiga.
+export function ateOndeFoi(etapas: readonly number[], inicio: InstanteMs, corte: string | null): string | null {
+  const daSerieNova = corte !== null && inicio >= instanteDoCorte(corte);
   let rotulo: string | null = null;
-  for (const [etapa, nome] of ORDEM_DE_AVANCO) {
+  for (const [etapa, nome] of daSerieNova ? ORDEM_DE_AVANCO_ENTRADA_COM_IA : ORDEM_DE_AVANCO) {
     if (etapas.includes(etapa)) rotulo = nome;
   }
   return rotulo;
 }
 
 // RF-A2-03: o campo do topo e o site montado viram uso da visita, mas não são uso do editor.
-const USOS_QUE_NAO_SAO_DO_EDITOR = new Set(['lp_topo_comecou', 'lp_site_montado_ia', 'lp_site_montado_reserva']);
+const USOS_QUE_NAO_SAO_DO_EDITOR = new Set([
+  'lp_topo_comecou',
+  'lp_site_montado_ia',
+  'lp_site_montado_reserva',
+  'lp_site_montado_modelo_pronto',
+]);
 
 export function usouOEditor(usos: readonly string[]): boolean {
   return usos.some((u) => !USOS_QUE_NAO_SAO_DO_EDITOR.has(u) && !u.startsWith(PREFIXO_FAIXA_DA_MONTAGEM));

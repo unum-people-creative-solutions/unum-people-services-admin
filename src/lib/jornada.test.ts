@@ -45,6 +45,9 @@ import {
   inicioDoDiaEmBrasilia,
   dividirPelaEntradaComIa,
   compararSeries,
+  calcularAoLadoEntradaComIa,
+  ateOndeFoi,
+  usouOEditor,
   OPCOES_MENU,
   LINHAS_DA_IA,
 } from './jornada';
@@ -259,6 +262,9 @@ const TABELA_CLIQUES: Record<string, string> = {
   rodape_privacidade: 'Rodapé: privacidade',
   rodape_ajuda: 'Rodapé: ajuda',
   hero_exemplo: 'Topo: tocou num exemplo', // configurador-com-ia A2 (lp_clique_hero_exemplo)
+  // jornada-fluxo-atual RF-JF-07: "Continuar editando" na home com rascunho.
+  hero_continuar: 'Topo: continuar editando',
+  fixo_continuar: 'Botão fixo (celular): continuar editando',
 };
 
 describe('rótulos da leitura (RF-3-14)', () => {
@@ -291,10 +297,14 @@ describe('rótulos da leitura (RF-3-14)', () => {
       'hero_montar', 'hero_planos', 'galeria_modelo', 'galeria_aparelho', 'galeria_montar', 'vantagens_montar',
       'plano_escolher', 'blog_conhecer', 'blog_plano', 'crm_conhecer', 'crm_plano', 'pergunta_abrir',
       'fechamento_montar', 'fixo_montar', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
+      // jornada-fluxo-atual RF-JF-07: leitura da home (ler_inicio_clique_*), depois dos da tabela de antes.
+      'hero_continuar', 'fixo_continuar',
     ];
     const produto = [
       'hero_montar', 'hero_planos', 'plano_escolher', 'pergunta_abrir', 'fechamento_montar', 'produto_todos_planos',
       'produto_crm', 'marca', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
+      // L-02: o "Continuar editando" do topo existe também em Saúde, CRM e Blog (HeroProduto); o fixo é só da home.
+      'hero_continuar',
     ];
     expect(BOTOES_DA_PAGINA).toEqual({ inicio, saude: produto, crm: produto, blog: produto });
   });
@@ -510,6 +520,10 @@ const TABELA_CLIQUES_CONFIGURADOR: Record<string, string> = {
   montagem_tentar: 'Clicou em "Tentar com a IA"',
   editor_ia_sugestao: 'Tocou numa sugestão do Editar com IA',
   editor_ia_contratar: 'Clicou em Contratar no convite da IA',
+  // jornada-fluxo-atual RF-JF-04 (nomes da tabela "Vale em" de medicao-e-robustez).
+  editor_layout: 'Trocou o layout no editor',
+  editor_tema: 'Trocou o tema no editor',
+  editor_botao: 'Mudou o destino do botão no editor',
 };
 
 const TABELA_ERROS: Record<string, string> = {
@@ -584,8 +598,8 @@ const TABELA_SECOES_PREVIA: Record<string, string> = {
 };
 
 describe('rótulos do configurador (RF-4-28, CA-4-24)', () => {
-  it('tabelas completas e na ordem da spec (42 cliques com os 2 da B1 e os 3 da A2, 50 erros com os 8 da A2 e o 1 de ia-montagem-parcial, 13 seções, 9 rotas)', () => {
-    expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(42);
+  it('tabelas completas e na ordem da spec (45 cliques com os 2 da B1, os 3 da A2 e os 3 da gaveta de jornada-fluxo-atual, 50 erros com os 8 da A2 e o 1 de ia-montagem-parcial, 13 seções, 9 rotas)', () => {
+    expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(45);
     expect(Object.keys(TABELA_ERROS)).toHaveLength(50);
     expect(Object.keys(TABELA_SECOES_PREVIA)).toHaveLength(13);
     expect(Object.entries(ROTULOS_CLIQUE_CONFIGURADOR)).toEqual(Object.entries(TABELA_CLIQUES_CONFIGURADOR));
@@ -1017,14 +1031,12 @@ describe('série "Entrada com IA" (A2)', () => {
     expect(DESDE_ENTRADA_COM_IA).toBe('2026-11-17T16:28:34-03:00');
   });
 
-  it('dez rótulos na ordem do blueprint §9.1', () => {
+  it('oito rótulos na sequência de RF-JF-40 (Editou e Abriu a prévia ficam ao lado)', () => {
     expect(ROTULOS_ETAPAS_ENTRADA_COM_IA).toEqual([
       'Visitou',
       'Começou',
       'Enviou os dados',
       'Viu o site montado',
-      'Editou',
-      'Viu a página final',
       'Abriu a contratação',
       'Enviou a contratação',
       'Contratou',
@@ -1032,8 +1044,9 @@ describe('série "Entrada com IA" (A2)', () => {
     ]);
   });
 
-  it('T31 — com a fixture da A2, as dez etapas valem 1 (etapas 1, 10, 11, 12, 4 a 8 e Pagou)', () => {
-    expect(calcularFunilEntradaComIa(funilA2, todos)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+  it('T31 — com a fixture da A2, as oito etapas da sequência valem 1 (etapas 1, 10, 11, 12, 6 a 8 e Pagou)', () => {
+    expect(calcularFunilEntradaComIa(funilA2, todos)).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(calcularAoLadoEntradaComIa(funilA2, todos)).toEqual({ editou: 1, abriuAPrevia: 1 });
   });
 
   it('lê cada etapa do seu número e Pagou de pagou; respeita o filtro', () => {
@@ -1060,8 +1073,11 @@ describe('série "Entrada com IA" (A2)', () => {
       ],
       leitura: [],
     };
-    expect(calcularFunilEntradaComIa(f, todos)).toEqual([150, 80, 60, 55, 40, 20, 10, 5, 4, 4]);
-    expect(calcularFunilEntradaComIa(f, { origem: 'direto', aparelho: 'todos' })).toEqual([50, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+    expect(calcularFunilEntradaComIa(f, todos)).toEqual([150, 80, 60, 55, 10, 5, 4, 4]);
+    expect(calcularFunilEntradaComIa(f, { origem: 'direto', aparelho: 'todos' })).toEqual([50, 0, 0, 0, 0, 0, 0, 1]);
+    // RF-JF-41: Editou (4) e Abriu a prévia (5) saem da sequência e vão para o lado.
+    expect(calcularAoLadoEntradaComIa(f, todos)).toEqual({ editou: 40, abriuAPrevia: 20 });
+    expect(calcularAoLadoEntradaComIa(f, { origem: 'direto', aparelho: 'todos' })).toEqual({ editou: 0, abriuAPrevia: 0 });
   });
 
   it('calcularFunil de hoje continua com as nove etapas e ignora 10, 11 e 12', () => {
@@ -1086,25 +1102,28 @@ describe('série "Entrada com IA" (A2)', () => {
     expect(medianaDaMontagem({ lp_site_montado_s_31: 4 })).toBeNull();
   });
 
-  it('ETAPAS_COMPARAVEIS: as cinco etapas que existem nas duas séries', () => {
-    expect(ETAPAS_COMPARAVEIS).toEqual(['Visitou', 'Editou', 'Viu a página final', 'Abriu a contratação', 'Pagou']);
+  it('ETAPAS_COMPARAVEIS: as quatro etapas que existem nas duas séries com o mesmo sentido', () => {
+    // "Viu a página final" fica de fora: na série nova a prévia abre sozinha e "Abriu a prévia" não é comparável.
+    expect(ETAPAS_COMPARAVEIS).toEqual(['Visitou', 'Editou', 'Abriu a contratação', 'Pagou']);
     for (const rotulo of ETAPAS_COMPARAVEIS) {
       expect(ROTULOS_ETAPAS).toContain(rotulo);
-      expect(ROTULOS_ETAPAS_ENTRADA_COM_IA).toContain(rotulo);
     }
   });
 
   it('compararSeries: cada etapa comum em "de cada 100 visitas" de cada série', () => {
     const antiga = [200, 100, 80, 50, 30, 20, 10, 6, 4];
-    const nova = [100, 70, 60, 55, 40, 25, 12, 8, 6, 5];
-    expect(compararSeries(antiga, nova)).toEqual([
+    const nova = [100, 70, 60, 55, 12, 8, 6, 5];
+    expect(compararSeries(antiga, nova, { editou: 40, abriuAPrevia: 25 })).toEqual([
       { rotulo: 'Visitou', antiga: 100, nova: 100 },
       { rotulo: 'Editou', antiga: 25, nova: 40 },
-      { rotulo: 'Viu a página final', antiga: 15, nova: 25 },
       { rotulo: 'Abriu a contratação', antiga: 10, nova: 12 },
       { rotulo: 'Pagou', antiga: 2, nova: 5 },
     ]);
-    expect(compararSeries(new Array(9).fill(0), nova)[0]).toEqual({ rotulo: 'Visitou', antiga: null, nova: 100 });
+    expect(compararSeries(new Array(9).fill(0), nova, { editou: 0, abriuAPrevia: 0 })[0]).toEqual({
+      rotulo: 'Visitou',
+      antiga: null,
+      nova: 100,
+    });
   });
 
   it('inicioDoDiaEmBrasilia: meia-noite de Brasília (UTC−3) em ms', () => {
@@ -1233,5 +1252,90 @@ describe('rótulos da A2: uso do editor e linha do tempo', () => {
     const resumo = resumirVisita(eventos, 'v');
     expect(resumo?.paginas[0].acoes.map((a) => a.rotulo)).toEqual(['Abriu a janela', 'Enviou os dados', 'IA: pediu mudança']);
     expect(resumo?.paginas[0].erros).toEqual(['nome vazio na janela']);
+  });
+});
+
+// jornada-fluxo-atual RF-JF-44 (pedido do dono, 20/11): "Até onde foi" pela sequência da série nova.
+describe('ateOndeFoi: série nova (RF-JF-44)', () => {
+  const corte = '2026-11-17T16:28:34-03:00';
+  const depois = Date.parse('2026-11-20T10:00:00-03:00');
+  const antes = Date.parse('2026-11-15T10:00:00-03:00');
+
+  it.each([
+    // visitas reais de exemplo
+    [[1, 10, 11, 12, 5], 'Viu o site montado'],
+    [[1, 10, 11, 12, 6], 'Abriu a contratação'],
+    [[1, 10, 11, 12, 4, 5], 'Viu o site montado'],
+    [[1, 10, 11, 12, 4], 'Viu o site montado'],
+    [[1, 10, 11, 12, 5, 6, 7], 'Enviou a contratação'],
+    [[1, 10, 11, 12], 'Viu o site montado'],
+    [[1, 10, 11], 'Enviou os dados'],
+    [[1, 10], 'Começou'],
+    [[1], 'Visitou'],
+    [[1, 2, 3], 'Escolheu modelo e tema'],
+  ])('com as etapas %j, "%s"', (etapas, rotulo) => {
+    expect(ateOndeFoi(etapas, depois, corte)).toBe(rotulo);
+  });
+
+  // Decisão: sem a 12 (lote recusado ou rascunho retomado), a 4 e a 5 mostram o que a pessoa fez, sem passar a 12.
+  it('sem a etapa 12, "Abriu a prévia" e "Editou" aparecem pelo nome e ficam atrás de "Viu o site montado"', () => {
+    expect(ateOndeFoi([1, 10, 5], depois, corte)).toBe('Abriu a prévia');
+    expect(ateOndeFoi([1, 10, 11, 5], depois, corte)).toBe('Abriu a prévia');
+    expect(ateOndeFoi([1, 10, 4], depois, corte)).toBe('Editou');
+    expect(ateOndeFoi([1, 10, 11, 12, 5], depois, corte)).toBe('Viu o site montado');
+  });
+
+  it('visita que começou exatamente no corte é da série nova; 1 ms antes, da antiga', () => {
+    const noCorte = Date.parse(corte);
+    expect(ateOndeFoi([1, 10, 11, 12, 5], noCorte, corte)).toBe('Viu o site montado');
+    expect(ateOndeFoi([1, 10, 11, 12, 5], noCorte - 1, corte)).toBe('Viu a página final');
+  });
+
+  it('corte só com o dia vale a meia-noite de Brasília', () => {
+    expect(ateOndeFoi([1, 10, 11, 12, 5], Date.parse('2026-11-20T00:00:00-03:00'), '2026-11-20')).toBe('Viu o site montado');
+    expect(ateOndeFoi([1, 10, 11, 12, 5], Date.parse('2026-11-19T23:59:59-03:00'), '2026-11-20')).toBe('Viu a página final');
+  });
+
+  it('série antiga: a ordem de hoje (Editou e Viu a página final à frente de Viu o site montado)', () => {
+    expect(ateOndeFoi([1, 10, 11, 12, 5], antes, corte)).toBe('Viu a página final');
+    expect(ateOndeFoi([1, 10, 11, 12, 4], antes, corte)).toBe('Editou');
+    expect(ateOndeFoi([1, 10, 11, 12, 6], antes, corte)).toBe('Abriu a contratação');
+    expect(ateOndeFoi([1, 2, 3], antes, corte)).toBe('Escolheu modelo e tema');
+  });
+
+  it('sem corte (null), tudo é série antiga; sem etapas, null', () => {
+    expect(ateOndeFoi([1, 10, 11, 12, 5], depois, null)).toBe('Viu a página final');
+    expect(ateOndeFoi([], depois, corte)).toBeNull();
+  });
+});
+
+// jornada-fluxo-atual RF-JF-43: rótulos em português dos eventos novos na linha do tempo da visita.
+describe('rótulos dos eventos novos (RF-JF-43)', () => {
+  const evento = (nome: string, extra: Partial<EventoJornada> = {}): EventoJornada =>
+    ({ visita: 'v', caminho: '/', em: 1, nome, ...extra }) as EventoJornada;
+
+  it.each([
+    ['lp_clique_editor_layout', 'Trocou o layout no editor'],
+    ['lp_clique_editor_tema', 'Trocou o tema no editor'],
+    ['lp_clique_editor_botao', 'Mudou o destino do botão no editor'],
+    ['lp_site_montado_modelo_pronto', 'Viu o site montado com um modelo pronto'],
+    ['lp_previa_chegada_vista', 'Viu o aviso de chegada na prévia'],
+    ['lp_previa_chegada_fechada', 'Fechou o aviso de chegada na prévia'],
+    ['lp_editor_aviso_edicao_visto', 'Viu o aviso da primeira edição'],
+    ['lp_editor_aviso_edicao_fechado', 'Fechou o aviso da primeira edição'],
+    ['lp_clique_hero_continuar', 'Clicou: Topo: continuar editando'],
+    ['lp_clique_fixo_continuar', 'Clicou: Botão fixo (celular): continuar editando'],
+    ['lp_rascunho_troca_aberta', 'Rascunho: viu a confirmação de troca'],
+    ['lp_rascunho_troca_continuar', 'Rascunho: escolheu continuar o atual'],
+    ['lp_rascunho_troca_outra', 'Rascunho: escolheu começar outra página'],
+    ['lp_verificacao_interacao_pedida', 'Verificação anti-robô: pediu interação'],
+    ['lp_verificacao_liberada', 'Verificação anti-robô: liberou'],
+  ])('%s → "%s"', (nome, rotulo) => {
+    expect(rotuloDoEvento(evento(nome))).toBe(rotulo);
+  });
+
+  it('"modelo pronto" não leva segundos (RF-JF-05) e não conta como uso do editor', () => {
+    expect(rotuloDoEvento(evento('lp_site_montado_modelo_pronto'))).not.toBeNull();
+    expect(usouOEditor(['lp_site_montado_modelo_pronto'])).toBe(false);
   });
 });

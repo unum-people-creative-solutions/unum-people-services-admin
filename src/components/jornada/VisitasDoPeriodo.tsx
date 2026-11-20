@@ -4,6 +4,7 @@ import type { MouseEvent } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { VisitaJornada } from '@/types/jornada';
 import {
+  DESDE_ENTRADA_COM_IA,
   ateOndeFoi,
   dadosDaVisita,
   formatarDiaMes,
@@ -111,7 +112,7 @@ export function VisitasDoPeriodo({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {visitas.slice(0, limite).map((v) => {
-                    const etapa = ateOndeFoi(v.etapas);
+                    const etapa = ateOndeFoi(v.etapas, v.inicio, DESDE_ENTRADA_COM_IA);
                     const aberta = abertas.has(v.visita);
                     const hora = formatarHora(v.inicio);
                     const idArea = `visita-aberta-${v.visita}`;

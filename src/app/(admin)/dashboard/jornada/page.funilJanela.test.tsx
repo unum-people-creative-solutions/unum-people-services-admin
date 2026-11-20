@@ -98,10 +98,10 @@ describe('Página Jornada: funil por janela com a fixture real da série nova (D
       expect.stringContaining(`/admin/dashboard/jornada/funil?desde=${(T - DIA) as InstanteMs}&ate=${T as InstanteMs}`),
     ]);
     expect(within(funil).getByRole('radio', { name: /^Entrada com IA/ })).toHaveAttribute('aria-checked', 'true');
-    // Visitou 2, etapas 10 a 12 com 2; as etapas 4 a 8 (Editou a Contratou) e Pagou com 1 cada (a 2, a 3 e a 9 não existem na série).
-    const valores = ['Visitou', 'Começou', 'Enviou os dados', 'Viu o site montado', 'Editou', 'Viu a página final',
+    // Visitou 2, etapas 10 a 12 com 2; as etapas 6 a 8 (Abriu a contratação a Contratou) e Pagou com 1 cada (a 2, a 3, a 4, a 5 e a 9 não são linhas da série).
+    const valores = ['Visitou', 'Começou', 'Enviou os dados', 'Viu o site montado',
       'Abriu a contratação', 'Enviou a contratação', 'Contratou', 'Pagou'].map((r) => valorDa(lista, r));
-    expect(valores).toEqual(['2', '2', '2', '2', '1', '1', '1', '1', '1', '1']);
+    expect(valores).toEqual(['2', '2', '2', '2', '1', '1', '1', '1']);
   });
 
   test('a divisão "com IA / modelo reserva", o campo do topo e o tempo mediano saem dos usos da fixture', async () => {

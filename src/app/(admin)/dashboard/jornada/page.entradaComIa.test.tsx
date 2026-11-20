@@ -94,17 +94,17 @@ describe('Página Jornada: funil em duas séries (A2)', () => {
     expect(
       within(funil).getByText('O período cruza a troca da entrada (05/11). Cada série mostra só as visitas do seu lado.'),
     ).toBeInTheDocument();
-    expect(within(within(funil).getByRole('table')).getAllByRole('row')).toHaveLength(6);
+    expect(within(within(funil).getByRole('table')).getAllByRole('row')).toHaveLength(5);
   });
 
-  test('C-V33 — a série nova vem marcada, com as dez etapas e as linhas extras', async () => {
+  test('C-V33 — a série nova vem marcada, com as oito etapas e as linhas extras', async () => {
     estado.desde = '2026-11-05';
     renderizar();
     const funil = await screen.findByRole('region', { name: 'Funil · 24 horas' });
     const grupo = within(funil).getByRole('radiogroup', { name: 'Série do funil' });
     expect(within(grupo).getByRole('radio', { name: /^Entrada com IA/ })).toHaveAttribute('aria-checked', 'true');
     const lista = await within(funil).findByRole('list');
-    expect(within(lista).getAllByRole('listitem')).toHaveLength(10);
+    expect(within(lista).getAllByRole('listitem')).toHaveLength(8);
     expect(within(funil).getByText('pelo campo do topo: 1')).toBeInTheDocument();
     expect(within(funil).getByText('com IA: 1 · modelo reserva: 1 · tempo mediano: 14 s')).toBeInTheDocument();
   });
