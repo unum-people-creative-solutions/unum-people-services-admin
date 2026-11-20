@@ -133,4 +133,29 @@ describe('DetalheDaVisita: resumo da visita', () => {
     ]);
     expect(screen.getByText('09:00–09:00 · 43 s · Editor → Prévia (saiu aqui)')).toBeInTheDocument();
   });
+
+  // jornada-fluxo-atual RF-JF-46, caso real: visita de 20/11 16:01 com /, /configurar e /configurar/editar.
+  test('visita de 20/11 16:01: "Início → Editor (saiu aqui)", sem "Escolha do modelo" no caminho nem na lista', async () => {
+    const t = Date.parse('2026-11-20T16:01:00-03:00');
+    const ev = (seg: number, nome: string, caminho: string, extra: Partial<EventoJornada> = {}): EventoJornada => ({
+      em: t + seg * 1000, nome, caminho, visita: V, ...extra,
+    });
+    vi.mocked(jornadaService.visitante).mockResolvedValue({
+      ...resposta,
+      eventos: [
+        ev(0, 'lp_page_view', '/'),
+        ev(5, 'lp_page_view', '/configurar'),
+        ev(6, 'lp_tempo_na_pagina', '/configurar', { segundos: 1 }),
+        ev(7, 'lp_page_view', '/configurar/editar'),
+        ev(60, 'lp_tempo_na_pagina', '/configurar/editar', { segundos: 53 }),
+      ],
+    });
+    renderizar();
+    expect(await screen.findByText('16:01–16:02 · 1 min · Início → Editor (saiu aqui)')).toBeInTheDocument();
+    expect(await paginas()).toEqual([
+      ['Início —Tempo medido a partir da publicação desta fase'],
+      ['Editor 53 s'],
+    ]);
+    expect(screen.queryByText(/Escolha do modelo/)).toBeNull();
+  });
 });
