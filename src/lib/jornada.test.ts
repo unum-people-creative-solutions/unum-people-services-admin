@@ -1034,7 +1034,7 @@ describe('série "Entrada com IA" (A2)', () => {
   it('oito rótulos na sequência de RF-JF-40 (Editou e Abriu a prévia ficam ao lado)', () => {
     expect(ROTULOS_ETAPAS_ENTRADA_COM_IA).toEqual([
       'Visitou',
-      'Começou',
+      'Abriu a janela no editor',
       'Enviou os dados',
       'Viu o site montado',
       'Abriu a contratação',
@@ -1270,7 +1270,7 @@ describe('ateOndeFoi: série nova (RF-JF-44)', () => {
     [[1, 10, 11, 12, 5, 6, 7], 'Enviou a contratação'],
     [[1, 10, 11, 12], 'Viu o site montado'],
     [[1, 10, 11], 'Enviou os dados'],
-    [[1, 10], 'Começou'],
+    [[1, 10], 'Abriu a janela no editor'],
     [[1], 'Visitou'],
     [[1, 2, 3], 'Escolheu modelo e tema'],
   ])('com as etapas %j, "%s"', (etapas, rotulo) => {
@@ -1306,6 +1306,73 @@ describe('ateOndeFoi: série nova (RF-JF-44)', () => {
   it('sem corte (null), tudo é série antiga; sem etapas, null', () => {
     expect(ateOndeFoi([1, 10, 11, 12, 5], depois, null)).toBe('Viu a página final');
     expect(ateOndeFoi([], depois, corte)).toBeNull();
+  });
+});
+
+// jornada-fluxo-atual RF-JF-45: o nome da etapa 10 depende da série da visita.
+describe('ateOndeFoi: nome da etapa 10 (RF-JF-45)', () => {
+  const corte = '2026-11-17T16:28:34-03:00';
+  const depois = Date.parse('2026-11-20T10:00:00-03:00');
+  const antes = Date.parse('2026-11-15T10:00:00-03:00');
+
+  it('série nova: "Abriu a janela no editor"; série antiga e sem corte: "Começou"', () => {
+    expect(ateOndeFoi([1, 10], depois, corte)).toBe('Abriu a janela no editor');
+    expect(ateOndeFoi([1, 10], antes, corte)).toBe('Começou');
+    expect(ateOndeFoi([1, 10], depois, null)).toBe('Começou');
+  });
+
+  it('as etapas 11 e 12 seguem com o nome de sempre na série nova', () => {
+    expect(ateOndeFoi([1, 10, 11], depois, corte)).toBe('Enviou os dados');
+    expect(ateOndeFoi([1, 10, 11, 12], depois, corte)).toBe('Viu o site montado');
+  });
+});
+
+// jornada-fluxo-atual RF-JF-46: /configurar só redireciona; desde o corte, sai do caminho da visita.
+describe('resumirVisita: passagem por /configurar (RF-JF-46)', () => {
+  const V = 'visita-1';
+  const depois = Date.parse('2026-11-20T16:01:00-03:00');
+  const antes = Date.parse('2026-11-15T16:01:00-03:00');
+  const e = (t0: number, seg: number, nome: string, caminho: string, extra: Partial<EventoJornada> = {}) =>
+    ev(nome, { em: t0 + seg * 1000, caminho, visita: V, ...extra });
+  const caminhos = (r: ReturnType<typeof resumirVisita>) => r?.paginas.map((p) => p.caminho);
+
+  const completa = (t0: number) => [
+    e(t0, 0, 'lp_page_view', '/'),
+    e(t0, 10, 'lp_page_view', '/configurar'),
+    e(t0, 10, 'lp_tempo_na_pagina', '/configurar', { segundos: 1 }),
+    e(t0, 11, 'lp_page_view', '/configurar/editar'),
+    e(t0, 30, 'lp_tempo_na_pagina', '/configurar/editar', { segundos: 19 }),
+  ];
+
+  it('visita de 20/11 com /, /configurar e /configurar/editar: Início → Editor, sem a página de passagem', () => {
+    const r = resumirVisita(completa(depois), V);
+    expect(caminhos(r)).toEqual(['/', '/configurar/editar']);
+    expect(r?.ultimaPagina).toBe('/configurar/editar');
+  });
+
+  it('visita anterior ao corte fica como estava, com /configurar', () => {
+    expect(caminhos(resumirVisita(completa(antes), V))).toEqual(['/', '/configurar', '/configurar/editar']);
+  });
+
+  it('visita que começou exatamente no corte é da série nova', () => {
+    const noCorte = Date.parse(DESDE_ENTRADA_COM_IA as string);
+    expect(caminhos(resumirVisita(completa(noCorte), V))).toEqual(['/', '/configurar/editar']);
+  });
+
+  it('só /configurar/editar e outras rotas /configurar/* não são escondidas', () => {
+    const r = resumirVisita([e(depois, 0, 'lp_page_view', '/configurar/preview'), e(depois, 1, 'lp_page_view', '/configurar/contratar')], V);
+    expect(caminhos(r)).toEqual(['/configurar/preview', '/configurar/contratar']);
+  });
+
+  // Decisão: a visita nunca fica sem destino; a passagem aparece quando é a única ou a última página.
+  it('se /configurar é a única página, ela aparece', () => {
+    expect(caminhos(resumirVisita([e(depois, 0, 'lp_page_view', '/configurar')], V))).toEqual(['/configurar']);
+  });
+
+  it('se /configurar é a última página, ela aparece com "saiu aqui"', () => {
+    const r = resumirVisita([e(depois, 0, 'lp_page_view', '/'), e(depois, 5, 'lp_page_view', '/configurar')], V);
+    expect(caminhos(r)).toEqual(['/', '/configurar']);
+    expect(r?.ultimaPagina).toBe('/configurar');
   });
 });
 
