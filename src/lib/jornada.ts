@@ -40,7 +40,7 @@ const ROTULOS_EVENTOS: Record<string, string> = {
   lp_page_view: 'Viu a página',
   lp_config_started: 'Abriu o configurador',
   lp_selection_completed: 'Escolheu modelo e tema',
-  lp_editor_opened: 'Abriu o editor',
+  lp_editor_opened: 'Carregou a tela do editor',
   lp_first_edit: 'Editou pela primeira vez',
   lp_preview_opened: 'Viu a página final',
   lp_checkout_opened: 'Abriu a contratação',
