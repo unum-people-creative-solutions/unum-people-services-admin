@@ -84,7 +84,7 @@ const FUNIL_ANTIGO: FunilJornada = {
 
 const ROTULOS_NOVOS = [
   'Visitou',
-  'Começou',
+  'Abriu a janela no editor',
   'Enviou os dados',
   'Viu o site montado',
   'Abriu a contratação',

@@ -2,6 +2,7 @@ import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import {
   DESDE_CHEGADA_NA_CONTRATACAO,
   ROTULOS_ETAPAS,
+  ROTULO_ETAPA_10_ENTRADA_COM_IA,
   ROTULOS_ETAPAS_ENTRADA_COM_IA,
   calcularFunil,
   calcularAoLadoEntradaComIa,
@@ -271,7 +272,7 @@ export function FunilEmSeries({
   // RF-JF-22: "modelo pronto" também é "Viu o site montado"; entra na divisão só quando houve.
   const modeloPronto = usoNova.lp_site_montado_modelo_pronto ?? 0;
   const extrasNova: Partial<Record<string, string | readonly string[]>> = {
-    Começou: `pelo campo do topo: ${usoNova.lp_topo_comecou ?? 0}`,
+    [ROTULO_ETAPA_10_ENTRADA_COM_IA]: `pelo campo do topo: ${usoNova.lp_topo_comecou ?? 0}`,
     'Viu o site montado': [
       `com IA: ${usoNova.lp_site_montado_ia ?? 0} · modelo reserva: ${usoNova.lp_site_montado_reserva ?? 0}` +
         (modeloPronto > 0 ? ` · modelo pronto: ${modeloPronto}` : '') +

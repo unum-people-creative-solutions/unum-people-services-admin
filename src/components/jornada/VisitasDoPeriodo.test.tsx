@@ -187,4 +187,17 @@ describe('VisitasDoPeriodo: "Até onde foi" na série nova (RF-JF-44)', () => {
     const linhas = renderizar([{ ...base, inicio: antes, fim: antes + 60_000, etapas: [1, 10, 11, 12, 5] }]);
     expect(within(linhas[0]).getByText('Viu a página final')).toBeInTheDocument();
   });
+
+  // jornada-fluxo-atual RF-JF-45: a etapa 10 muda de nome só na série nova; o número de "Páginas" vem da API.
+  test('etapa 10: "Abriu a janela no editor" na série nova e "Começou" antes do corte', () => {
+    const antes = Date.parse('2026-11-15T10:00:00-03:00');
+    const linhas = renderizar([
+      { ...base, visita: 'nova', etapas: [1, 10], paginas: 3 },
+      { ...base, visita: 'antiga', inicio: antes, fim: antes + 60_000, etapas: [1, 10], paginas: 3 },
+    ]);
+    expect(within(linhas[0]).getByText('Abriu a janela no editor')).toBeInTheDocument();
+    expect(within(linhas[0]).queryByText('Começou')).toBeNull();
+    expect(within(linhas[1]).getByText('Começou')).toBeInTheDocument();
+    expect(within(linhas[0]).getByText('3')).toBeInTheDocument();
+  });
 });

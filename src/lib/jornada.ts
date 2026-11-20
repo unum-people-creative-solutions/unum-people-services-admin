@@ -521,7 +521,16 @@ function emOrdem(eventos: EventoJornada[]): EventoJornada[] {
 }
 
 // spec-4-detalhe RF-4-25: só os eventos da visita, na ordem do tempo. null se a visita não tem eventos.
-export function resumirVisita(eventos: EventoJornada[], visita: string): ResumoDaVisita | null {
+// jornada-fluxo-atual RF-JF-46: /configurar só redireciona para /configurar/editar. Em visita da série nova ele sai
+// do caminho e da lista de páginas, exceto quando é a única página ou a última (a visita não fica sem destino).
+// `corte` (DESDE_ENTRADA_COM_IA) contra o início da visita diz a série; sem corte, nada muda.
+const PAGINA_DE_PASSAGEM = '/configurar';
+
+export function resumirVisita(
+  eventos: EventoJornada[],
+  visita: string,
+  corte: string | null = DESDE_ENTRADA_COM_IA,
+): ResumoDaVisita | null {
   const daVisita = emOrdem(eventos.filter((e) => e.visita === visita));
   if (daVisita.length === 0) return null;
 
@@ -561,13 +570,11 @@ export function resumirVisita(eventos: EventoJornada[], visita: string): ResumoD
 
   const inicio = daVisita[0].em;
   const fim = daVisita[daVisita.length - 1].em;
-  return {
-    inicio,
-    fim,
-    duracaoMs: fim - inicio,
-    paginas: [...paginas.values()],
-    ultimaPagina: daVisita[daVisita.length - 1].caminho,
-  };
+  const ultimaPagina = daVisita[daVisita.length - 1].caminho;
+  const daSerieNova = corte !== null && inicio >= instanteDoCorte(corte);
+  const escondeAPassagem = daSerieNova && paginas.size > 1 && ultimaPagina !== PAGINA_DE_PASSAGEM;
+  if (escondeAPassagem) paginas.delete(PAGINA_DE_PASSAGEM);
+  return { inicio, fim, duracaoMs: fim - inicio, paginas: [...paginas.values()], ultimaPagina };
 }
 
 export interface TempoDaPagina {
@@ -751,10 +758,14 @@ export function calcularFunil(funil: FunilJornada, filtro: FiltroJornada): numbe
 // instante, e não o dia, porque as visitas da manhã de 17/11 ainda viram a escolha de modelo.
 export const DESDE_ENTRADA_COM_IA: string | null = '2026-11-17T16:28:34-03:00';
 
+// jornada-fluxo-atual RF-JF-45: na série nova a etapa 10 é a abertura da janela no editor, não um "começo".
+// Rótulo único: o funil, o "Até onde foi" e a nota do funil usam esta constante.
+export const ROTULO_ETAPA_10_ENTRADA_COM_IA = 'Abriu a janela no editor';
+
 // Blueprint §9.1, série nova, na ordem de exibição (não a dos números da API).
 export const ROTULOS_ETAPAS_ENTRADA_COM_IA = [
   'Visitou',
-  'Começou',
+  ROTULO_ETAPA_10_ENTRADA_COM_IA,
   'Enviou os dados',
   'Viu o site montado',
   'Abriu a contratação',
@@ -927,7 +938,7 @@ const ORDEM_DE_AVANCO: ReadonlyArray<[number, string]> = [
 const ORDEM_DE_AVANCO_ENTRADA_COM_IA: ReadonlyArray<[number, string]> = [
   [1, 'Visitou'],
   [2, 'Abriu o configurador'],
-  [10, 'Começou'],
+  [10, ROTULO_ETAPA_10_ENTRADA_COM_IA],
   [3, 'Escolheu modelo e tema'],
   [11, 'Enviou os dados'],
   [4, 'Editou'],
