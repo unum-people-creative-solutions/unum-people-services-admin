@@ -135,3 +135,56 @@ describe('VisitasDoPeriodo: visitas da entrada com IA (A2)', () => {
     expect(within(linhas[0]).queryByText('Usou o editor')).toBeNull();
   });
 });
+
+// jornada-fluxo-atual RF-JF-44 (pedido do dono, 20/11): na série nova, "Até onde foi" segue a sequência do funil.
+describe('VisitasDoPeriodo: "Até onde foi" na série nova (RF-JF-44)', () => {
+  // 20/11/2026 10:00 em Brasília: depois de DESDE_ENTRADA_COM_IA (17/11 16h28).
+  const NOVA = Date.parse('2026-11-20T10:00:00-03:00');
+  const base: VisitaJornada = {
+    visitante: '6f1c2a9e-3b7d-4c51-9a2e-8d4f0b6c1e27',
+    visita: '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
+    inicio: NOVA,
+    fim: NOVA + 60_000,
+    aparelho: 'celular',
+    origem: 'google_ads',
+    paginas: 2,
+    etapas: [],
+    usos: [],
+    teste: false,
+  };
+
+  function renderizar(lista: VisitaJornada[]) {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <VisitasDoPeriodo
+          titulo="Visitas"
+          textoVazio="Nada"
+          comData={false}
+          visitas={lista}
+          carregando={false}
+          erro={false}
+          onTentar={() => {}}
+          mostrarTeste={false}
+          onMostrarTeste={() => {}}
+        />
+      </QueryClientProvider>,
+    );
+    return screen.getAllByRole('row').slice(1);
+  }
+
+  test.each([
+    [[1, 10, 11, 12, 5], 'Viu o site montado'],
+    [[1, 10, 11, 12, 6], 'Abriu a contratação'],
+    [[1, 10, 5], 'Abriu a prévia'],
+  ])('visita da série nova com as etapas %j mostra "%s"', (etapas, rotulo) => {
+    const linhas = renderizar([{ ...base, etapas }]);
+    expect(within(linhas[0]).getByText(rotulo)).toBeInTheDocument();
+  });
+
+  test('a mesma visita, começada antes do corte, segue a ordem antiga', () => {
+    const antes = Date.parse('2026-11-15T10:00:00-03:00');
+    const linhas = renderizar([{ ...base, inicio: antes, fim: antes + 60_000, etapas: [1, 10, 11, 12, 5] }]);
+    expect(within(linhas[0]).getByText('Viu a página final')).toBeInTheDocument();
+  });
+});

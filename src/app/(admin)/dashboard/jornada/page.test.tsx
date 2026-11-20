@@ -825,7 +825,10 @@ describe('Página Jornada: Páginas de entrada', () => {
       'Fechamento00%',
     ]);
     const cliques = linhas(secao, 'Cliques');
-    expect(cliques).toHaveLength(19);
+    // 19 da tabela de antes + hero_continuar e fixo_continuar (jornada-fluxo-atual RF-JF-07).
+    expect(cliques).toHaveLength(21);
+    expect(cliques).toContain('Topo: continuar editando0');
+    expect(cliques).toContain('Botão fixo (celular): continuar editando0');
     expect(cliques.slice(0, 3)).toEqual(['Galeria: escolheu um modelo1', 'Topo: botão principal0', 'Topo: ver planos0']);
     expect(cliques).not.toContain('Logo0');
     expect(cliques).not.toContain('Plano: ver todos os planos0');
