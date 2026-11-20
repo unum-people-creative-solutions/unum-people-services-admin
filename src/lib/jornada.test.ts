@@ -50,6 +50,7 @@ import {
   usouOEditor,
   OPCOES_MENU,
   LINHAS_DA_IA,
+  eventosDaLinhaDoTempo,
 } from './jornada';
 // JSON real de GET /admin/dashboard/jornada/funil (L-071).
 import fixtureFunilLeitura from '@/services/__fixtures__/funil-leitura.json';
@@ -1204,7 +1205,7 @@ describe('rótulos da A2: uso do editor e linha do tempo', () => {
 
   it('§9.3 — etapas da entrada com IA na linha do tempo', () => {
     expect(rotuloDoEvento(ev('lp_topo_comecou', { caminho: '/' }))).toBe('Começou no topo');
-    expect(rotuloDoEvento(ev('lp_janela_aberta'))).toBe('Abriu a janela');
+    expect(rotuloDoEvento(ev('lp_janela_aberta'))).toBe("Viu a janela 'Vamos montar seu site'");
     expect(rotuloDoEvento(ev('lp_janela_enviada'))).toBe('Enviou os dados');
   });
 
@@ -1250,7 +1251,7 @@ describe('rótulos da A2: uso do editor e linha do tempo', () => {
       { em: 5, nome: 'lp_ia_pedido_enviado', caminho: '/configurar/editar', visita: 'v' },
     ];
     const resumo = resumirVisita(eventos, 'v');
-    expect(resumo?.paginas[0].acoes.map((a) => a.rotulo)).toEqual(['Abriu a janela', 'Enviou os dados', 'IA: pediu mudança']);
+    expect(resumo?.paginas[0].acoes.map((a) => a.rotulo)).toEqual(["Viu a janela 'Vamos montar seu site'", 'Enviou os dados', 'IA: pediu mudança']);
     expect(resumo?.paginas[0].erros).toEqual(['nome vazio na janela']);
   });
 });
@@ -1404,5 +1405,99 @@ describe('rótulos dos eventos novos (RF-JF-43)', () => {
   it('"modelo pronto" não leva segundos (RF-JF-05) e não conta como uso do editor', () => {
     expect(rotuloDoEvento(evento('lp_site_montado_modelo_pronto'))).not.toBeNull();
     expect(usouOEditor(['lp_site_montado_modelo_pronto'])).toBe(false);
+  });
+});
+
+// jornada-fluxo-atual RF-JF-47 (dono, 20/11): "Só o que a pessoa viu" — a janela e a tela do editor são uma linha só.
+describe('janela depois do editor: uma linha só (RF-JF-47)', () => {
+  const V = 'visita-janela';
+  const EDITAR = '/configurar/editar';
+  const JANELA = "Viu a janela 'Vamos montar seu site'";
+  const t0 = Date.parse('2026-11-20T16:01:44-03:00');
+  const e = (seg: number, nome: string, extra: Partial<EventoJornada> = {}) =>
+    ev(nome, { em: t0 + seg * 1000, caminho: EDITAR, visita: V, ...extra });
+  const rotulos = (eventos: EventoJornada[]) => eventosDaLinhaDoTempo(eventos).map((x) => rotuloDoEvento(x));
+
+  // Visita real de 20/11, 16:01:44 a 16:01:49.
+  const real = (): EventoJornada[] => [
+    e(0, 'lp_page_view'),
+    e(1, 'lp_rolagem_25'),
+    e(2, 'lp_rolagem_50'),
+    e(3, 'lp_rolagem_75'),
+    e(4, 'lp_rolagem_100'),
+    e(4, 'lp_editor_opened'),
+    e(5, 'lp_janela_aberta'),
+    e(5, 'lp_tempo_na_pagina', { segundos: 4 }),
+  ];
+
+  it('caso real: a linha única leva o rótulo novo e o horário da janela; as rolagens e o tempo ficam', () => {
+    const linhas = eventosDaLinhaDoTempo(real());
+    expect(linhas.map((x) => rotuloDoEvento(x))).toEqual([
+      'Viu a página',
+      'Rolou 25%',
+      'Rolou 50%',
+      'Rolou 75%',
+      'Rolou até o fim',
+      JANELA,
+      'Ficou 4 s nesta página',
+    ]);
+    expect(linhas.find((x) => rotuloDoEvento(x) === JANELA)?.em).toBe(t0 + 5000);
+  });
+
+  it('sem janela em seguida (retomar rascunho), continua "Carregou a tela do editor"', () => {
+    const eventos = [e(0, 'lp_page_view'), e(1, 'lp_editor_opened'), e(5, 'lp_tempo_na_pagina', { segundos: 4 })];
+    expect(rotulos(eventos)).toEqual(['Viu a página', 'Carregou a tela do editor', 'Ficou 4 s nesta página']);
+  });
+
+  it('janela sozinha usa o rótulo novo', () => {
+    expect(rotulos([e(0, 'lp_page_view'), e(1, 'lp_janela_aberta')])).toEqual(['Viu a página', JANELA]);
+  });
+
+  it('outro evento de ação entre os dois mantém as duas linhas', () => {
+    const eventos = [e(0, 'lp_editor_opened'), e(1, 'lp_menu_tema'), e(2, 'lp_janela_aberta')];
+    expect(rotulos(eventos)).toEqual(['Carregou a tela do editor', 'Menu: Editar tema', JANELA]);
+  });
+
+  it('outra passagem (lp_page_view) ou outro caminho entre os dois mantém as duas linhas', () => {
+    expect(rotulos([e(0, 'lp_editor_opened'), e(1, 'lp_page_view'), e(2, 'lp_janela_aberta')])).toEqual([
+      'Carregou a tela do editor',
+      'Viu a página',
+      JANELA,
+    ]);
+    expect(rotulos([e(0, 'lp_editor_opened'), e(1, 'lp_janela_aberta', { caminho: '/' })])).toEqual([
+      'Carregou a tela do editor',
+      JANELA,
+    ]);
+  });
+
+  it('duas passagens pelo editor: cada janela absorve o editor da sua passagem', () => {
+    const eventos = [
+      e(0, 'lp_editor_opened'),
+      e(1, 'lp_janela_aberta'),
+      e(10, 'lp_page_view'),
+      e(11, 'lp_editor_opened'),
+    ];
+    expect(rotulos(eventos)).toEqual([JANELA, 'Viu a página', 'Carregou a tela do editor']);
+  });
+
+  it('não muda a lista recebida nem as visitas sem os dois eventos', () => {
+    const eventos = real();
+    const copia = structuredClone(eventos);
+    eventosDaLinhaDoTempo(eventos);
+    expect(eventos).toEqual(copia);
+    const sem = [e(0, 'lp_page_view'), e(1, 'lp_menu_tema')];
+    expect(eventosDaLinhaDoTempo(sem)).toEqual(sem);
+  });
+
+  it('resumo da visita: a ação é só a janela, sem "Carregou a tela do editor"', () => {
+    const resumo = resumirVisita(real(), V);
+    expect(resumo?.paginas[0].acoes).toEqual([{ rotulo: JANELA, vezes: 1 }]);
+    expect(resumo?.paginas[0].rolagem).toBe(100);
+    expect(resumo?.paginas[0].segundos).toBe(4);
+  });
+
+  it('resumo da visita: sem janela em seguida, a ação é "Carregou a tela do editor"', () => {
+    const resumo = resumirVisita([e(0, 'lp_page_view'), e(1, 'lp_editor_opened')], V);
+    expect(resumo?.paginas[0].acoes).toEqual([{ rotulo: 'Carregou a tela do editor', vezes: 1 }]);
   });
 });
