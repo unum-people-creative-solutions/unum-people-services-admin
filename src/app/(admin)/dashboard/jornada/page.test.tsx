@@ -794,7 +794,10 @@ describe('Página Jornada: Páginas de entrada', () => {
       'Rodapé: termos0',
       'Rodapé: privacidade0',
       'Rodapé: ajuda0',
+      // L-02: o "Continuar editando" do topo também aparece em Saúde (e em CRM e Blog); o fixo é só da home.
+      'Topo: continuar editando0',
     ]);
+    expect(linhas(secao, 'Cliques')).not.toContain('Botão fixo (celular): continuar editando0');
   });
 
   test('trocar de aba mostra a outra página', async () => {

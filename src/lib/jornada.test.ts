@@ -303,6 +303,8 @@ describe('rótulos da leitura (RF-3-14)', () => {
     const produto = [
       'hero_montar', 'hero_planos', 'plano_escolher', 'pergunta_abrir', 'fechamento_montar', 'produto_todos_planos',
       'produto_crm', 'marca', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
+      // L-02: o "Continuar editando" do topo existe também em Saúde, CRM e Blog (HeroProduto); o fixo é só da home.
+      'hero_continuar',
     ];
     expect(BOTOES_DA_PAGINA).toEqual({ inicio, saude: produto, crm: produto, blog: produto });
   });

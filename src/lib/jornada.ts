@@ -163,6 +163,9 @@ const BOTOES_INICIO = [
 const BOTOES_PRODUTO = [
   'hero_montar', 'hero_planos', 'plano_escolher', 'pergunta_abrir', 'fechamento_montar', 'produto_todos_planos',
   'produto_crm', 'marca', 'minha_conta', 'rodape_email', 'rodape_termos', 'rodape_privacidade', 'rodape_ajuda',
+  // jornada-fluxo-atual RF-JF-07: o "Continuar editando" do topo (HeroProduto) também vale em Saúde, CRM e Blog;
+  // o fixo é só da home.
+  'hero_continuar',
 ] as const;
 
 export const BOTOES_DA_PAGINA: Record<PaginaDeEntrada, readonly string[]> = {

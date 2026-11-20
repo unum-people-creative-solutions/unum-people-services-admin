@@ -183,6 +183,21 @@ describe('FunilEmSeries: duas séries, sem misturar (A2)', () => {
     expect(within(secao).getByText('Abriu a prévia: 2 (20% de quem viu)')).toBeInTheDocument();
   });
 
+  // L-04: 12 editaram e 10 viram o site montado (a etapa 12 é de visitas distintas, a 4 não depende dela):
+  // a parcela passa de 100%, e o painel mostra 100%.
+  it('a parcela "% de quem viu" tem teto de 100%: 12 editaram e 10 viram o site montado', () => {
+    const maisEditaram: FunilJornada = {
+      ...FUNIL_A2,
+      etapas: FUNIL_A2.etapas.map((l) =>
+        l.etapa === 12 ? { ...l, visitas: 10 } : l.etapa === 4 ? { ...l, visitas: 12 } : l.etapa === 5 ? { ...l, visitas: 11 } : l,
+      ),
+    };
+    const secao = renderizarSeries({ antiga: null, nova: maisEditaram });
+    expect(within(secao).getByText('Editou: 12 (100% de quem viu)')).toBeInTheDocument();
+    expect(within(secao).getByText('Abriu a prévia: 11 (100% de quem viu)')).toBeInTheDocument();
+    expect(within(secao).queryByText(/120%|110%/)).not.toBeInTheDocument();
+  });
+
   it('sem ninguém que viu o site montado, a parcela mostra só a contagem, sem porcentagem', () => {
     const semVistos: FunilJornada = { ...FUNIL_A2, etapas: FUNIL_A2.etapas.filter((l) => l.etapa !== 12) };
     const secao = renderizarSeries({ antiga: null, nova: semVistos });
