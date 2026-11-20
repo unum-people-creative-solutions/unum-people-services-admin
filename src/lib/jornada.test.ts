@@ -111,7 +111,7 @@ describe('rótulos', () => {
       lp_page_view: 'Viu a página',
       lp_config_started: 'Abriu o configurador',
       lp_selection_completed: 'Escolheu modelo e tema',
-      lp_editor_opened: 'Abriu o editor',
+      lp_editor_opened: 'Carregou a tela do editor',
       lp_first_edit: 'Editou pela primeira vez',
       lp_preview_opened: 'Viu a página final',
       lp_checkout_opened: 'Abriu a contratação',
@@ -741,7 +741,7 @@ describe('resumirVisita (RF-4-25, CA-4-21)', () => {
           rolagem: null,
           secoes: [],
           acoes: [
-            { rotulo: 'Abriu o editor', vezes: 1 },
+            { rotulo: 'Carregou a tela do editor', vezes: 1 },
             { rotulo: 'Menu: Editar tema', vezes: 1 },
             { rotulo: 'Pôs ou trocou imagem', vezes: 1 },
           ],

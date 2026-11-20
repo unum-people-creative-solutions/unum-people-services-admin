@@ -100,7 +100,7 @@ describe('Página do visitante', () => {
         .getAllByRole('listitem')
         .map((li) => li.textContent);
     expect(linhas(visitas[0])).toEqual([
-      '18:51:08Abriu o editor/configurar/editar',
+      '18:51:08Carregou a tela do editor/configurar/editar',
       '18:51:19Viu a página/',
       '18:51:21lp_evento_novo/configurar',
     ]);
