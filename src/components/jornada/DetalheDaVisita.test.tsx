@@ -158,4 +158,19 @@ describe('DetalheDaVisita: resumo da visita', () => {
     ]);
     expect(screen.queryByText(/Escolha do modelo/)).toBeNull();
   });
+
+  // jornada-higiene-e-qualidade (RF-JH-22, CA-JH-21): linha consolidada agrega todas as visitas agrupadas.
+  test('CA-JH-21 — com múltiplas visitas agrupadas, resume todos os eventos em uma única linha do tempo', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <DetalheDaVisita visitante={VISITANTE} visita={[V, 'outra']} />
+      </QueryClientProvider>,
+    );
+    expect(
+      await screen.findByText(
+        '14:02–14:17 · 15 min · Escolha do modelo → Editor → Prévia → Contratação → CRM (saiu aqui)',
+      ),
+    ).toBeInTheDocument();
+  });
 });

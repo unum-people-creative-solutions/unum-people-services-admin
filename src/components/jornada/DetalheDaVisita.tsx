@@ -74,7 +74,7 @@ export function ResumoDaVisita({ resumo }: { resumo: Resumo }) {
 }
 
 // spec-4-detalhe RF-4-24: conteúdo da linha aberta. Cache por visitante; o Atualizar invalida.
-export function DetalheDaVisita({ visitante, visita }: { visitante: string; visita: string }) {
+export function DetalheDaVisita({ visitante, visita }: { visitante: string; visita: string | readonly string[] }) {
   const consulta = useQuery({
     queryKey: ['jornada-visitante', visitante],
     queryFn: () => jornadaService.visitante(visitante),

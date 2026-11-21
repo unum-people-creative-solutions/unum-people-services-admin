@@ -15,6 +15,7 @@ import {
   calcularFunil,
   calcularLeitura,
   calcularUso,
+  consolidarVisitas,
   dividirPelaEntradaComIa,
   filtrarVisitas,
   formatarHora,
@@ -103,9 +104,13 @@ export default function JornadaPage() {
     () => visitasQuery.data?.filter((v) => mostrarTeste || !v.teste),
     [visitasQuery.data, mostrarTeste],
   );
+  const visitasConsolidadas = useMemo(
+    () => (visitasDoPeriodo ? consolidarVisitas(visitasDoPeriodo) : undefined),
+    [visitasDoPeriodo],
+  );
   const visitas = useMemo(
-    () => (visitasDoPeriodo ? filtrarVisitas(visitasDoPeriodo, filtro) : undefined),
-    [visitasDoPeriodo, filtro],
+    () => (visitasConsolidadas ? filtrarVisitas(visitasConsolidadas, filtro) : undefined),
+    [visitasConsolidadas, filtro],
   );
 
   const atualizando = chamadasDoFunil.some((q) => q.isFetching) || visitasQuery.isFetching;
