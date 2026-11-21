@@ -7,14 +7,16 @@ import {
   DESDE_ENTRADA_COM_IA,
   ateOndeFoi,
   dadosDaVisita,
+  editouAPagina,
   formatarDiaMes,
   formatarHora,
+  origemDaMontagem,
   rotuloDaOrigem,
   rotuloDoAparelho,
   usouOEditor,
 } from '@/lib/jornada';
 import { EsqueletoDaSecao, ErroDaSecao } from './EstadoDaSecao';
-import { SeloPagamento, SeloTeste, SeloUsouEditor } from './Selos';
+import { SeloAberturas, SeloEditou, SeloMontagem, SeloPagamento, SeloTeste, SeloUsouEditor } from './Selos';
 import { EmpresaContratante } from './EmpresaContratante';
 import { DetalheDaVisita, caminhoDoVisitante } from './DetalheDaVisita';
 import { DadosDaVisita } from './DadosDaVisita';
@@ -22,13 +24,15 @@ import { DadosDaVisita } from './DadosDaVisita';
 const POR_PAGINA = 100;
 const COLUNAS = 6;
 
+type VisitaDaLista = VisitaJornada & { visitasAgrupadas?: readonly string[] };
+
 interface VisitasDoPeriodoProps {
   // "Visitas" com o período e os filtros (blueprint §3.2).
   titulo: string;
   textoVazio: string;
   // Períodos acima de 24 horas mostram a data junto da hora.
   comData: boolean;
-  visitas: VisitaJornada[] | undefined;
+  visitas: readonly VisitaDaLista[] | undefined;
   carregando: boolean;
   erro: boolean;
   onTentar: () => void;
@@ -113,6 +117,11 @@ export function VisitasDoPeriodo({
                 <tbody className="divide-y divide-slate-100">
                   {visitas.slice(0, limite).map((v) => {
                     const etapa = ateOndeFoi(v.etapas, v.inicio, DESDE_ENTRADA_COM_IA);
+                    const montagem = origemDaMontagem(v.usos);
+                    const daSerieNova =
+                      DESDE_ENTRADA_COM_IA !== null && v.inicio >= Date.parse(DESDE_ENTRADA_COM_IA);
+                    const editou = daSerieNova && editouAPagina(v.etapas) && etapa !== 'Editou';
+                    const aberturas = v.visitasAgrupadas?.length ?? 1;
                     const aberta = abertas.has(v.visita);
                     const hora = formatarHora(v.inicio);
                     const idArea = `visita-aberta-${v.visita}`;
@@ -144,6 +153,7 @@ export function VisitasDoPeriodo({
                               >
                                 {comData ? `${formatarDiaMes(v.inicio)} ${hora}` : hora}
                               </Link>
+                              {aberturas > 1 ? <SeloAberturas quantidade={aberturas} /> : null}
                               {v.teste ? <SeloTeste /> : null}
                             </div>
                           </td>
@@ -155,6 +165,8 @@ export function VisitasDoPeriodo({
                           <td className="px-3 py-2.5 text-slate-700">
                             <div className="flex flex-wrap items-center gap-2">
                               <span>{etapa ?? '—'}</span>
+                              {montagem ? <SeloMontagem tipo={montagem} /> : null}
+                              {editou ? <SeloEditou /> : null}
                               {usouOEditor(v.usos) ? <SeloUsouEditor /> : null}
                             </div>
                           </td>
@@ -183,7 +195,10 @@ export function VisitasDoPeriodo({
                                   <DadosDaVisita visita={v} />
                                 </div>
                               ) : null}
-                              <DetalheDaVisita visitante={v.visitante} visita={v.visita} />
+                              <DetalheDaVisita
+                                visitante={v.visitante}
+                                visita={v.visitasAgrupadas && v.visitasAgrupadas.length > 0 ? v.visitasAgrupadas : v.visita}
+                              />
                             </td>
                           </tr>
                         ) : null}

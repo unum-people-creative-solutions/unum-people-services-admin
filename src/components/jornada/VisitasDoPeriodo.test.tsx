@@ -200,4 +200,52 @@ describe('VisitasDoPeriodo: "Até onde foi" na série nova (RF-JF-44)', () => {
     expect(within(linhas[1]).getByText('Começou')).toBeInTheDocument();
     expect(within(linhas[0]).getByText('3')).toBeInTheDocument();
   });
+
+  // jornada-higiene-e-qualidade (RF-JH-21, RF-JH-23, RF-JH-24; CA-JH-21).
+  test('CA-JH-21 — selos de montagem (IA, Reserva, Modelo pronto), Editou sem duplicar e N aberturas', () => {
+    const antes = Date.parse('2026-11-15T10:00:00-03:00');
+    const linhas = renderizar([
+      {
+        ...base,
+        visita: 'reserva-3',
+        visitasAgrupadas: ['reserva-3', 'r2', 'r3'],
+        etapas: [1, 10, 11, 12],
+        usos: ['lp_site_montado_reserva'],
+      } as VisitaJornada,
+      {
+        ...base,
+        visita: 'ia-editou',
+        etapas: [1, 10, 11, 12, 4],
+        usos: ['lp_site_montado_ia'],
+      },
+      {
+        ...base,
+        visita: 'modelo-pronto',
+        etapas: [1, 10, 11, 12],
+        usos: ['lp_site_montado_modelo_pronto'],
+      },
+      {
+        ...base,
+        visita: 'serie-antiga-editou',
+        inicio: antes,
+        fim: antes + 60_000,
+        etapas: [1, 2, 3, 4],
+        usos: [],
+      },
+    ]);
+
+    expect(within(linhas[0]).getByText('3 aberturas')).toBeInTheDocument();
+    expect(within(linhas[0]).getByText('Reserva (falha IA)')).toBeInTheDocument();
+    expect(within(linhas[0]).queryByText('Editou')).toBeNull();
+
+    expect(within(linhas[1]).getByText('Viu o site montado')).toBeInTheDocument();
+    expect(within(linhas[1]).getByText('IA')).toBeInTheDocument();
+    expect(within(linhas[1]).getByText('Editou')).toBeInTheDocument();
+    expect(within(linhas[1]).queryByText(/aberturas/)).toBeNull();
+
+    expect(within(linhas[2]).getByText('Modelo pronto')).toBeInTheDocument();
+
+    // Na série antiga o texto principal já é "Editou": o selo "Editou" não duplica.
+    expect(within(linhas[3]).getAllByText('Editou')).toHaveLength(1);
+  });
 });

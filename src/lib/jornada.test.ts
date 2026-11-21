@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { EventoJornada, FunilJornada, VisitanteJornada } from '@/types/jornada';
+import type { EventoJornada, FunilJornada, VisitaJornada, VisitanteJornada } from '@/types/jornada';
 import {
+  JANELA_CONSOLIDACAO_MS,
+  consolidarVisitas,
+  editouAPagina,
+  origemDaMontagem,
   ROTULOS_ETAPAS,
   rotuloDoEvento,
   rotuloDoAparelho,
@@ -1499,5 +1503,101 @@ describe('janela depois do editor: uma linha só (RF-JF-47)', () => {
   it('resumo da visita: sem janela em seguida, a ação é "Carregou a tela do editor"', () => {
     const resumo = resumirVisita([e(0, 'lp_page_view'), e(1, 'lp_editor_opened')], V);
     expect(resumo?.paginas[0].acoes).toEqual([{ rotulo: 'Carregou a tela do editor', vezes: 1 }]);
+  });
+});
+
+// jornada-higiene-e-qualidade (RF-JH-20, RF-JH-22, RF-JH-23, RF-JH-24; CA-JH-20).
+describe('consolidarVisitas, origemDaMontagem, editouAPagina e resumirVisita multi-visita (RF-JH-20..24)', () => {
+  const MIN = 60_000;
+  const T0 = Date.UTC(2026, 10, 20, 13, 0, 0);
+  const vBase = (over: Partial<VisitaJornada>): VisitaJornada => ({
+    visitante: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    visita: 'v1',
+    inicio: T0,
+    fim: T0 + MIN,
+    aparelho: 'celular',
+    origem: 'google_ads',
+    paginas: 1,
+    etapas: [1],
+    usos: [],
+    teste: false,
+    ...over,
+  });
+
+  it('CA-JH-20 — funde aberturas do mesmo visitante em janela deslizante <= 30 min e separa > 30 min e teste', () => {
+    expect(JANELA_CONSOLIDACAO_MS).toBe(30 * MIN);
+    const v1 = vBase({
+      visita: 'v1', inicio: T0, fim: T0 + 2 * MIN, paginas: 2,
+      aparelho: 'celular', origem: 'google_ads', campanha: 'pagina', termo: 'site',
+      etapas: [1, 10], usos: ['lp_topo_comecou'],
+    });
+    const v2 = vBase({
+      visita: 'v2', inicio: T0 + 4 * MIN, fim: T0 + 5 * MIN, paginas: 3,
+      aparelho: 'celular', origem: 'direto',
+      etapas: [1, 10, 11, 12], usos: ['lp_site_montado_ia'],
+    });
+    // Gap exato de 30 min a partir de v2.fim -> ainda consolida.
+    const v3 = vBase({
+      visita: 'v3', inicio: T0 + 35 * MIN, fim: T0 + 36 * MIN, paginas: 1,
+      aparelho: 'computador', origem: 'direto',
+      etapas: [1, 4], usos: ['lp_menu_tema', 'lp_site_montado_ia'],
+    });
+    // Visita de teste 1 min depois de v1: nunca funde com real.
+    const vTeste = vBase({
+      visita: 'vt', inicio: T0 + 3 * MIN, fim: T0 + 3 * MIN + 10_000, paginas: 1, teste: true,
+    });
+    // Gap de 30 min + 1 ms a partir de v3.fim -> sessão separada.
+    const v4 = vBase({
+      visita: 'v4', inicio: T0 + 66 * MIN + 1, fim: T0 + 67 * MIN, paginas: 2, etapas: [1],
+    });
+
+    const out = consolidarVisitas([v4, v3, vTeste, v2, v1]);
+    expect(out).toHaveLength(3);
+    // Ordenado por inicio decrescente: v4, vTeste, consolidada(v1+v2+v3).
+    expect(out[0].visita).toBe('v4');
+    expect(out[0].visitasAgrupadas).toEqual(['v4']);
+    expect(out[1].visita).toBe('vt');
+    expect(out[1].teste).toBe(true);
+    expect(out[2]).toMatchObject({
+      visita: 'v1',
+      inicio: T0,
+      fim: T0 + 36 * MIN,
+      paginas: 6,
+      aparelho: 'celular',
+      origem: 'google_ads',
+      campanha: 'pagina',
+      termo: 'site',
+      etapas: [1, 10, 11, 12, 4],
+      usos: ['lp_topo_comecou', 'lp_site_montado_ia', 'lp_menu_tema'],
+      visitasAgrupadas: ['v1', 'v2', 'v3'],
+    });
+  });
+
+  it('CA-JH-20 — resumirVisita aceita múltiplas visitas agrupadas e une eventos em ordem cronológica', () => {
+    const eventos: EventoJornada[] = [
+      { em: T0 + 10_000, nome: 'lp_page_view', caminho: '/configurar/editar', visita: 'v2' },
+      { em: T0, nome: 'lp_page_view', caminho: '/', visita: 'v1' },
+      { em: T0 + 20_000, nome: 'lp_page_view', caminho: '/configurar/contratar', visita: 'v3' },
+      { em: T0 + 30_000, nome: 'lp_page_view', caminho: '/crm', visita: 'outra' },
+    ];
+    const resumo = resumirVisita(eventos, ['v1', 'v2', 'v3']);
+    expect(resumo?.inicio).toBe(T0);
+    expect(resumo?.fim).toBe(T0 + 20_000);
+    expect(resumo?.ultimaPagina).toBe('/configurar/contratar');
+    expect(resumo?.paginas.map((p) => p.caminho)).toEqual(['/', '/configurar/editar', '/configurar/contratar']);
+  });
+
+  it('RF-JH-23 — origemDaMontagem classifica IA, modelo pronto, reserva e null com prioridade determinística', () => {
+    expect(origemDaMontagem([])).toBeNull();
+    expect(origemDaMontagem(['lp_topo_comecou', 'lp_menu_tema'])).toBeNull();
+    expect(origemDaMontagem(['lp_site_montado_reserva'])).toBe('reserva');
+    expect(origemDaMontagem(['lp_site_montado_modelo_pronto'])).toBe('modelo_pronto');
+    expect(origemDaMontagem(['lp_site_montado_reserva', 'lp_site_montado_modelo_pronto'])).toBe('modelo_pronto');
+    expect(origemDaMontagem(['lp_site_montado_reserva', 'lp_site_montado_ia'])).toBe('ia');
+  });
+
+  it('RF-JH-24 — editouAPagina detecta etapa 4', () => {
+    expect(editouAPagina([1, 10, 11, 12])).toBe(false);
+    expect(editouAPagina([1, 10, 11, 12, 4])).toBe(true);
   });
 });
