@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { PERIODOS } from '@/lib/jornada';
 import type { AuditRecord, SystemErrorLog } from '@/types/dashboard';
 import { formatarHorarioDoLog } from '@/lib/horarioDosLogs';
+import { AlertasDeErro } from '@/components/alertas/AlertasDeErro';
 
 type LogSource = 'system' | 'audit';
 // Os mesmos períodos da Jornada; o valor é o rótulo.
@@ -68,14 +69,17 @@ export default function LogsPage() {
                 : 'Rastreabilidade de ações de negócio gravadas na trilha de auditoria.'}
             </p>
           </div>
-          <button 
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw size={18} className={cn(isFetching && "animate-spin")} />
-            {isFetching ? 'Consultando...' : 'Atualizar'}
-          </button>
+          <div className="flex items-start gap-3">
+            <AlertasDeErro />
+            <button 
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={18} className={cn(isFetching && "animate-spin")} />
+              {isFetching ? 'Consultando...' : 'Atualizar'}
+            </button>
+          </div>
         </div>
 
         {/* Filtros e Tabs */}
