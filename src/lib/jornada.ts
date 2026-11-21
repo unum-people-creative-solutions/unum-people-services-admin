@@ -551,10 +551,11 @@ const PAGINA_DE_PASSAGEM = '/configurar';
 
 export function resumirVisita(
   eventos: EventoJornada[],
-  visita: string,
+  visita: string | readonly string[],
   corte: string | null = DESDE_ENTRADA_COM_IA,
 ): ResumoDaVisita | null {
-  const emOrdemDaVisita = emOrdem(eventos.filter((e) => e.visita === visita));
+  const visitas = typeof visita === 'string' ? null : new Set(visita);
+  const emOrdemDaVisita = emOrdem(eventos.filter((e) => (visitas ? visitas.has(e.visita) : e.visita === visita)));
   if (emOrdemDaVisita.length === 0) return null;
   // RF-JF-47: o editor que a janela absorve não vira ação; início, fim e última página seguem os eventos todos.
   const daVisita = eventosDaLinhaDoTempo(emOrdemDaVisita);
@@ -996,6 +997,91 @@ const USOS_QUE_NAO_SAO_DO_EDITOR = new Set([
 
 export function usouOEditor(usos: readonly string[]): boolean {
   return usos.some((u) => !USOS_QUE_NAO_SAO_DO_EDITOR.has(u) && !u.startsWith(PREFIXO_FAIXA_DA_MONTAGEM));
+}
+
+// jornada-higiene-e-qualidade (RF-JH-20, RF-JH-23, RF-JH-24).
+export const JANELA_CONSOLIDACAO_MS = 30 * 60 * 1000;
+
+export type VisitaConsolidada = VisitaJornada & { visitasAgrupadas: readonly string[] };
+
+export type OrigemDaMontagem = 'ia' | 'reserva' | 'modelo_pronto';
+
+export function origemDaMontagem(usos: readonly string[]): OrigemDaMontagem | null {
+  if (usos.includes('lp_site_montado_ia')) return 'ia';
+  if (usos.includes('lp_site_montado_modelo_pronto')) return 'modelo_pronto';
+  if (usos.includes('lp_site_montado_reserva')) return 'reserva';
+  return null;
+}
+
+export function editouAPagina(etapas: readonly number[]): boolean {
+  return etapas.includes(ETAPA_EDITOU);
+}
+
+function fimEfetivo(visita: Pick<VisitaJornada, 'inicio' | 'fim'>): InstanteMs {
+  return visita.fim > visita.inicio ? visita.fim : visita.inicio;
+}
+
+// Funde aberturas consecutivas do mesmo visitante (separando teste de real) cujo
+// intervalo entre o fim da sessão consolidada e o início da próxima seja <= janelaMs.
+export function consolidarVisitas(
+  visitas: readonly VisitaJornada[],
+  janelaMs: number = JANELA_CONSOLIDACAO_MS,
+): VisitaConsolidada[] {
+  const porGrupo = new Map<string, VisitaJornada[]>();
+  for (const visita of visitas) {
+    const chave = `${visita.visitante}#${visita.teste ? '1' : '0'}`;
+    const lista = porGrupo.get(chave);
+    if (lista) lista.push(visita);
+    else porGrupo.set(chave, [visita]);
+  }
+
+  const consolidadas: VisitaConsolidada[] = [];
+  for (const lista of porGrupo.values()) {
+    lista.sort((a, b) => (a.inicio !== b.inicio ? a.inicio - b.inicio : a.visita.localeCompare(b.visita)));
+    let atual: VisitaConsolidada & { visitasAgrupadas: string[] } = {
+      ...lista[0],
+      fim: fimEfetivo(lista[0]),
+      etapas: [...new Set(lista[0].etapas)],
+      usos: [...new Set(lista[0].usos)],
+      visitasAgrupadas: [lista[0].visita],
+    };
+
+    for (let i = 1; i < lista.length; i += 1) {
+      const prox = lista[i];
+      const fimProx = fimEfetivo(prox);
+      if (prox.inicio - atual.fim <= janelaMs) {
+        if (fimProx > atual.fim) atual.fim = fimProx;
+        atual.paginas += prox.paginas;
+        if (!atual.campanha && prox.campanha) atual.campanha = prox.campanha;
+        if (!atual.grupo && prox.grupo) atual.grupo = prox.grupo;
+        if (!atual.termo && prox.termo) atual.termo = prox.termo;
+        if (!atual.correspondencia && prox.correspondencia) atual.correspondencia = prox.correspondencia;
+        if (!atual.navegador && prox.navegador) atual.navegador = prox.navegador;
+        atual.etapas = [...new Set([...atual.etapas, ...prox.etapas])];
+        atual.usos = [...new Set([...atual.usos, ...prox.usos])];
+        if (prox.pagou_em !== undefined && (atual.pagou_em === undefined || prox.pagou_em < atual.pagou_em)) {
+          atual.pagou_em = prox.pagou_em;
+        }
+        if (prox.contratacao && (!atual.contratacao || prox.contratacao.em > atual.contratacao.em)) {
+          atual.contratacao = prox.contratacao;
+        }
+        atual.visitasAgrupadas.push(prox.visita);
+      } else {
+        consolidadas.push(atual);
+        atual = {
+          ...prox,
+          fim: fimProx,
+          etapas: [...new Set(prox.etapas)],
+          usos: [...new Set(prox.usos)],
+          visitasAgrupadas: [prox.visita],
+        };
+      }
+    }
+    consolidadas.push(atual);
+  }
+
+  consolidadas.sort((a, b) => (a.inicio !== b.inicio ? b.inicio - a.inicio : a.visita.localeCompare(b.visita)));
+  return consolidadas;
 }
 
 // Dias no formato AAAA-MM-DD, em UTC, como os dados.

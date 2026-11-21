@@ -392,7 +392,12 @@ describe('Página Jornada do visitante', () => {
   // RF-4-24: cache por visitante (['jornada-visitante', visitante]), não por visita.
   test('CA-4-20: duas visitas do mesmo visitante buscam o visitante uma vez e cada área mostra a sua visita', async () => {
     const visitaEditor: VisitaJornada = { ...visitaDireta, visita: 'visita-editor' };
-    const visitaPrevia: VisitaJornada = { ...visitaDireta, visita: 'visita-previa', inicio: visitaDireta.inicio - 3_600_000 };
+    const visitaPrevia: VisitaJornada = {
+      ...visitaDireta,
+      visita: 'visita-previa',
+      inicio: visitaDireta.inicio - 3_600_000,
+      fim: visitaDireta.fim - 3_600_000,
+    };
     vi.mocked(jornadaService.visitas).mockResolvedValue([visitaEditor, visitaPrevia]);
     vi.mocked(jornadaService.visitante).mockResolvedValue({
       visitante: visitaDireta.visitante,
@@ -423,6 +428,49 @@ describe('Página Jornada do visitante', () => {
 
     expect(jornadaService.visitante).toHaveBeenCalledTimes(1);
     expect(vi.mocked(jornadaService.visitante).mock.calls).toEqual([[visitaDireta.visitante]]);
+  });
+
+  // jornada-higiene-e-qualidade (RF-JH-21, RF-JH-22; CA-JH-21): consolidação antes do filtro e detalhe unificado.
+  test('CA-JH-21: consolida aberturas do mesmo visitante em <= 30 min com selo e timeline unificada', async () => {
+    const primeira: VisitaJornada = {
+      ...visitaDireta,
+      visita: 'abertura-1',
+      origem: 'google_ads',
+      inicio: visitaDireta.inicio - 10 * 60_000,
+      fim: visitaDireta.inicio - 8 * 60_000,
+      paginas: 2,
+      etapas: [1, 10],
+    };
+    const segunda: VisitaJornada = {
+      ...visitaDireta,
+      visita: 'abertura-2',
+      origem: 'direto',
+      paginas: 3,
+      etapas: [1, 10, 11, 12],
+      usos: ['lp_site_montado_reserva'],
+    };
+    vi.mocked(jornadaService.visitas).mockResolvedValue([segunda, primeira]);
+    vi.mocked(jornadaService.visitante).mockResolvedValue({
+      visitante: visitaDireta.visitante,
+      visitas: [segunda, primeira],
+      eventos: [
+        { em: primeira.inicio, nome: 'lp_page_view', caminho: '/', visita: 'abertura-1' },
+        { em: segunda.inicio, nome: 'lp_page_view', caminho: '/configurar/editar', visita: 'abertura-2' },
+        { em: segunda.inicio + 5_000, nome: 'lp_clique_editor_imagem', caminho: '/configurar/editar', visita: 'abertura-2' },
+      ],
+      contratacoes: [],
+    });
+    // Tela abre filtrada em "Anúncio do Google": a sessão consolidada herda a origem da 1ª abertura (google_ads).
+    renderizar();
+    const tabela = await screen.findByRole('table');
+    const linhas = within(tabela).getAllByRole('row').slice(1);
+    expect(linhas).toHaveLength(1);
+    expect(within(linhas[0]).getByText('2 aberturas')).toBeInTheDocument();
+    expect(within(linhas[0]).getByText('Reserva (falha IA)')).toBeInTheDocument();
+    expect(within(linhas[0]).getByText('5')).toBeInTheDocument();
+
+    fireEvent.click(within(linhas[0]).getByRole('button', { name: /Abrir a visita/ }));
+    expect(await screen.findByText('Pôs ou trocou imagem')).toBeInTheDocument();
   });
 
   // spec-4-detalhe RF-4-24, CA-4-20: a linha abre embaixo.
