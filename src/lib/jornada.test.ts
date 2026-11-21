@@ -1220,6 +1220,13 @@ describe('rótulos da A2: uso do editor e linha do tempo', () => {
     expect(rotuloDoEvento(ev('lp_site_montado_reserva'))).toBeNull();
   });
 
+  it('RF-PT-05 — token anti-robô com os segundos; sem segundos, sem rótulo', () => {
+    expect(rotuloDoEvento(ev('lp_verificacao_token', { segundos: 26 }))).toBe('Token anti-robô em 26 s');
+    expect(rotuloDoEvento(ev('lp_verificacao_token', { segundos: 1 }))).toBe('Token anti-robô em 1 s');
+    expect(rotuloDoEvento(ev('lp_verificacao_token', { segundos: 300 }))).toBe('Token anti-robô em 300 s');
+    expect(rotuloDoEvento(ev('lp_verificacao_token'))).toBeNull();
+  });
+
   it('§9.3 — erros com o prefixo de hoje', () => {
     const erros: Array<[string, string]> = [
       ['lp_erro_montagem_prazo', 'Erro: montagem passou do prazo'],

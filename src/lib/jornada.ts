@@ -474,6 +474,10 @@ export function rotuloDoEvento(evento: EventoJornada): string | null {
   if (Object.hasOwn(SITE_MONTADO, nome)) {
     return evento.segundos === undefined ? null : `${SITE_MONTADO[nome]} (${evento.segundos} s)`;
   }
+  // montagem-prazo-do-token RF-PT-05: segundos (1 a 300) do envio da janela até o token anti-robô chegar.
+  if (nome === 'lp_verificacao_token') {
+    return evento.segundos === undefined ? null : `Token anti-robô em ${evento.segundos} s`;
+  }
   if (nome === 'lp_page_view') return ROTULOS_EVENTOS[nome];
   if (Object.hasOwn(ROTULOS_LEITURA, nome)) return ROTULOS_LEITURA[nome];
   const classificado = classificar(nome);
