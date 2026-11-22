@@ -9,8 +9,11 @@ import {
   dadosDaVisita,
   editouAPagina,
   formatarDiaMes,
+  formatarDuracao,
   formatarHora,
   origemDaMontagem,
+  progressoDaVisita,
+  ROTULOS_ETAPAS_ENTRADA_COM_IA,
   rotuloDaOrigem,
   rotuloDoAparelho,
   usouOEditor,
@@ -23,6 +26,22 @@ import { DadosDaVisita } from './DadosDaVisita';
 
 const POR_PAGINA = 100;
 const COLUNAS = 6;
+
+// jornada-trajetoria RF-JT-41: um pontinho por etapa da série nova, preenchidos até a alcançada.
+function PontinhosDeProgresso({ posicao }: { posicao: number }) {
+  const total = ROTULOS_ETAPAS_ENTRADA_COM_IA.length;
+  return (
+    <span role="img" aria-label={`${posicao} de ${total} etapas`} className="inline-flex items-center gap-[3px]">
+      {ROTULOS_ETAPAS_ENTRADA_COM_IA.map((rotulo, i) => (
+        <span
+          key={rotulo}
+          aria-hidden="true"
+          className={`h-[7px] w-[7px] rounded-full ${i < posicao ? 'bg-primary-500' : 'bg-slate-200'}`}
+        />
+      ))}
+    </span>
+  );
+}
 
 type VisitaDaLista = VisitaJornada & { visitasAgrupadas?: readonly string[] };
 
@@ -109,7 +128,7 @@ export function VisitasDoPeriodo({
                     <th scope="col" className="px-3 py-2">Hora</th>
                     <th scope="col" className="px-3 py-2">Aparelho</th>
                     <th scope="col" className="px-3 py-2">Origem</th>
-                    <th scope="col" className="px-3 py-2 text-right">Páginas</th>
+                    <th scope="col" className="px-3 py-2 text-right">Tempo</th>
                     <th scope="col" className="px-3 py-2">Até onde foi</th>
                     <th scope="col" className="px-3 py-2">Contratou</th>
                   </tr>
@@ -117,6 +136,8 @@ export function VisitasDoPeriodo({
                 <tbody className="divide-y divide-slate-100">
                   {visitas.slice(0, limite).map((v) => {
                     const etapa = ateOndeFoi(v.etapas, v.inicio, DESDE_ENTRADA_COM_IA);
+                    const pagou = v.pagou_em !== undefined || v.contratacao?.pago === true;
+                    const progresso = progressoDaVisita(v.etapas, v.inicio, DESDE_ENTRADA_COM_IA, pagou);
                     const montagem = origemDaMontagem(v.usos);
                     const daSerieNova =
                       DESDE_ENTRADA_COM_IA !== null && v.inicio >= Date.parse(DESDE_ENTRADA_COM_IA);
@@ -161,9 +182,12 @@ export function VisitasDoPeriodo({
                           <td className="px-3 py-2.5 text-slate-700" title={v.campanha}>
                             {rotuloDaOrigem(v.origem)}
                           </td>
-                          <td className="px-3 py-2.5 text-right text-slate-700 tabular-nums">{v.paginas}</td>
+                          <td className="px-3 py-2.5 text-right text-slate-700 tabular-nums whitespace-nowrap">
+                            {formatarDuracao(Math.floor((v.fim - v.inicio) / 1000))}
+                          </td>
                           <td className="px-3 py-2.5 text-slate-700">
                             <div className="flex flex-wrap items-center gap-2">
+                              {progresso !== null ? <PontinhosDeProgresso posicao={progresso} /> : null}
                               <span>{etapa ?? '—'}</span>
                               {montagem ? <SeloMontagem tipo={montagem} /> : null}
                               {editou ? <SeloEditou /> : null}
@@ -198,6 +222,7 @@ export function VisitasDoPeriodo({
                               <DetalheDaVisita
                                 visitante={v.visitante}
                                 visita={v.visitasAgrupadas && v.visitasAgrupadas.length > 0 ? v.visitasAgrupadas : v.visita}
+                                pagou={pagou}
                               />
                             </td>
                           </tr>

@@ -35,8 +35,18 @@ function paginaComMaisVisitas(leitura: Record<PaginaDeEntrada, Record<string, nu
   return PAGINAS.reduce((melhor, p) => ((leitura[p].visita ?? 0) > (leitura[melhor].visita ?? 0) ? p : melhor));
 }
 
-// Bloco com barras sobre as visitas da página (rolagem, tempo e seções).
+// jornada-trajetoria RF-JT-34: só as linhas com valor maior que 0.
+const comValor = (linhas: Linha[]) => linhas.filter((linha) => linha.valor > 0);
+
+// Nomes ligados por vírgula e "e": "CRM e Blog", "Saúde, CRM e Blog".
+function listarNomes(nomes: string[]): string {
+  if (nomes.length <= 1) return nomes.join('');
+  return `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`;
+}
+
+// Bloco com barras sobre as visitas da página (rolagem, tempo e seções). Sem linhas, o bloco não aparece.
 function BlocoComTaxa({ id, titulo, linhas, base }: { id: string; titulo: ReactNode; linhas: Linha[]; base: number }) {
+  if (linhas.length === 0) return null;
   return (
     <div className="rounded-lg border border-slate-200 p-4">
       <h3 id={id} className="mb-3 text-sm font-semibold text-slate-900">
@@ -71,7 +81,15 @@ function BlocoComTaxa({ id, titulo, linhas, base }: { id: string; titulo: ReactN
 export function PaginasDeEntrada({ titulo, leitura, carregando, erro, onTentar }: PaginasDeEntradaProps) {
   const [escolhida, setEscolhida] = useState<PaginaDeEntrada | null>(null);
 
-  const pagina = leitura ? (escolhida ?? paginaComMaisVisitas(leitura)) : null;
+  // RF-JT-34: só as páginas com visita. A escolhida que deixou de ter visita (filtro) cede à de mais visitas.
+  const comVisita = leitura ? PAGINAS.filter((p) => (leitura[p].visita ?? 0) > 0) : [];
+  const semVisita = PAGINAS.filter((p) => !comVisita.includes(p));
+  const pagina =
+    leitura && comVisita.length > 0
+      ? escolhida && comVisita.includes(escolhida)
+        ? escolhida
+        : paginaComMaisVisitas(leitura)
+      : null;
   const contagem = leitura && pagina ? leitura[pagina] : {};
   const contar = (evento: string) => contagem[evento] ?? 0;
   const n = contar('visita');
@@ -81,6 +99,7 @@ export function PaginasDeEntrada({ titulo, leitura, carregando, erro, onTentar }
         .map((nome) => ({ chave: nome, rotulo: ROTULOS_CLIQUE[nome], valor: contar(`clique_${nome}`) }))
         // sort estável: no empate fica a ordem da tabela de cliques.
         .sort((a, b) => b.valor - a.valor)
+        .filter((clique) => clique.valor > 0)
     : [];
 
   return (
@@ -97,13 +116,17 @@ export function PaginasDeEntrada({ titulo, leitura, carregando, erro, onTentar }
       <div className="p-4">
         {carregando ? (
           <EsqueletoDaSecao linhas={6} />
-        ) : erro || leitura === undefined || pagina === null ? (
+        ) : erro || leitura === undefined ? (
           <ErroDaSecao onTentar={onTentar} />
+        ) : pagina === null ? (
+          <p className="py-6 text-center text-sm text-slate-500">
+            Nenhuma visita entrou pelas páginas de entrada no período.
+          </p>
         ) : (
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div role="group" aria-label="Página de entrada" className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50">
-                {PAGINAS.map((p) => (
+                {comVisita.map((p) => (
                   <button
                     key={p}
                     type="button"
@@ -115,7 +138,7 @@ export function PaginasDeEntrada({ titulo, leitura, carregando, erro, onTentar }
                         : 'px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900'
                     }
                   >
-                    {ROTULOS_PAGINA[p]}
+                    {`${ROTULOS_PAGINA[p]} · ${leitura[p].visita ?? 0}`}
                   </button>
                 ))}
               </div>
@@ -124,37 +147,41 @@ export function PaginasDeEntrada({ titulo, leitura, carregando, erro, onTentar }
               ) : null}
             </div>
 
-            {n === 0 ? (
-              <p className="py-6 text-center text-sm text-slate-500">Nenhuma visita entrou por esta página no período.</p>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <BlocoComTaxa
-                  id="titulo-leitura-rolagem"
-                  titulo="Rolagem"
-                  base={n}
-                  linhas={ROLAGEM_LEITURA.map((l) => ({ chave: l.evento, rotulo: l.rotulo, valor: contar(l.evento) }))}
-                />
-                <BlocoComTaxa
-                  id="titulo-leitura-tempo"
-                  titulo={
-                    <>
-                      Tempo na página <span className="font-normal text-slate-500">(aba visível)</span>
-                    </>
-                  }
-                  base={n}
-                  linhas={TEMPO_LEITURA.map((l) => ({ chave: l.evento, rotulo: l.rotulo, valor: contar(l.evento) }))}
-                />
-                <BlocoComTaxa
-                  id="titulo-leitura-secoes"
-                  titulo="Seções vistas"
-                  base={n}
-                  linhas={SECOES_DA_PAGINA[pagina].map((nome) => ({
+            <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
+              <BlocoComTaxa
+                id="titulo-leitura-rolagem"
+                titulo="Rolagem"
+                base={n}
+                linhas={comValor(
+                  ROLAGEM_LEITURA.map((l) => ({ chave: l.evento, rotulo: l.rotulo, valor: contar(l.evento) })),
+                )}
+              />
+              <BlocoComTaxa
+                id="titulo-leitura-tempo"
+                titulo={
+                  <>
+                    Tempo na página <span className="font-normal text-slate-500">(aba visível)</span>
+                  </>
+                }
+                base={n}
+                linhas={comValor(
+                  TEMPO_LEITURA.map((l) => ({ chave: l.evento, rotulo: l.rotulo, valor: contar(l.evento) })),
+                )}
+              />
+              <BlocoComTaxa
+                id="titulo-leitura-secoes"
+                titulo="Seções vistas"
+                base={n}
+                linhas={comValor(
+                  SECOES_DA_PAGINA[pagina].map((nome) => ({
                     chave: nome,
                     rotulo: ROTULOS_SECAO[nome],
                     valor: contar(`secao_${nome}`),
-                  }))}
-                />
-                {/* Cliques só com o número: dependem de onde o botão fica (§7.1). */}
+                  })),
+                )}
+              />
+              {/* Cliques só com o número: dependem de onde o botão fica (§7.1). */}
+              {cliques.length > 0 ? (
                 <div className="rounded-lg border border-slate-200 p-4">
                   <h3 id="titulo-leitura-cliques" className="mb-3 text-sm font-semibold text-slate-900">
                     Cliques
@@ -168,8 +195,15 @@ export function PaginasDeEntrada({ titulo, leitura, carregando, erro, onTentar }
                     ))}
                   </ul>
                 </div>
-              </div>
-            )}
+              ) : null}
+            </div>
+            {semVisita.length > 0 ? (
+              <p className="text-xs text-slate-500">
+                {`${listarNomes(semVisita.map((p) => ROTULOS_PAGINA[p]))} sem visitas no período ${
+                  semVisita.length === 1 ? 'não aparece' : 'não aparecem'
+                }.`}
+              </p>
+            ) : null}
           </div>
         )}
       </div>

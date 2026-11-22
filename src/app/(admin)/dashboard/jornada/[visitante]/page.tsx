@@ -12,20 +12,17 @@ import {
   formatarDiaMes,
   formatarDuracao,
   formatarHora,
-  formatarHoraComSegundos,
-  resumirVisita,
-  eventosDaLinhaDoTempo,
   rotuloDaOrigem,
   rotuloDaRota,
   rotuloDoAparelho,
-  rotuloDoEvento,
   tempoPorPagina,
 } from '@/lib/jornada';
 import { EsqueletoDaSecao, ErroDaSecao } from '@/components/jornada/EstadoDaSecao';
 import { SeloPagamento, SeloTeste } from '@/components/jornada/Selos';
 import { EmpresaContratante } from '@/components/jornada/EmpresaContratante';
-import { ResumoDaVisita } from '@/components/jornada/DetalheDaVisita';
+import { TrajetoriaDaVisita } from '@/components/jornada/TrajetoriaDaVisita';
 import { DadosDaVisita } from '@/components/jornada/DadosDaVisita';
+import { trajetoriaDaVisita } from '@/lib/trajetoria';
 import type { EventoJornada, VisitaJornada, VisitanteJornada } from '@/types/jornada';
 
 // spec-2-painel RF-2-08; blueprint §4; spec-4-detalhe RF-4-27.
@@ -177,10 +174,16 @@ export default function VisitantePage() {
 
               {grupos.map((grupo) => {
                 const idTitulo = `titulo-visita-${grupo.visita}`;
-                const resumo = resumirVisita(grupo.eventos, grupo.visita);
+                const trajetoria = trajetoriaDaVisita(grupo.eventos, grupo.visita);
+                // RF-JT-26: pagou_em gravado na visita, ou pagamento na contratação.
+                const pagou =
+                  grupo.resumo?.pagou_em !== undefined ||
+                  grupo.resumo?.contratacao?.pago === true ||
+                  dados.contratacoes.some((c) => c.pago);
                 return (
                   <section
                     key={grupo.visita}
+                    id={`visita-${grupo.visita}`}
                     aria-labelledby={idTitulo}
                     className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
                   >
@@ -196,38 +199,18 @@ export default function VisitantePage() {
                         <DadosDaVisita visita={grupo.resumo} />
                       </div>
                     ) : null}
-                    {resumo ? (
-                      <div className="p-4 border-b border-slate-100">
-                        <ResumoDaVisita resumo={resumo} />
+                    {trajetoria ? (
+                      <div className="p-4">
+                        <TrajetoriaDaVisita
+                          trajetoria={trajetoria}
+                          modo="completo"
+                          visitante={dados.visitante}
+                          ancora={grupo.visita}
+                          pagou={pagou}
+                        />
                       </div>
-                    ) : null}
-                    {grupo.eventos.length === 0 ? (
-                      <p className="p-4 text-sm text-slate-500">Nenhum evento registrado nesta visita.</p>
                     ) : (
-                      <ol aria-label="Linha do tempo" className="divide-y divide-slate-50">
-                        {eventosDaLinhaDoTempo(grupo.eventos).map((evento, i) => {
-                          const rotulo = rotuloDoEvento(evento);
-                          return (
-                            <li
-                              key={`${evento.em}-${i}`}
-                              className="grid grid-cols-[4.5rem_1fr] sm:grid-cols-[5rem_minmax(10rem,16rem)_1fr] items-center gap-x-3 gap-y-0.5 px-4 py-2 text-sm"
-                            >
-                              <time dateTime={new Date(evento.em).toISOString()} className="text-slate-500 tabular-nums">
-                                {formatarHoraComSegundos(evento.em)}
-                              </time>
-                              {rotulo !== null ? (
-                                <span className="text-slate-900">{rotulo}</span>
-                              ) : (
-                                <span className="font-mono text-slate-700">{evento.nome}</span>
-                              )}
-                              {/* No celular o caminho desce para a linha de baixo, sob o rótulo. */}
-                              <span className="col-start-2 sm:col-start-auto min-w-0 font-mono text-xs text-slate-500 truncate">
-                                {evento.caminho}
-                              </span>
-                            </li>
-                          );
-                        })}
-                      </ol>
+                      <p className="p-4 text-sm text-slate-500">Nenhum evento registrado nesta visita.</p>
                     )}
                   </section>
                 );

@@ -410,7 +410,7 @@ const ROTULOS_MEDICAO = rotulosDaMedicao();
 
 const TEMPO_NA_PAGINA = 'lp_tempo_na_pagina';
 
-const ROLAGEM: Record<string, 25 | 50 | 75 | 100> = {
+export const ROLAGEM: Record<string, 25 | 50 | 75 | 100> = {
   lp_rolagem_25: 25,
   lp_rolagem_50: 50,
   lp_rolagem_75: 75,
@@ -507,6 +507,10 @@ export function eventosDaLinhaDoTempo(eventos: readonly EventoJornada[]): Evento
   return eventos.filter((e, i) => !(e.nome === 'lp_editor_opened' && janelaSegueOEditor(eventos, i)));
 }
 
+export function caminhoDoVisitante(visitante: string): string {
+  return `/dashboard/jornada/${encodeURIComponent(visitante)}`;
+}
+
 // spec-4-detalhe RF-4-26.
 export function formatarDuracao(segundos: number): string {
   if (segundos < 60) return `${segundos} s`;
@@ -520,91 +524,8 @@ export function formatarDuracao(segundos: number): string {
   return `${horas} h ${String(minutos).padStart(2, '0')} min`;
 }
 
-export interface AcaoDaPagina {
-  rotulo: string;
-  vezes: number;
-}
-
-export interface PaginaDaVisita {
-  caminho: string;
-  passagens: number;
-  segundos: number | null;
-  rolagem: 25 | 50 | 75 | 100 | null;
-  secoes: string[];
-  acoes: AcaoDaPagina[];
-  erros: string[];
-}
-
-export interface ResumoDaVisita {
-  inicio: InstanteMs;
-  fim: InstanteMs;
-  duracaoMs: number;
-  paginas: PaginaDaVisita[];
-  ultimaPagina: string;
-}
-
 function emOrdem(eventos: EventoJornada[]): EventoJornada[] {
   return [...eventos].sort((a, b) => a.em - b.em);
-}
-
-// spec-4-detalhe RF-4-25: só os eventos da visita, na ordem do tempo. null se a visita não tem eventos.
-// jornada-fluxo-atual RF-JF-46: /configurar só redireciona para /configurar/editar. Em visita da série nova ele sai
-// do caminho e da lista de páginas, exceto quando é a única página ou a última (a visita não fica sem destino).
-// `corte` (DESDE_ENTRADA_COM_IA) contra o início da visita diz a série; sem corte, nada muda.
-const PAGINA_DE_PASSAGEM = '/configurar';
-
-export function resumirVisita(
-  eventos: EventoJornada[],
-  visita: string | readonly string[],
-  corte: string | null = DESDE_ENTRADA_COM_IA,
-): ResumoDaVisita | null {
-  const visitas = typeof visita === 'string' ? null : new Set(visita);
-  const emOrdemDaVisita = emOrdem(eventos.filter((e) => (visitas ? visitas.has(e.visita) : e.visita === visita)));
-  if (emOrdemDaVisita.length === 0) return null;
-  // RF-JF-47: o editor que a janela absorve não vira ação; início, fim e última página seguem os eventos todos.
-  const daVisita = eventosDaLinhaDoTempo(emOrdemDaVisita);
-
-  const paginas = new Map<string, PaginaDaVisita>();
-  for (const evento of daVisita) {
-    let pagina = paginas.get(evento.caminho);
-    if (!pagina) {
-      pagina = { caminho: evento.caminho, passagens: 0, segundos: null, rolagem: null, secoes: [], acoes: [], erros: [] };
-      paginas.set(evento.caminho, pagina);
-    }
-    const { nome } = evento;
-    if (nome === 'lp_page_view') {
-      pagina.passagens += 1;
-      continue;
-    }
-    if (nome === TEMPO_NA_PAGINA) {
-      pagina.segundos = (pagina.segundos ?? 0) + (evento.segundos ?? 0);
-      continue;
-    }
-    if (Object.hasOwn(ROLAGEM, nome)) {
-      pagina.rolagem = Math.max(pagina.rolagem ?? 0, ROLAGEM[nome]) as PaginaDaVisita['rolagem'];
-      continue;
-    }
-    const classificado = classificar(nome);
-    if (!classificado) continue;
-    const { tipo, rotulo } = classificado;
-    if (tipo === 'secao' || tipo === 'secao_previa') {
-      if (!pagina.secoes.includes(rotulo)) pagina.secoes.push(rotulo);
-    } else if (tipo === 'erro') {
-      if (!pagina.erros.includes(rotulo)) pagina.erros.push(rotulo);
-    } else {
-      const anterior = pagina.acoes.at(-1);
-      if (anterior?.rotulo === rotulo) anterior.vezes += 1;
-      else pagina.acoes.push({ rotulo, vezes: 1 });
-    }
-  }
-
-  const inicio = emOrdemDaVisita[0].em;
-  const fim = emOrdemDaVisita[emOrdemDaVisita.length - 1].em;
-  const ultimaPagina = emOrdemDaVisita[emOrdemDaVisita.length - 1].caminho;
-  const daSerieNova = corte !== null && inicio >= instanteDoCorte(corte);
-  const escondeAPassagem = daSerieNova && paginas.size > 1 && ultimaPagina !== PAGINA_DE_PASSAGEM;
-  if (escondeAPassagem) paginas.delete(PAGINA_DE_PASSAGEM);
-  return { inicio, fim, duracaoMs: fim - inicio, paginas: [...paginas.values()], ultimaPagina };
 }
 
 export interface TempoDaPagina {
@@ -790,7 +711,7 @@ export const DESDE_ENTRADA_COM_IA: string | null = '2026-11-17T16:28:34-03:00';
 
 // jornada-fluxo-atual RF-JF-45: na série nova a etapa 10 é a abertura da janela no editor, não um "começo".
 // Rótulo único: o funil, o "Até onde foi" e a nota do funil usam esta constante.
-export const ROTULO_ETAPA_10_ENTRADA_COM_IA = 'Abriu a janela no editor';
+export const ROTULO_ETAPA_10_ENTRADA_COM_IA = 'Abriu modal de entrada';
 
 // Blueprint §9.1, série nova, na ordem de exibição (não a dos números da API).
 export const ROTULOS_ETAPAS_ENTRADA_COM_IA = [
@@ -893,7 +814,7 @@ export function inicioDoDiaEmBrasilia(dia: string): InstanteMs {
 }
 
 // O corte da série nova (dia AAAA-MM-DD ou instante ISO com fuso) em ms.
-function instanteDoCorte(corte: string): InstanteMs {
+export function instanteDoCorte(corte: string): InstanteMs {
   return corte.includes('T') ? Date.parse(corte) : inicioDoDiaEmBrasilia(corte);
 }
 
@@ -989,6 +910,43 @@ export function ateOndeFoi(etapas: readonly number[], inicio: InstanteMs, corte:
     if (etapas.includes(etapa)) rotulo = nome;
   }
   return rotulo;
+}
+
+// jornada-trajetoria RF-JT-41: posição de 1 a 8 do "Até onde foi" na ordem de ROTULOS_ETAPAS_ENTRADA_COM_IA, para
+// os pontinhos. Só a série nova tem; série antiga e visita sem etapa dão null. "Editou" e "Abriu a prévia" contam
+// como "Enviou os dados"; o rótulo "Pagou" (etapa 9) e `pagou` dão 8.
+const POSICAO_FORA_DA_SEQUENCIA: Record<string, number> = {
+  'Abriu o configurador': 1,
+  'Escolheu modelo e tema': 2,
+  Editou: 3,
+  'Abriu a prévia': 3,
+};
+
+export function progressoDaVisita(
+  etapas: readonly number[],
+  inicio: InstanteMs,
+  corte: string | null,
+  pagou: boolean,
+): number | null {
+  if (corte === null || inicio < instanteDoCorte(corte)) return null;
+  const rotulo = ateOndeFoi(etapas, inicio, corte);
+  if (rotulo === null) return null;
+  if (pagou) return ROTULOS_ETAPAS_ENTRADA_COM_IA.length;
+  const indice = (ROTULOS_ETAPAS_ENTRADA_COM_IA as readonly string[]).indexOf(rotulo);
+  return indice >= 0 ? indice + 1 : (POSICAO_FORA_DA_SEQUENCIA[rotulo] ?? null);
+}
+
+// jornada-trajetoria RF-JT-42: índice (da 2ª etapa em diante) da etapa com a menor taxa sobre a anterior, só onde
+// a anterior é maior que 0. No empate, a primeira. null quando nenhuma taxa é menor que 100% ou sem visitas.
+export function etapaDaMaiorQueda(valores: readonly number[]): number | null {
+  let melhor: number | null = null;
+  for (let i = 1; i < valores.length; i++) {
+    const anterior = valores[i - 1];
+    if (anterior <= 0 || valores[i] >= anterior) continue;
+    // valores[i]/anterior < valores[melhor]/valores[melhor - 1], sem divisão.
+    if (melhor === null || valores[i] * valores[melhor - 1] < valores[melhor] * anterior) melhor = i;
+  }
+  return melhor;
 }
 
 // RF-A2-03: o campo do topo e o site montado viram uso da visita, mas não são uso do editor.

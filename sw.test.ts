@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 describe('service worker endpoint', () => {
   it('serves an explicit no-op service worker for browsers with stale registrations', () => {

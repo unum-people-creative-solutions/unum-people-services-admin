@@ -37,7 +37,6 @@ import {
   ROTULOS_CLIQUE_CONFIGURADOR,
   ROTULOS_ERRO,
   ROTULOS_SECAO_PREVIA,
-  resumirVisita,
   tempoPorPagina,
   notaDaEtapa,
   DESDE_CHEGADA_NA_CONTRATACAO,
@@ -51,6 +50,8 @@ import {
   compararSeries,
   calcularAoLadoEntradaComIa,
   ateOndeFoi,
+  progressoDaVisita,
+  etapaDaMaiorQueda,
   usouOEditor,
   OPCOES_MENU,
   LINHAS_DA_IA,
@@ -58,8 +59,6 @@ import {
 } from './jornada';
 // JSON real de GET /admin/dashboard/jornada/funil (L-071).
 import fixtureFunilLeitura from '@/services/__fixtures__/funil-leitura.json';
-// JSON real de GET /admin/dashboard/jornada/visitantes/{v} com segundos (CA-4-16, L-071).
-import fixtureVisitanteComTempo from '@/services/__fixtures__/visitante-com-tempo.json';
 // JSON real de GET /admin/dashboard/jornada/visitantes/{v} com os 41 nomes da A1 (TASK-BE-106/BE-204, L-071).
 import fixtureVisitanteA1 from '@/services/__fixtures__/visitante-a1.json';
 // Resposta do funil da A2 (configurador-com-ia spec §3.7, TASK-API-210), copiada sem edição.
@@ -660,174 +659,6 @@ describe('rótulos do configurador (RF-4-28, CA-4-24)', () => {
   });
 });
 
-// spec-4-detalhe RF-4-25, CA-4-21 (cálculo).
-describe('resumirVisita (RF-4-25, CA-4-21)', () => {
-  const V = 'visita-1';
-  const T0 = Date.UTC(2026, 10, 6, 17, 2, 0); // 14:02 em Brasília
-  const s = (segundos: number) => T0 + segundos * 1000;
-  const e = (seg: number, nome: string, caminho: string, extra: Partial<EventoJornada> = {}) =>
-    ev(nome, { em: s(seg), caminho, visita: V, ...extra });
-
-  // Fora de ordem de propósito: o resumo segue a ordem do tempo.
-  const eventos: EventoJornada[] = [
-    e(400, 'lp_page_view', '/configurar/editar'),
-    e(0, 'lp_page_view', '/saude'),
-    e(5, 'lp_secao_funcoes', '/saude'),
-    e(6, 'lp_secao_planos', '/saude'),
-    e(7, 'lp_secao_funcoes', '/saude'),
-    e(8, 'lp_rolagem_25', '/saude'),
-    e(9, 'lp_rolagem_75', '/saude'),
-    e(10, 'lp_rolagem_50', '/saude'),
-    e(11, 'lp_tempo_10s', '/saude'),
-    e(12, 'lp_clique_hero_montar', '/saude'),
-    e(70, 'lp_tempo_na_pagina', '/saude', { segundos: 70 }),
-    e(71, 'lp_page_view', '/configurar'),
-    e(72, 'lp_config_started', '/configurar'),
-    e(80, 'lp_clique_escolha_modelo', '/configurar'),
-    e(81, 'lp_clique_escolha_modelo', '/configurar'),
-    e(82, 'lp_clique_escolha_modelo', '/configurar'),
-    e(83, 'lp_clique_escolha_tema', '/configurar'),
-    e(84, 'lp_clique_escolha_modelo', '/configurar'),
-    e(100, 'lp_page_view', '/configurar/editar'),
-    e(101, 'lp_editor_opened', '/configurar/editar'),
-    e(102, 'lp_menu_tema', '/configurar/editar'),
-    e(103, 'lp_erro_editor_imagem_grande', '/configurar/editar'),
-    e(104, 'lp_clique_editor_imagem', '/configurar/editar'),
-    e(105, 'lp_erro_editor_imagem_formato', '/configurar/editar'),
-    e(106, 'lp_erro_editor_imagem_grande', '/configurar/editar'),
-    e(108, 'lp_tempo_na_pagina', '/configurar/editar', { segundos: 8 }),
-    e(109, 'lp_page_view', '/configurar/preview'),
-    e(110, 'lp_previa_secao_services', '/configurar/preview'),
-    e(111, 'lp_previa_secao_hero', '/configurar/preview'),
-    e(112, 'lp_previa_secao_steps', '/configurar/preview'),
-    e(412, 'lp_tempo_na_pagina', '/configurar/editar', { segundos: 12 }),
-    e(413, 'lp_page_view', '/configurar/contratar'),
-    e(414, 'lp_clique_contratar_pix', '/configurar/contratar'),
-    e(415, 'lp_clique_contratar_finalizar', '/configurar/contratar'),
-    e(416, 'lp_erro_contratar_documento', '/configurar/contratar'),
-    // Outra visita: fica fora.
-    ev('lp_page_view', { em: s(500), caminho: '/crm', visita: 'outra' }),
-  ];
-
-  it('período, páginas na ordem da 1ª passagem e a última página', () => {
-    expect(resumirVisita(eventos, V)).toEqual({
-      inicio: s(0),
-      fim: s(416),
-      duracaoMs: 416_000,
-      ultimaPagina: '/configurar/contratar',
-      paginas: [
-        {
-          caminho: '/saude',
-          passagens: 1,
-          segundos: 70,
-          rolagem: 75,
-          secoes: ['Funções', 'Planos'],
-          acoes: [{ rotulo: 'Topo: botão principal', vezes: 1 }],
-          erros: [],
-        },
-        {
-          caminho: '/configurar',
-          passagens: 1,
-          segundos: null,
-          rolagem: null,
-          secoes: [],
-          acoes: [
-            { rotulo: 'Abriu o configurador', vezes: 1 },
-            { rotulo: 'Trocou o modelo', vezes: 3 },
-            { rotulo: 'Trocou o tema', vezes: 1 },
-            { rotulo: 'Trocou o modelo', vezes: 1 },
-          ],
-          erros: [],
-        },
-        {
-          caminho: '/configurar/editar',
-          passagens: 2,
-          segundos: 20,
-          rolagem: null,
-          secoes: [],
-          acoes: [
-            { rotulo: 'Carregou a tela do editor', vezes: 1 },
-            { rotulo: 'Menu: Editar tema', vezes: 1 },
-            { rotulo: 'Pôs ou trocou imagem', vezes: 1 },
-          ],
-          erros: ['Imagem grande demais', 'Formato de imagem recusado'],
-        },
-        {
-          caminho: '/configurar/preview',
-          passagens: 1,
-          segundos: null,
-          rolagem: null,
-          secoes: ['Serviços', 'Passos'],
-          acoes: [],
-          erros: [],
-        },
-        {
-          caminho: '/configurar/contratar',
-          passagens: 1,
-          segundos: null,
-          rolagem: null,
-          secoes: [],
-          acoes: [
-            { rotulo: 'Escolheu Pix', vezes: 1 },
-            { rotulo: 'Clicou em Finalizar', vezes: 1 },
-          ],
-          erros: ['Campo CPF ou CNPJ'],
-        },
-      ],
-    });
-  });
-
-  it('a última página é a do último evento, mesmo já vista antes', () => {
-    const volta = [
-      e(0, 'lp_page_view', '/configurar'),
-      e(10, 'lp_page_view', '/configurar/editar'),
-      e(20, 'lp_page_view', '/configurar'),
-    ];
-    const resumo = resumirVisita(volta, V);
-    expect(resumo?.ultimaPagina).toBe('/configurar');
-    expect(resumo?.paginas.map((p) => [p.caminho, p.passagens])).toEqual([
-      ['/configurar', 2],
-      ['/configurar/editar', 1],
-    ]);
-  });
-
-  it('rolagem até o fim vale 100', () => {
-    const resumo = resumirVisita([e(0, 'lp_page_view', '/'), e(1, 'lp_rolagem_100', '/'), e(2, 'lp_rolagem_25', '/')], V);
-    expect(resumo?.paginas[0].rolagem).toBe(100);
-  });
-
-  it('com o JSON real da API: segundos do editor e prévia sem tempo', () => {
-    const dados = JSON.parse(JSON.stringify(fixtureVisitanteComTempo)) as VisitanteJornada;
-    const visita = dados.visitas[0].visita;
-    expect(resumirVisita(dados.eventos, visita)).toEqual({
-      inicio: 1793880000000,
-      fim: 1793880043000,
-      duracaoMs: 43_000,
-      ultimaPagina: '/configurar/preview',
-      paginas: [
-        {
-          caminho: '/configurar/editar',
-          passagens: 1,
-          segundos: 42,
-          rolagem: null,
-          secoes: [],
-          acoes: [{ rotulo: 'Pôs ou trocou imagem', vezes: 1 }],
-          erros: [],
-        },
-        {
-          caminho: '/configurar/preview',
-          passagens: 1,
-          segundos: null,
-          rolagem: null,
-          secoes: [],
-          acoes: [],
-          erros: [],
-        },
-      ],
-    });
-  });
-});
-
 // spec-4-detalhe RF-4-27 (cálculo), CA-4-23.
 describe('tempoPorPagina (RF-4-27)', () => {
   it('soma de todas as visitas por caminho, na ordem da 1ª vez, com o número de visitas', () => {
@@ -957,51 +788,6 @@ describe('rótulos dos 41 nomes da A1 (MR-21)', () => {
     const email = daA1.find((e) => e.nome === 'lp_campo_contratar_email')!;
     expect(rotuloDoEvento(email)).toBe('Ficou 12 s no campo E-mail');
   });
-
-  it('com o JSON real da API: resumirVisita agrupa os campos como ação "Campo <campo>"', () => {
-    const dados = JSON.parse(JSON.stringify(fixtureVisitanteA1)) as VisitanteJornada;
-    const resumo = resumirVisita(dados.eventos, dados.visitas[0].visita)!;
-    const contratar = resumo.paginas.find((p) => p.caminho === '/configurar/contratar')!;
-    expect(contratar.acoes.map((a) => a.rotulo)).toEqual([
-      'Abriu a contratação',
-      'Campo Seu link', 'Campo Nome do negócio', 'Campo Seu nome', 'Campo E-mail', 'Campo CPF ou CNPJ',
-      'Campo Celular', 'Campo Ramo', 'Campo CEP', 'Campo Endereço', 'Campo Número', 'Campo Bairro',
-      'Campo Complemento',
-      'Enviou com Pix', 'Enviou com cartão',
-      'Enviou com o plano Página', 'Enviou com o plano Presença', 'Enviou com o plano Captação',
-      'Enviou com o plano Página anual', 'Enviou com o plano Presença anual', 'Enviou com o plano Captação anual',
-      'Enviou com o plano outro',
-      'Enviou a contratação',
-    ]);
-    expect(resumo.paginas.find((p) => p.caminho === '/')!.acoes[0]).toEqual({
-      rotulo: 'Rolou 25% na miniatura do topo', vezes: 1,
-    });
-    expect(resumo.paginas.find((p) => p.caminho === '/configurar/sucesso')!.acoes.map((a) => a.rotulo)).toEqual([
-      'Voltou da fatura', 'Viu a página no ar',
-    ]);
-  });
-
-  it('resumirVisita: campos viram ação "Campo <campo>" e os outros a ação com o rótulo da tabela', () => {
-    const eventos: EventoJornada[] = [
-      ev('lp_page_view', { em: 1, caminho: '/configurar/contratar' }),
-      ev('lp_checkout_opened', { em: 2, caminho: '/configurar/contratar' }),
-      ev('lp_campo_contratar_email', { em: 3, caminho: '/configurar/contratar', segundos: 12 }),
-      ev('lp_campo_contratar_email', { em: 4, caminho: '/configurar/contratar', segundos: 3 }),
-      ev('lp_campo_contratar_cep', { em: 5, caminho: '/configurar/contratar', segundos: 8 }),
-      ev('lp_envio_contratar_plano_pagina', { em: 6, caminho: '/configurar/contratar' }),
-      ev('lp_envio_contratar_pix', { em: 7, caminho: '/configurar/contratar' }),
-      ev('lp_carga_recarga', { em: 8, caminho: '/configurar/contratar' }),
-    ];
-    const resumo = resumirVisita(eventos, 'v');
-    expect(resumo?.paginas[0].acoes).toEqual([
-      { rotulo: 'Abriu a contratação', vezes: 1 },
-      { rotulo: 'Campo E-mail', vezes: 2 },
-      { rotulo: 'Campo CEP', vezes: 1 },
-      { rotulo: 'Enviou com o plano Página', vezes: 1 },
-      { rotulo: 'Enviou com Pix', vezes: 1 },
-      { rotulo: 'Recarregou a página', vezes: 1 },
-    ]);
-  });
 });
 
 // oferta-e-primeira-tela OF-306 (T33, DV-05): os três nomes novos da B1 ganham rótulo,
@@ -1039,7 +825,7 @@ describe('série "Entrada com IA" (A2)', () => {
   it('oito rótulos na sequência de RF-JF-40 (Editou e Abriu a prévia ficam ao lado)', () => {
     expect(ROTULOS_ETAPAS_ENTRADA_COM_IA).toEqual([
       'Visitou',
-      'Abriu a janela no editor',
+      'Abriu modal de entrada',
       'Enviou os dados',
       'Viu o site montado',
       'Abriu a contratação',
@@ -1252,19 +1038,6 @@ describe('rótulos da A2: uso do editor e linha do tempo', () => {
   it('A1 F6 — lp_sucesso_retorno_asaas vira "Voltou do Asaas"', () => {
     expect(rotuloDoEvento(ev('lp_sucesso_retorno_asaas', { caminho: '/configurar/sucesso' }))).toBe('Voltou do Asaas');
   });
-
-  it('o resumo da visita mostra as ações novas na página delas', () => {
-    const eventos: EventoJornada[] = [
-      { em: 1, nome: 'lp_page_view', caminho: '/configurar/editar', visita: 'v' },
-      { em: 2, nome: 'lp_janela_aberta', caminho: '/configurar/editar', visita: 'v' },
-      { em: 3, nome: 'lp_erro_janela_nome', caminho: '/configurar/editar', visita: 'v' },
-      { em: 4, nome: 'lp_janela_enviada', caminho: '/configurar/editar', visita: 'v' },
-      { em: 5, nome: 'lp_ia_pedido_enviado', caminho: '/configurar/editar', visita: 'v' },
-    ];
-    const resumo = resumirVisita(eventos, 'v');
-    expect(resumo?.paginas[0].acoes.map((a) => a.rotulo)).toEqual(["Viu a janela 'Vamos montar seu site'", 'Enviou os dados', 'IA: pediu mudança']);
-    expect(resumo?.paginas[0].erros).toEqual(['nome vazio na janela']);
-  });
 });
 
 // jornada-fluxo-atual RF-JF-44 (pedido do dono, 20/11): "Até onde foi" pela sequência da série nova.
@@ -1282,7 +1055,7 @@ describe('ateOndeFoi: série nova (RF-JF-44)', () => {
     [[1, 10, 11, 12, 5, 6, 7], 'Enviou a contratação'],
     [[1, 10, 11, 12], 'Viu o site montado'],
     [[1, 10, 11], 'Enviou os dados'],
-    [[1, 10], 'Abriu a janela no editor'],
+    [[1, 10], 'Abriu modal de entrada'],
     [[1], 'Visitou'],
     [[1, 2, 3], 'Escolheu modelo e tema'],
   ])('com as etapas %j, "%s"', (etapas, rotulo) => {
@@ -1327,8 +1100,8 @@ describe('ateOndeFoi: nome da etapa 10 (RF-JF-45)', () => {
   const depois = Date.parse('2026-11-20T10:00:00-03:00');
   const antes = Date.parse('2026-11-15T10:00:00-03:00');
 
-  it('série nova: "Abriu a janela no editor"; série antiga e sem corte: "Começou"', () => {
-    expect(ateOndeFoi([1, 10], depois, corte)).toBe('Abriu a janela no editor');
+  it('série nova: "Abriu modal de entrada"; série antiga e sem corte: "Começou"', () => {
+    expect(ateOndeFoi([1, 10], depois, corte)).toBe('Abriu modal de entrada');
     expect(ateOndeFoi([1, 10], antes, corte)).toBe('Começou');
     expect(ateOndeFoi([1, 10], depois, null)).toBe('Começou');
   });
@@ -1336,55 +1109,6 @@ describe('ateOndeFoi: nome da etapa 10 (RF-JF-45)', () => {
   it('as etapas 11 e 12 seguem com o nome de sempre na série nova', () => {
     expect(ateOndeFoi([1, 10, 11], depois, corte)).toBe('Enviou os dados');
     expect(ateOndeFoi([1, 10, 11, 12], depois, corte)).toBe('Viu o site montado');
-  });
-});
-
-// jornada-fluxo-atual RF-JF-46: /configurar só redireciona; desde o corte, sai do caminho da visita.
-describe('resumirVisita: passagem por /configurar (RF-JF-46)', () => {
-  const V = 'visita-1';
-  const depois = Date.parse('2026-11-20T16:01:00-03:00');
-  const antes = Date.parse('2026-11-15T16:01:00-03:00');
-  const e = (t0: number, seg: number, nome: string, caminho: string, extra: Partial<EventoJornada> = {}) =>
-    ev(nome, { em: t0 + seg * 1000, caminho, visita: V, ...extra });
-  const caminhos = (r: ReturnType<typeof resumirVisita>) => r?.paginas.map((p) => p.caminho);
-
-  const completa = (t0: number) => [
-    e(t0, 0, 'lp_page_view', '/'),
-    e(t0, 10, 'lp_page_view', '/configurar'),
-    e(t0, 10, 'lp_tempo_na_pagina', '/configurar', { segundos: 1 }),
-    e(t0, 11, 'lp_page_view', '/configurar/editar'),
-    e(t0, 30, 'lp_tempo_na_pagina', '/configurar/editar', { segundos: 19 }),
-  ];
-
-  it('visita de 20/11 com /, /configurar e /configurar/editar: Início → Editor, sem a página de passagem', () => {
-    const r = resumirVisita(completa(depois), V);
-    expect(caminhos(r)).toEqual(['/', '/configurar/editar']);
-    expect(r?.ultimaPagina).toBe('/configurar/editar');
-  });
-
-  it('visita anterior ao corte fica como estava, com /configurar', () => {
-    expect(caminhos(resumirVisita(completa(antes), V))).toEqual(['/', '/configurar', '/configurar/editar']);
-  });
-
-  it('visita que começou exatamente no corte é da série nova', () => {
-    const noCorte = Date.parse(DESDE_ENTRADA_COM_IA as string);
-    expect(caminhos(resumirVisita(completa(noCorte), V))).toEqual(['/', '/configurar/editar']);
-  });
-
-  it('só /configurar/editar e outras rotas /configurar/* não são escondidas', () => {
-    const r = resumirVisita([e(depois, 0, 'lp_page_view', '/configurar/preview'), e(depois, 1, 'lp_page_view', '/configurar/contratar')], V);
-    expect(caminhos(r)).toEqual(['/configurar/preview', '/configurar/contratar']);
-  });
-
-  // Decisão: a visita nunca fica sem destino; a passagem aparece quando é a única ou a última página.
-  it('se /configurar é a única página, ela aparece', () => {
-    expect(caminhos(resumirVisita([e(depois, 0, 'lp_page_view', '/configurar')], V))).toEqual(['/configurar']);
-  });
-
-  it('se /configurar é a última página, ela aparece com "saiu aqui"', () => {
-    const r = resumirVisita([e(depois, 0, 'lp_page_view', '/'), e(depois, 5, 'lp_page_view', '/configurar')], V);
-    expect(caminhos(r)).toEqual(['/', '/configurar']);
-    expect(r?.ultimaPagina).toBe('/configurar');
   });
 });
 
@@ -1499,22 +1223,10 @@ describe('janela depois do editor: uma linha só (RF-JF-47)', () => {
     const sem = [e(0, 'lp_page_view'), e(1, 'lp_menu_tema')];
     expect(eventosDaLinhaDoTempo(sem)).toEqual(sem);
   });
-
-  it('resumo da visita: a ação é só a janela, sem "Carregou a tela do editor"', () => {
-    const resumo = resumirVisita(real(), V);
-    expect(resumo?.paginas[0].acoes).toEqual([{ rotulo: JANELA, vezes: 1 }]);
-    expect(resumo?.paginas[0].rolagem).toBe(100);
-    expect(resumo?.paginas[0].segundos).toBe(4);
-  });
-
-  it('resumo da visita: sem janela em seguida, a ação é "Carregou a tela do editor"', () => {
-    const resumo = resumirVisita([e(0, 'lp_page_view'), e(1, 'lp_editor_opened')], V);
-    expect(resumo?.paginas[0].acoes).toEqual([{ rotulo: 'Carregou a tela do editor', vezes: 1 }]);
-  });
 });
 
 // jornada-higiene-e-qualidade (RF-JH-20, RF-JH-22, RF-JH-23, RF-JH-24; CA-JH-20).
-describe('consolidarVisitas, origemDaMontagem, editouAPagina e resumirVisita multi-visita (RF-JH-20..24)', () => {
+describe('consolidarVisitas, origemDaMontagem e editouAPagina (RF-JH-20..24)', () => {
   const MIN = 60_000;
   const T0 = Date.UTC(2026, 10, 20, 13, 0, 0);
   const vBase = (over: Partial<VisitaJornada>): VisitaJornada => ({
@@ -1580,20 +1292,6 @@ describe('consolidarVisitas, origemDaMontagem, editouAPagina e resumirVisita mul
     });
   });
 
-  it('CA-JH-20 — resumirVisita aceita múltiplas visitas agrupadas e une eventos em ordem cronológica', () => {
-    const eventos: EventoJornada[] = [
-      { em: T0 + 10_000, nome: 'lp_page_view', caminho: '/configurar/editar', visita: 'v2' },
-      { em: T0, nome: 'lp_page_view', caminho: '/', visita: 'v1' },
-      { em: T0 + 20_000, nome: 'lp_page_view', caminho: '/configurar/contratar', visita: 'v3' },
-      { em: T0 + 30_000, nome: 'lp_page_view', caminho: '/crm', visita: 'outra' },
-    ];
-    const resumo = resumirVisita(eventos, ['v1', 'v2', 'v3']);
-    expect(resumo?.inicio).toBe(T0);
-    expect(resumo?.fim).toBe(T0 + 20_000);
-    expect(resumo?.ultimaPagina).toBe('/configurar/contratar');
-    expect(resumo?.paginas.map((p) => p.caminho)).toEqual(['/', '/configurar/editar', '/configurar/contratar']);
-  });
-
   it('RF-JH-23 — origemDaMontagem classifica IA, modelo pronto, reserva e null com prioridade determinística', () => {
     expect(origemDaMontagem([])).toBeNull();
     expect(origemDaMontagem(['lp_topo_comecou', 'lp_menu_tema'])).toBeNull();
@@ -1606,5 +1304,70 @@ describe('consolidarVisitas, origemDaMontagem, editouAPagina e resumirVisita mul
   it('RF-JH-24 — editouAPagina detecta etapa 4', () => {
     expect(editouAPagina([1, 10, 11, 12])).toBe(false);
     expect(editouAPagina([1, 10, 11, 12, 4])).toBe(true);
+  });
+});
+
+// jornada-trajetoria T12 (RF-JT-41): posição de 1 a 8 do "Até onde foi" na série nova.
+describe('progressoDaVisita (RF-JT-41)', () => {
+  const corte = '2026-11-17T16:28:34-03:00';
+  const depois = Date.parse('2026-11-20T10:00:00-03:00');
+  const antes = Date.parse('2026-11-15T10:00:00-03:00');
+
+  it.each([
+    [[1], 1],
+    [[1, 10], 2],
+    [[1, 10, 11], 3],
+    [[1, 10, 11, 12], 4],
+    [[1, 10, 11, 12, 6], 5],
+    [[1, 10, 11, 12, 6, 7], 6],
+    [[1, 10, 11, 12, 6, 7, 8], 7],
+  ])('com as etapas %j, posição %i', (etapas, posicao) => {
+    expect(progressoDaVisita(etapas, depois, corte, false)).toBe(posicao);
+  });
+
+  it('"Editou" e "Abriu a prévia" contam como "Enviou os dados" (3), não como a 4', () => {
+    expect(progressoDaVisita([1, 10, 11, 4], depois, corte, false)).toBe(3);
+    expect(progressoDaVisita([1, 10, 11, 5], depois, corte, false)).toBe(3);
+  });
+
+  it('pagou: os 8, com ou sem a etapa 9', () => {
+    expect(progressoDaVisita([1, 10, 11, 12, 6, 7, 8], depois, corte, true)).toBe(8);
+    expect(progressoDaVisita([1, 10, 11, 12, 6, 7, 8, 9], depois, corte, false)).toBe(8);
+  });
+
+  it('série antiga, sem etapa ou sem corte: null', () => {
+    expect(progressoDaVisita([1, 10, 11], antes, corte, false)).toBeNull();
+    expect(progressoDaVisita([1, 10, 11], antes, corte, true)).toBeNull();
+    expect(progressoDaVisita([], depois, corte, false)).toBeNull();
+    expect(progressoDaVisita([1, 10], depois, null, false)).toBeNull();
+  });
+
+  it('visita que começou exatamente no corte é da série nova', () => {
+    expect(progressoDaVisita([1, 10], Date.parse(corte), corte, false)).toBe(2);
+    expect(progressoDaVisita([1, 10], Date.parse(corte) - 1, corte, false)).toBeNull();
+  });
+});
+
+// jornada-trajetoria T13 (RF-JT-42): índice da etapa com a menor taxa sobre a anterior.
+describe('etapaDaMaiorQueda (RF-JT-42)', () => {
+  it('[64, 31, 22, 20, 6, 3, 2, 1]: índice 4 (a contratação, 30%)', () => {
+    expect(etapaDaMaiorQueda([64, 31, 22, 20, 6, 3, 2, 1])).toBe(4);
+  });
+
+  it('empate de taxa: a primeira', () => {
+    expect(etapaDaMaiorQueda([8, 4, 4, 2])).toBe(1);
+    expect(etapaDaMaiorQueda([100, 50, 25])).toBe(1);
+  });
+
+  it('só olha onde a etapa anterior é maior que 0', () => {
+    expect(etapaDaMaiorQueda([10, 0, 0, 0])).toBe(1);
+    expect(etapaDaMaiorQueda([10, 10, 0, 0, 0])).toBe(2);
+  });
+
+  it('null com tudo 0, sem visitas ou com todas as taxas em 100%', () => {
+    expect(etapaDaMaiorQueda([0, 0, 0])).toBeNull();
+    expect(etapaDaMaiorQueda([])).toBeNull();
+    expect(etapaDaMaiorQueda([7])).toBeNull();
+    expect(etapaDaMaiorQueda([5, 5, 5])).toBeNull();
   });
 });

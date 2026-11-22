@@ -9,6 +9,7 @@ import {
   calcularFunilEntradaComIa,
   calcularUso,
   compararSeries,
+  etapaDaMaiorQueda,
   medianaDaMontagem,
   notaDaEtapa,
   taxa,
@@ -63,6 +64,8 @@ export function FunilVitrine({
   const visitou = valores?.[0] ?? 0;
   // Sem "Visitou" no período, as barras usam o maior valor como escala.
   const escala = visitou > 0 ? visitou : Math.max(0, ...(valores ?? []));
+  // jornada-trajetoria RF-JT-42: só no funil com a taxa sobre a anterior.
+  const maiorQueda = comAnterior && valores ? etapaDaMaiorQueda(valores) : null;
 
   return (
     <section
@@ -110,6 +113,12 @@ export function FunilVitrine({
                     >
                       <span className="text-slate-700">
                         {rotulo}
+                        {/* No rótulo, e não junto da taxa: a coluna da taxa tem largura fixa e as barras ficam alinhadas. */}
+                        {maiorQueda === i ? (
+                          <span className="ml-2 inline-block rounded-full bg-amber-100 px-2 text-[11px] font-semibold text-amber-800">
+                            maior queda
+                          </span>
+                        ) : null}
                         {nota !== null ? <span className="block text-xs text-slate-500">{nota}</span> : null}
                         {linhasExtras.map((extra) => (
                           <span key={extra} className="block text-xs text-slate-500">

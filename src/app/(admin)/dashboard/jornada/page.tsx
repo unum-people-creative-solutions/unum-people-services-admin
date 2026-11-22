@@ -160,84 +160,89 @@ export default function JornadaPage() {
   return (
     <div className="p-8">
       <div className="max-w-7xl mx-auto flex flex-col gap-8">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <h1 className="text-2xl font-bold text-slate-900">Jornada do visitante</h1>
-          <p className="text-slate-500">
-            De onde vêm, onde param e o que usam no configurador. Visitas de teste ficam fora dos números.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-4 bg-white px-6 py-4 rounded-xl shadow-sm border border-slate-200">
-          <div className="flex w-full items-start gap-3">
-            <span aria-hidden="true" className="py-2 text-sm font-medium text-slate-600">
-              Período:
-            </span>
-            <div role="group" aria-label="Período" className="flex flex-wrap rounded-lg border border-slate-200 p-0.5 bg-slate-50">
-              {PERIODOS.map((p) => (
-                <button
-                  key={p.rotulo}
-                  type="button"
-                  aria-pressed={periodo === p}
-                  onClick={() => trocarPeriodo(p)}
-                  className={
-                    periodo === p
-                      ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-white text-primary-700 shadow-sm'
-                      : 'px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900'
-                  }
-                >
-                  {p.rotulo}
-                </button>
-              ))}
-            </div>
-          </div>
-          <label className="flex items-center gap-3 text-sm font-medium text-slate-600">
-            Origem
-            <select
-              className={classeSelect}
-              value={filtro.origem}
-              onChange={(e) => setFiltro((f) => ({ ...f, origem: e.target.value as FiltroJornada['origem'] }))}
-            >
-              <option value="todas">Todas</option>
-              {GRUPOS_ORIGEM.map((g) => (
-                <option key={g} value={g}>
-                  {ROTULOS_ORIGEM[g]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center gap-3 text-sm font-medium text-slate-600">
-            Aparelho
-            <select
-              className={classeSelect}
-              value={filtro.aparelho}
-              onChange={(e) => setFiltro((f) => ({ ...f, aparelho: e.target.value as FiltroJornada['aparelho'] }))}
-            >
-              <option value="todos">Todos</option>
-              {APARELHOS.map((a) => (
-                <option key={a} value={a}>
-                  {rotuloDoAparelho(a)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
-            <button
-              type="button"
-              onClick={atualizar}
-              disabled={atualizando}
-              aria-busy={atualizando}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <RefreshCw
-                size={16}
-                aria-hidden="true"
-                className={atualizando ? 'animate-spin motion-reduce:animate-none' : undefined}
-              />
-              Atualizar
-            </button>
-            <p aria-live="polite" className="text-sm text-slate-500">
-              {atualizadoEm !== null ? `Atualizado às ${formatarHora(atualizadoEm)}` : ''}
+        <div
+          data-testid="topo-da-jornada"
+          className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
+        >
+          <div className="p-6">
+            <h1 className="text-2xl font-bold text-slate-900">Jornada do visitante</h1>
+            <p className="text-slate-500">
+              De onde vêm, onde param e o que usam no configurador. Visitas de teste ficam fora dos números.
             </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+            <div className="flex w-full items-start gap-3">
+              <span aria-hidden="true" className="py-2 text-sm font-medium text-slate-600">
+                Período:
+              </span>
+              <div role="group" aria-label="Período" className="flex flex-wrap rounded-lg border border-slate-200 p-0.5 bg-slate-50">
+                {PERIODOS.map((p) => (
+                  <button
+                    key={p.rotulo}
+                    type="button"
+                    aria-pressed={periodo === p}
+                    onClick={() => trocarPeriodo(p)}
+                    className={
+                      periodo === p
+                        ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-white text-primary-700 shadow-sm'
+                        : 'px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900'
+                    }
+                  >
+                    {p.rotulo}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label className="flex items-center gap-3 text-sm font-medium text-slate-600">
+              Origem
+              <select
+                className={classeSelect}
+                value={filtro.origem}
+                onChange={(e) => setFiltro((f) => ({ ...f, origem: e.target.value as FiltroJornada['origem'] }))}
+              >
+                <option value="todas">Todas</option>
+                {GRUPOS_ORIGEM.map((g) => (
+                  <option key={g} value={g}>
+                    {ROTULOS_ORIGEM[g]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-3 text-sm font-medium text-slate-600">
+              Aparelho
+              <select
+                className={classeSelect}
+                value={filtro.aparelho}
+                onChange={(e) => setFiltro((f) => ({ ...f, aparelho: e.target.value as FiltroJornada['aparelho'] }))}
+              >
+                <option value="todos">Todos</option>
+                {APARELHOS.map((a) => (
+                  <option key={a} value={a}>
+                    {rotuloDoAparelho(a)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
+              <button
+                type="button"
+                onClick={atualizar}
+                disabled={atualizando}
+                aria-busy={atualizando}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCw
+                  size={16}
+                  aria-hidden="true"
+                  className={atualizando ? 'animate-spin motion-reduce:animate-none' : undefined}
+                />
+                Atualizar
+              </button>
+              <p aria-live="polite" className="text-sm text-slate-500">
+                {atualizadoEm !== null ? `Atualizado às ${formatarHora(atualizadoEm)}` : ''}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -267,20 +272,23 @@ export default function JornadaPage() {
           />
         )}
 
-        <UsoDoEditor
-          uso={uso}
-          carregando={funilCarregando}
-          erro={funilErro}
-          onTentar={tentarFunil}
-        />
+        {/* RF-JT-35: lado a lado a partir de lg; abaixo disso, um embaixo do outro. */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <UsoDoEditor
+            uso={uso}
+            carregando={funilCarregando}
+            erro={funilErro}
+            onTentar={tentarFunil}
+          />
 
-        <PaginasDeEntrada
-          titulo={comFiltros('Páginas de entrada')}
-          leitura={leitura}
-          carregando={funilCarregando}
-          erro={funilErro}
-          onTentar={tentarFunil}
-        />
+          <PaginasDeEntrada
+            titulo={comFiltros('Páginas de entrada')}
+            leitura={leitura}
+            carregando={funilCarregando}
+            erro={funilErro}
+            onTentar={tentarFunil}
+          />
+        </div>
 
         <VisitasDoPeriodo
           titulo={comFiltros('Visitas')}

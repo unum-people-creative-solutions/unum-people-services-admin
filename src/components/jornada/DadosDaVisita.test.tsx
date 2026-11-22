@@ -115,4 +115,28 @@ describe('VisitasDoPeriodo mostra os dados da visita na linha aberta (MR-23)', (
       'Pagou em 15/11 às 09:32',
     ]);
   });
+
+  test('na linha aberta, "Dados da visita" vem antes da trajetória (RF-JT-31)', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <VisitasDoPeriodo
+          titulo="Visitas"
+          textoVazio="Nada"
+          comData={false}
+          visitas={visitas}
+          carregando={false}
+          erro={false}
+          onTentar={() => {}}
+          mostrarTeste={false}
+          onMostrarTeste={() => {}}
+        />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir a visita das 09:30' }));
+    const trajetoria = await screen.findByRole('group', { name: 'Trajetória da visita' });
+    const dados = screen.getByRole('list', { name: 'Dados da visita' });
+    expect(dados.compareDocumentPosition(trajetoria) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(trajetoria.compareDocumentPosition(dados) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
 });
