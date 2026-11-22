@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { tenantService } from '@/services/tenantService';
 import { useRouter } from 'next/navigation';
 
+// O CEP digitado não consulta o ViaCEP de verdade: a resposta real chegaria num tempo que o teste não controla.
+vi.mock('@/lib/viaCep', () => ({ buscarCep: vi.fn().mockResolvedValue(null) }));
+
 vi.mock('@/services/tenantService', () => ({
   tenantService: { create: vi.fn().mockResolvedValue({}) },
 }));
