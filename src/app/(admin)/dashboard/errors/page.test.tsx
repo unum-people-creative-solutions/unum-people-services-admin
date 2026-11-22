@@ -4,6 +4,10 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import LogsPage from './page';
 import { tenantService } from '@/services/tenantService';
 
+vi.mock('@/components/alertas/AlertasDeErro', () => ({
+  AlertasDeErro: () => <div>alertas-de-erro-stub</div>,
+}));
+
 vi.mock('@/services/tenantService', () => ({
   tenantService: {
     getSystemErrors: vi.fn().mockResolvedValue([]),
@@ -80,6 +84,45 @@ describe('LogsPage - filtro de serviço', () => {
     const linha = screen.getByText('06/11/2026, 21:44:35').closest('tr') as HTMLElement;
     fireEvent.click(within(linha).getByRole('button'));
     expect(await screen.findByText('// 06/11/2026, 21:44:35')).toBeInTheDocument();
+  });
+});
+
+// RF-EM-22: a coluna serviço mostra o `service` da API; vazio (API antiga) volta a "System".
+describe('LogsPage - coluna serviço e alertas', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  function renderizar() {
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <LogsPage />
+      </QueryClientProvider>
+    );
+  }
+
+  it('mostra o service que vem da API em cada linha', async () => {
+    vi.mocked(tenantService.getSystemErrors).mockResolvedValue([
+      { timestamp: '2026-11-21 10:00:00.000', level: 'ERROR', message: 'LpMontagemFalhou', service: 'lp-ia', request_id: 'r1' },
+      { timestamp: '2026-11-21 10:01:00.000', level: 'ERROR', message: 'sem servico', service: '', request_id: 'r2' },
+    ]);
+    renderizar();
+    const linhaIa = (await screen.findByText('LpMontagemFalhou')).closest('tr') as HTMLElement;
+    expect(within(linhaIa).getByText('lp-ia')).toBeInTheDocument();
+    expect(within(linhaIa).queryByText('System')).not.toBeInTheDocument();
+  });
+
+  it('service vazio mantém "System"', async () => {
+    vi.mocked(tenantService.getSystemErrors).mockResolvedValue([
+      { timestamp: '2026-11-21 10:01:00.000', level: 'ERROR', message: 'sem servico', service: '', request_id: 'r2' },
+    ]);
+    renderizar();
+    const linha = (await screen.findByText('sem servico')).closest('tr') as HTMLElement;
+    expect(within(linha).getByText('System')).toBeInTheDocument();
+  });
+
+  it('o Monitoramento mostra o controle de alertas de erro', async () => {
+    vi.mocked(tenantService.getSystemErrors).mockResolvedValue([]);
+    renderizar();
+    expect(await screen.findByText('alertas-de-erro-stub')).toBeInTheDocument();
   });
 });
 
