@@ -59,6 +59,7 @@ const ROTULOS_EVENTOS: Record<string, string> = {
   lp_ia_mudancas_aplicadas: 'IA: aplicou',
   lp_ia_fora_do_escopo: 'IA: pedido fora do assunto',
   lp_ia_convite_exibido: 'IA: viu o convite para contratar',
+  lp_ia_tema_aplicado: 'IA: trocou as cores',
   lp_ia_copiou: 'IA: copiou as instruções (copiar e colar)',
   lp_ia_viu_mudancas: 'IA: viu as mudanças (copiar e colar)',
   lp_ia_resposta_invalida: 'IA: resposta não lida (copiar e colar)',

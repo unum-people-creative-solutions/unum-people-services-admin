@@ -974,6 +974,11 @@ describe('rótulos da A2: uso do editor e linha do tempo', () => {
     for (const [nome, rotulo] of tabela) expect(rotuloDoEvento(ev(nome))).toBe(rotulo);
   });
 
+  it('ia-troca-tema (RF-TT-30) — a troca de cores aplicada na revisão da IA', () => {
+    expect(rotuloDoEvento(ev('lp_ia_tema_aplicado', { caminho: '/configurar/editar' }))).toBe('IA: trocou as cores');
+    expect(rotuloDoEvento(ev('lp_ia_tema_aplicado', { caminho: '/configurar/preview' }))).toBe('IA: trocou as cores');
+  });
+
   it('§9.2 — as linhas da IA no cartão "Uso do editor", nesta ordem', () => {
     expect(LINHAS_DA_IA.map((l) => [l.evento, l.rotulo])).toEqual([
       ['lp_ia_pedido_enviado', 'IA: pediu mudança'],
