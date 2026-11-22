@@ -7,6 +7,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { ApiError } from '@/lib/apiError';
 import type { Tenant } from '@/types/tenant';
 
+// O CEP digitado não consulta o ViaCEP de verdade: a resposta real chegaria num tempo que o teste não controla.
+vi.mock('@/lib/viaCep', () => ({ buscarCep: vi.fn().mockResolvedValue(null) }));
+
 vi.mock('@/services/acessoService', () => ({
   acessoService: {
     catalogo: vi.fn().mockResolvedValue({ ferramentas: [] }),

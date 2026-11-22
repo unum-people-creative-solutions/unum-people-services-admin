@@ -7,6 +7,27 @@ vi.mock('@/services/settingsService', () => ({
   settingsService: {
     getSettings: vi.fn(),
     updateSettings: vi.fn(),
+    obterModoTeste: vi.fn().mockResolvedValue({ ativo: false }),
+    desligarModoTeste: vi.fn(),
+    rotacionarModoTeste: vi.fn(),
+  },
+}));
+
+// As seções montadas na página também carregam dados; sem simular, o teste chamava a API de verdade.
+vi.mock('@/services/googleAdsService', () => ({
+  googleAdsService: {
+    obter: vi.fn().mockResolvedValue({
+      conectado: false, email: '', conectado_em: '', mcc_customer_id: '', tenants_usando: 0, google_client_id: '',
+    }),
+    atualizarMcc: vi.fn(),
+    conectar: vi.fn(),
+  },
+}));
+
+vi.mock('@/services/funilConfiguradorService', () => ({
+  funilConfiguradorService: {
+    obter: vi.fn().mockResolvedValue({ tenant_real: '', tenant_real_nome: '', tenant_teste: '', tenant_teste_nome: '' }),
+    atualizar: vi.fn(),
   },
 }));
 
