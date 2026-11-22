@@ -151,6 +151,27 @@ describe('Página Jornada do visitante', () => {
   });
 
   // spec-4-detalhe RF-4-21, CA-4-17.
+  // jornada-trajetoria T11 (RF-JT-40): título, descrição e filtros num único cartão.
+  test('T11: título, descrição e filtros ficam no mesmo cartão do topo', () => {
+    renderizarComTodas();
+    const topo = screen.getByTestId('topo-da-jornada');
+    expect(within(topo).getByRole('heading', { level: 1, name: 'Jornada do visitante' })).toBeInTheDocument();
+    expect(
+      within(topo).getByText('De onde vêm, onde param e o que usam no configurador. Visitas de teste ficam fora dos números.'),
+    ).toBeInTheDocument();
+    expect(within(topo).getByRole('group', { name: 'Período' })).toBeInTheDocument();
+    expect(within(topo).getByRole('combobox', { name: 'Origem' })).toBeInTheDocument();
+    expect(within(topo).getByRole('combobox', { name: 'Aparelho' })).toBeInTheDocument();
+    expect(within(topo).getByRole('button', { name: 'Atualizar' })).toBeInTheDocument();
+  });
+
+  test('T11: depois de carregar, "Atualizado às" fica dentro do cartão do topo', async () => {
+    renderizarComTodas();
+    const aviso = await screen.findByText('Atualizado às 20:00');
+    const topo = screen.getByTestId('topo-da-jornada');
+    expect(within(topo).getByText('Atualizado às 20:00')).toBe(aviso);
+  });
+
   test('períodos: os nove na ordem, 24 horas por padrão, sem "Hoje", e a janela de 24 h até agora', async () => {
     renderizarComTodas();
     const grupo = screen.getByRole('group', { name: 'Período' });
@@ -238,7 +259,7 @@ describe('Página Jornada do visitante', () => {
       'Visitou120',
       'Abriu o configurador4840% · 40% da anterior',
       'Escolheu modelo e tema108% · 21% da anterior',
-      'Editou00% · 0% da anterior',
+      'Editoumaior queda00% · 0% da anterior',
       'Viu a página final00%',
       'Abriu a contrataçãoconta a chegada na tela desde 15/1100%',
       'Enviou a contratação00%',
@@ -256,7 +277,7 @@ describe('Página Jornada do visitante', () => {
       'Visitou80',
       'Abriu o configurador3038% · 38% da anterior',
       'Escolheu modelo e tema1013% · 33% da anterior',
-      'Editou00% · 0% da anterior',
+      'Editoumaior queda00% · 0% da anterior',
       'Viu a página final00%',
       'Abriu a contrataçãoconta a chegada na tela desde 15/1100%',
       'Enviou a contratação00%',
@@ -269,7 +290,7 @@ describe('Página Jornada do visitante', () => {
     expect(valoresDoFunil(secao)).toEqual([
       'Visitou60',
       'Abriu o configurador3050% · 50% da anterior',
-      'Escolheu modelo e tema00% · 0% da anterior',
+      'Escolheu modelo e temamaior queda00% · 0% da anterior',
       'Editou00%',
       'Viu a página final00%',
       'Abriu a contrataçãoconta a chegada na tela desde 15/1100%',
@@ -279,13 +300,10 @@ describe('Página Jornada do visitante', () => {
     ]);
 
     const menu = within(screen.getByRole('region', { name: 'Uso do editor' })).getByRole('list', { name: 'Menu "Editar"' });
+    // jornada-trajetoria RF-JT-33: as opções sem uso ficam fora da lista.
     expect(within(menu).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       'Editar tema8',
-      'Editar layout0',
-      'Dados da página0',
-      'Buscas0',
       'Editar com IA9',
-      'Como editar0',
     ]);
     expect(jornadaService.funil).toHaveBeenCalledTimes(1);
   });
@@ -303,7 +321,7 @@ describe('Página Jornada do visitante', () => {
 
   // configurador-com-ia blueprint §9.2 (TASK-ADM-305): o rótulo da IA no menu e as linhas da IA
   // mudaram por contrato; os números são os mesmos de antes.
-  test('CA-2-07: Uso do editor mostra as seis opções e o funil da IA', async () => {
+  test('CA-2-07: Uso do editor mostra as seis opções com uso e o funil da IA (RF-JT-33)', async () => {
     renderizarComTodas();
     const uso = await screen.findByRole('region', { name: 'Uso do editor' });
     const menu = await within(uso).findByRole('list', { name: 'Menu "Editar"' });
@@ -317,12 +335,6 @@ describe('Página Jornada do visitante', () => {
     ]);
     const ia = within(uso).getByRole('list', { name: 'Editar com IA' });
     expect(within(ia).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'IA: pediu mudança0',
-      'IA: viu as mudanças0',
-      'IA: resposta sem mudança0',
-      'IA: aplicou0',
-      'IA: pedido fora do assunto0',
-      'IA: viu o convite para contratar0',
       'IA: copiou as instruções (copiar e colar)9',
       'IA: viu as mudanças (copiar e colar)556%',
       'IA: resposta não lida (copiar e colar)2',
@@ -338,19 +350,19 @@ describe('Página Jornada do visitante', () => {
     expect(jornadaService.visitas).toHaveBeenCalledWith(T - 7 * DIA, T);
     const tabela = await within(visitas).findByRole('table');
     expect(within(tabela).getAllByRole('columnheader').map((th) => th.textContent)).toEqual([
-      'Hora', 'Aparelho', 'Origem', 'Páginas', 'Até onde foi', 'Contratou',
+      'Hora', 'Aparelho', 'Origem', 'Tempo', 'Até onde foi', 'Contratou',
     ]);
     const [, linhaDireta, linhaContratou, linhaNaoPagou] = within(tabela).getAllByRole('row');
 
     expect(within(linhaDireta).getAllByRole('cell').map((td) => td.textContent)).toEqual([
-      '5/11 18:51', 'Celular', 'Direto', '3', 'Abriu o configurador', '—',
+      '5/11 18:51', 'Celular', 'Direto', '1 min 52 s', 'Abriu o configurador', '—',
     ]);
     expect(within(linhaDireta).getByRole('link', { name: '5/11 18:51' })).toHaveAttribute(
       'href', '/dashboard/jornada/5b1f8a3c-2d4e-4f6a-8b9c-0d1e2f2da0b6',
     );
 
     expect(within(linhaContratou).getAllByRole('cell').map((td) => td.textContent)).toEqual([
-      '5/11 17:12', 'Computador', 'Anúncio do Google', '4', 'Abriu a contrataçãoUsou o editor', 'Espaço SerenoPagou',
+      '5/11 17:12', 'Computador', 'Anúncio do Google', '19 min', 'Abriu a contrataçãoUsou o editor', 'Espaço SerenoPagou',
     ]);
     expect(within(linhaContratou).getByRole('link', { name: 'Espaço Sereno' })).toHaveAttribute(
       'href', '/tenants/a1b2c3d4-0000-4000-8000-000000000001',
@@ -371,7 +383,7 @@ describe('Página Jornada do visitante', () => {
     const tabela = await screen.findByRole('table');
     const [, linha] = within(tabela).getAllByRole('row');
     expect(within(linha).getAllByRole('cell').map((td) => td.textContent)).toEqual([
-      '09:00', 'Celular', 'Anúncio do Google', '1', 'ContratouUsou o editor', 'Espaço SerenoPagou',
+      '09:00', 'Celular', 'Anúncio do Google', '3 s', 'ContratouUsou o editor', 'Espaço SerenoPagou',
     ]);
   });
 
@@ -404,7 +416,7 @@ describe('Página Jornada do visitante', () => {
       visitas: [visitaEditor, visitaPrevia],
       eventos: [
         { em: visitaPrevia.inicio, nome: 'lp_page_view', caminho: '/configurar/preview', visita: 'visita-previa' },
-        { em: visitaPrevia.inicio + 5_000, nome: 'lp_previa_secao_services', caminho: '/configurar/preview', visita: 'visita-previa' },
+        { em: visitaPrevia.inicio + 5_000, nome: 'lp_clique_previa_botao', caminho: '/configurar/preview', visita: 'visita-previa' },
         { em: visitaEditor.inicio, nome: 'lp_page_view', caminho: '/configurar/editar', visita: 'visita-editor' },
         { em: visitaEditor.inicio + 5_000, nome: 'lp_clique_editor_imagem', caminho: '/configurar/editar', visita: 'visita-editor' },
       ],
@@ -422,8 +434,8 @@ describe('Página Jornada do visitante', () => {
     const editor = areaDe('18:51');
     const previa = areaDe('17:51');
     expect(await within(editor).findByText('Pôs ou trocou imagem')).toBeInTheDocument();
-    expect(within(editor).queryByText('Viu: Serviços')).not.toBeInTheDocument();
-    expect(await within(previa).findByText('Viu: Serviços')).toBeInTheDocument();
+    expect(within(editor).queryByText('Testou um botão da página')).not.toBeInTheDocument();
+    expect(await within(previa).findByText('Testou um botão da página')).toBeInTheDocument();
     expect(within(previa).queryByText('Pôs ou trocou imagem')).not.toBeInTheDocument();
 
     expect(jornadaService.visitante).toHaveBeenCalledTimes(1);
@@ -467,7 +479,7 @@ describe('Página Jornada do visitante', () => {
     expect(linhas).toHaveLength(1);
     expect(within(linhas[0]).getByText('2 aberturas')).toBeInTheDocument();
     expect(within(linhas[0]).getByText('Reserva (falha IA)')).toBeInTheDocument();
-    expect(within(linhas[0]).getByText('5')).toBeInTheDocument();
+    expect(within(linhas[0]).getByText('11 min 52 s')).toBeInTheDocument();
 
     fireEvent.click(within(linhas[0]).getByRole('button', { name: /Abrir a visita/ }));
     expect(await screen.findByText('Pôs ou trocou imagem')).toBeInTheDocument();
@@ -801,12 +813,12 @@ describe('Página Jornada: Páginas de entrada', () => {
     ]);
   });
 
-  test('abas com aria-pressed; a inicial é a de mais visitas (Saúde, 12)', async () => {
+  test('abas com aria-pressed e o número de visitas; a inicial é a de mais visitas (Saúde, 12)', async () => {
     renderizarComTodas();
     const secao = await secaoCarregada();
     const abas = within(within(secao).getByRole('group', { name: 'Página de entrada' })).getAllByRole('button');
-    expect(abas.map((b) => b.textContent)).toEqual(['Início', 'Saúde', 'CRM', 'Blog']);
-    expect(abaPressionada(secao)).toEqual(['Saúde']);
+    expect(abas.map((b) => b.textContent)).toEqual(['Início · 5', 'Saúde · 12', 'CRM · 3', 'Blog · 1']);
+    expect(abaPressionada(secao)).toEqual(['Saúde · 12']);
     expect(within(secao).getByText('12 visitas viram esta página')).toBeInTheDocument();
   });
 
@@ -814,75 +826,32 @@ describe('Página Jornada: Páginas de entrada', () => {
     renderizarComTodas();
     const secao = await secaoCarregada();
     expect(linhas(secao, 'Rolagem')).toEqual(['25%758%', '50%433%', '75%217%', 'Até o fim18%']);
-    expect(linhas(secao, 'Tempo na página (aba visível)')).toEqual(['10 s650%', '30 s325%', '1 min00%', '3 min00%']);
-    expect(linhas(secao, 'Seções vistas')).toEqual([
-      'Caminho650%',
-      'Funções00%',
-      'Junto00%',
-      'Planos18%',
-      'Perguntas frequentes00%',
-      'Fechamento00%',
-    ]);
+    // RF-JT-34: só as linhas com valor maior que 0.
+    expect(linhas(secao, 'Tempo na página (aba visível)')).toEqual(['10 s650%', '30 s325%']);
+    expect(linhas(secao, 'Seções vistas')).toEqual(['Caminho650%', 'Planos18%']);
   });
 
-  test('cliques: só os botões da página de produto, do mais clicado ao menos, empate na ordem da tabela', async () => {
+  test('cliques: só os botões com clique, do mais clicado ao menos', async () => {
     renderizarComTodas();
     const secao = await secaoCarregada();
-    expect(linhas(secao, 'Cliques')).toEqual([
-      'Topo: botão principal2',
-      'Topo: ver planos1',
-      'Planos: escolheu um plano0',
-      'Abriu uma pergunta0',
-      'Fechamento: botão principal0',
-      'Plano: ver todos os planos0',
-      'Plano: conhecer o CRM0',
-      'Logo0',
-      'Minha conta0',
-      'Rodapé: e-mail0',
-      'Rodapé: termos0',
-      'Rodapé: privacidade0',
-      'Rodapé: ajuda0',
-      // L-02: o "Continuar editando" do topo também aparece em Saúde (e em CRM e Blog); o fixo é só da home.
-      'Topo: continuar editando0',
-    ]);
-    expect(linhas(secao, 'Cliques')).not.toContain('Botão fixo (celular): continuar editando0');
+    expect(linhas(secao, 'Cliques')).toEqual(['Topo: botão principal2', 'Topo: ver planos1']);
   });
 
   test('trocar de aba mostra a outra página', async () => {
     renderizarComTodas();
     const secao = await secaoCarregada();
-    fireEvent.click(within(secao).getByRole('button', { name: 'CRM' }));
-    expect(abaPressionada(secao)).toEqual(['CRM']);
+    fireEvent.click(within(secao).getByRole('button', { name: 'CRM · 3' }));
+    expect(abaPressionada(secao)).toEqual(['CRM · 3']);
     expect(within(secao).getByText('3 visitas viram esta página')).toBeInTheDocument();
-    expect(linhas(secao, 'Rolagem')).toEqual(['25%00%', '50%133%', '75%00%', 'Até o fim00%']);
-    expect(linhas(secao, 'Seções vistas')[0]).toBe('Caminho267%');
-    expect(linhas(secao, 'Cliques').slice(0, 3)).toEqual([
-      'Plano: conhecer o CRM1',
-      'Topo: botão principal0',
-      'Topo: ver planos0',
-    ]);
+    expect(linhas(secao, 'Rolagem')).toEqual(['50%133%']);
+    expect(linhas(secao, 'Seções vistas')).toEqual(['Caminho267%']);
+    expect(linhas(secao, 'Cliques')).toEqual(['Plano: conhecer o CRM1']);
 
-    fireEvent.click(within(secao).getByRole('button', { name: 'Início' }));
-    expect(abaPressionada(secao)).toEqual(['Início']);
+    fireEvent.click(within(secao).getByRole('button', { name: 'Início · 5' }));
+    expect(abaPressionada(secao)).toEqual(['Início · 5']);
     expect(within(secao).getByText('5 visitas viram esta página')).toBeInTheDocument();
-    expect(linhas(secao, 'Seções vistas')).toEqual([
-      'Modelos360%',
-      'Vantagens00%',
-      'Como funciona00%',
-      'Planos00%',
-      'Blog00%',
-      'CRM00%',
-      'Perguntas frequentes00%',
-      'Fechamento00%',
-    ]);
-    const cliques = linhas(secao, 'Cliques');
-    // 19 da tabela de antes + hero_continuar e fixo_continuar (jornada-fluxo-atual RF-JF-07).
-    expect(cliques).toHaveLength(21);
-    expect(cliques).toContain('Topo: continuar editando0');
-    expect(cliques).toContain('Botão fixo (celular): continuar editando0');
-    expect(cliques.slice(0, 3)).toEqual(['Galeria: escolheu um modelo1', 'Topo: botão principal0', 'Topo: ver planos0']);
-    expect(cliques).not.toContain('Logo0');
-    expect(cliques).not.toContain('Plano: ver todos os planos0');
+    expect(linhas(secao, 'Seções vistas')).toEqual(['Modelos360%']);
+    expect(linhas(secao, 'Cliques')).toEqual(['Galeria: escolheu um modelo1']);
   });
 
   test('filtros de origem e aparelho recalculam os números sem nova chamada', async () => {
@@ -890,19 +859,22 @@ describe('Página Jornada: Páginas de entrada', () => {
     await secaoCarregada();
     fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'google' } });
     const google = screen.getByRole('region', { name: 'Páginas de entrada · 24 horas · Anúncio do Google' });
-    expect(abaPressionada(google)).toEqual(['Saúde']);
+    expect(abaPressionada(google)).toEqual(['Saúde · 10']);
     expect(within(google).getByText('10 visitas viram esta página')).toBeInTheDocument();
+    // Com o filtro, só Início e Saúde têm visita: CRM e Blog saem das abas.
+    expect(within(google).getByText('CRM e Blog sem visitas no período não aparecem.')).toBeInTheDocument();
     expect(linhas(google, 'Rolagem')).toEqual(['25%770%', '50%440%', '75%220%', 'Até o fim110%']);
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'todas' } });
     fireEvent.change(screen.getByRole('combobox', { name: 'Aparelho' }), { target: { value: 'computador' } });
     const computador = screen.getByRole('region', { name: 'Páginas de entrada · 24 horas · Computador' });
     // CRM tem 3 visitas no computador, Saúde tem 2: a aba inicial acompanha o filtro.
-    expect(abaPressionada(computador)).toEqual(['CRM']);
+    expect(abaPressionada(computador)).toEqual(['CRM · 3']);
     expect(within(computador).getByText('3 visitas viram esta página')).toBeInTheDocument();
-    fireEvent.click(within(computador).getByRole('button', { name: 'Saúde' }));
+    fireEvent.click(within(computador).getByRole('button', { name: 'Saúde · 2' }));
     expect(within(computador).getByText('2 visitas viram esta página')).toBeInTheDocument();
-    expect(linhas(computador, 'Rolagem')).toEqual(['25%00%', '50%00%', '75%00%', 'Até o fim00%']);
+    // Saúde no computador não tem rolagem, tempo, seção nem clique: nenhum bloco aparece.
+    expect(within(computador).queryByRole('list')).not.toBeInTheDocument();
     expect(jornadaService.funil).toHaveBeenCalledTimes(1);
   });
 
@@ -910,10 +882,10 @@ describe('Página Jornada: Páginas de entrada', () => {
     renderizarComTodas();
     const secao = await secaoCarregada();
     expect(within(secao).getByText('12 visitas viram esta página')).toBeInTheDocument();
-    fireEvent.click(within(secao).getByRole('button', { name: 'Blog' }));
+    fireEvent.click(within(secao).getByRole('button', { name: 'Blog · 1' }));
     expect(within(secao).getByText('1 visita viu esta página')).toBeInTheDocument();
     expect(within(secao).queryByText('1 visitas viram esta página')).not.toBeInTheDocument();
-    fireEvent.click(within(secao).getByRole('button', { name: 'CRM' }));
+    fireEvent.click(within(secao).getByRole('button', { name: 'CRM · 3' }));
     expect(within(secao).getByText('3 visitas viram esta página')).toBeInTheDocument();
   });
 
@@ -928,24 +900,26 @@ describe('Página Jornada: Páginas de entrada', () => {
     });
     renderizarComTodas();
     const secao = await secaoCarregada();
-    expect(abaPressionada(secao)).toEqual(['CRM']);
+    expect(abaPressionada(secao)).toEqual(['CRM · 4']);
   });
 
-  test('n = 0: a frase de vazio no lugar dos blocos', async () => {
+  test('sem visita em nenhuma página (filtro): a frase de vazio, sem abas nem blocos', async () => {
     renderizarComTodas();
     await secaoCarregada();
     fireEvent.change(screen.getByRole('combobox', { name: 'Origem' }), { target: { value: 'campanha' } });
     const secao = screen.getByRole('region', { name: 'Páginas de entrada · 24 horas · Outra campanha' });
-    expect(abaPressionada(secao)).toEqual(['Início']);
-    expect(within(secao).getByText('Nenhuma visita entrou por esta página no período.')).toBeInTheDocument();
+    expect(within(secao).getByText('Nenhuma visita entrou pelas páginas de entrada no período.')).toBeInTheDocument();
+    expect(within(secao).queryByRole('group', { name: 'Página de entrada' })).not.toBeInTheDocument();
     expect(within(secao).queryByRole('list')).not.toBeInTheDocument();
   });
 
   test('leitura vazia da API ([]): a frase de vazio', async () => {
     vi.mocked(jornadaService.funil).mockResolvedValue(funil);
     renderizarComTodas();
-    const secao = await secaoCarregada();
-    expect(within(secao).getByText('Nenhuma visita entrou por esta página no período.')).toBeInTheDocument();
+    const secao = await screen.findByRole('region', { name: 'Páginas de entrada · 24 horas' });
+    expect(
+      await within(secao).findByText('Nenhuma visita entrou pelas páginas de entrada no período.'),
+    ).toBeInTheDocument();
   });
 
   test('erro: "Tentar de novo" na seção, as visitas seguem, e tentar de novo carrega', async () => {

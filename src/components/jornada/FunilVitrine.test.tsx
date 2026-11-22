@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FunilJornada } from '@/types/jornada';
 import { FunilEmSeries, FunilVitrine } from './FunilVitrine';
@@ -84,7 +84,7 @@ const FUNIL_ANTIGO: FunilJornada = {
 
 const ROTULOS_NOVOS = [
   'Visitou',
-  'Abriu a janela no editor',
+  'Abriu modal de entrada',
   'Enviou os dados',
   'Viu o site montado',
   'Abriu a contratação',
@@ -356,5 +356,126 @@ describe('FunilEmSeries: duas séries, sem misturar (A2)', () => {
     const secao = renderizarSeries(undefined, { carregando: true });
     expect(secao).toHaveAttribute('aria-busy', 'true');
     expect(within(secao).queryByRole('list')).toBeNull();
+  });
+});
+
+// jornada-trajetoria T13 (RF-JT-42): selo "maior queda" na etapa com a menor taxa sobre a anterior.
+describe('selo "maior queda" (RF-JT-42)', () => {
+  const NOVA_QUEDA = [64, 31, 22, 20, 6, 3, 2, 1];
+
+  function funilDeNova(valores: number[]): FunilJornada {
+    const etapas = [1, 10, 11, 12, 6, 7, 8];
+    return {
+      etapas: etapas.map((etapa, i) => ({ etapa, aparelho: 'celular', origem: 'google_ads', visitas: valores[i] })),
+      uso: [],
+      pagou: [{ aparelho: 'celular', origem: 'google_ads', visitas: valores[7] }],
+      leitura: [],
+    };
+  }
+
+  function renderizarNova(valores: number[], comAnterior: boolean) {
+    render(
+      <FunilEmSeries
+        idTitulo="titulo-funil-queda"
+        titulo="Funil da queda"
+        corte={CORTE}
+        series={{ antiga: null, nova: funilDeNova(valores) }}
+        filtro={TODOS}
+        carregando={false}
+        erro={false}
+        onTentar={() => {}}
+        textoVazio="Nada"
+        comAnterior={comAnterior}
+      />,
+    );
+    return screen.getByRole('region', { name: 'Funil da queda' });
+  }
+
+  it('série nova [64, 31, 22, 20, 6, 3, 2, 1]: o selo só na linha "Abriu a contratação" (30%)', () => {
+    const secao = renderizarNova(NOVA_QUEDA, true);
+    expect(within(secao).getAllByText('maior queda')).toHaveLength(1);
+    const alvo = linha(secao, 'Abriu a contratação');
+    expect(within(alvo).getByText('maior queda')).toBeInTheDocument();
+    expect(alvo).toHaveTextContent('30% da anterior');
+  });
+
+  it('série nova sem comAnterior: nunca mostra o selo', () => {
+    const secao = renderizarNova(NOVA_QUEDA, false);
+    expect(within(secao).queryByText('maior queda')).toBeNull();
+  });
+
+  it('série nova com tudo 0, ou com todas as taxas em 100%: sem selo', () => {
+    const zerada = renderizarNova([0, 0, 0, 0, 0, 0, 0, 0], true);
+    expect(within(zerada).queryByText('maior queda')).toBeNull();
+    cleanup();
+    const cheia = renderizarNova([5, 5, 5, 5, 5, 5, 5, 5], true);
+    expect(within(cheia).queryByText('maior queda')).toBeNull();
+  });
+
+  it('série nova com empate: o selo na primeira', () => {
+    const secao = renderizarNova([100, 50, 50, 25, 25, 25, 25, 25], true);
+    expect(within(secao).getAllByText('maior queda')).toHaveLength(1);
+    expect(within(linha(secao, 'Abriu modal de entrada')).getByText('maior queda')).toBeInTheDocument();
+  });
+
+  it('série antiga: o selo na linha de menor taxa ("Editou", 25%)', () => {
+    const antiga: FunilJornada = {
+      etapas: [10, 9, 8, 2, 2, 2, 1, 1].map((visitas, i) => ({
+        etapa: i + 1,
+        aparelho: 'celular' as const,
+        origem: 'google_ads',
+        visitas,
+      })),
+      uso: [],
+      pagou: [{ aparelho: 'celular', origem: 'google_ads', visitas: 1 }],
+      leitura: [],
+    };
+    render(
+      <FunilEmSeries
+        idTitulo="titulo-funil-antiga"
+        titulo="Funil antigo"
+        corte={CORTE}
+        series={{ antiga, nova: null }}
+        filtro={TODOS}
+        carregando={false}
+        erro={false}
+        onTentar={() => {}}
+        textoVazio="Nada"
+        comAnterior
+      />,
+    );
+    const secao = screen.getByRole('region', { name: 'Funil antigo' });
+    expect(within(secao).getAllByText('maior queda')).toHaveLength(1);
+    expect(within(linha(secao, 'Editou')).getByText('maior queda')).toBeInTheDocument();
+  });
+
+  it('FunilVitrine com comAnterior mostra o selo; sem comAnterior, nunca', () => {
+    const { rerender } = render(
+      <FunilVitrine
+        idTitulo="titulo-funil"
+        titulo="Funil"
+        valores={[100, 60, 40, 30, 5, 3, 2, 1, 1]}
+        carregando={false}
+        erro={false}
+        onTentar={() => {}}
+        textoVazio="Nada"
+        comAnterior
+      />,
+    );
+    const secao = screen.getByRole('region', { name: 'Funil' });
+    expect(within(linha(secao, 'Viu a página final')).getByText('maior queda')).toBeInTheDocument();
+    expect(within(secao).getAllByText('maior queda')).toHaveLength(1);
+    rerender(
+      <FunilVitrine
+        idTitulo="titulo-funil"
+        titulo="Funil"
+        valores={[100, 60, 40, 30, 5, 3, 2, 1, 1]}
+        carregando={false}
+        erro={false}
+        onTentar={() => {}}
+        textoVazio="Nada"
+      />,
+    );
+    expect(within(screen.getByRole('region', { name: 'Funil' })).queryByText('maior queda')).toBeNull();
   });
 });
