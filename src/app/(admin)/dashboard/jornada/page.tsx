@@ -4,8 +4,10 @@ import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { jornadaService } from '@/services/jornadaService';
+import { toolsUsoService } from '@/services/toolsUsoService';
 import { FunilEmSeries, FunilVitrine, type SeriesDoFunil } from '@/components/jornada/FunilVitrine';
 import { UsoDoEditor } from '@/components/jornada/UsoDoEditor';
+import { UsoDoTools } from '@/components/jornada/UsoDoTools';
 import { MotivosDaReserva } from '@/components/jornada/MotivosDaReserva';
 import { JanelaCampoACampo } from '@/components/jornada/JanelaCampoACampo';
 import { PaginasDeEntrada } from '@/components/jornada/PaginasDeEntrada';
@@ -27,12 +29,15 @@ import {
   type FiltroJornada,
   type GrupoOrigem,
 } from '@/lib/jornada';
+import { diasDoPeriodo, visitasPelaOrigem } from '@/lib/toolsUso';
 import type { Aparelho, FunilJornada } from '@/types/jornada';
 
 // spec-2-painel RF-2-07; blueprint §3; spec-4-detalhe RF-4-21 e RF-4-22.
 
 const PERIODO_PADRAO = PERIODOS.find((p) => p.rotulo === '24 horas')!;
 const UM_DIA_MS = 86_400_000;
+// A origem crua das visitas que saem do Tools (medicao-de-uso RF-MU-09).
+const ORIGEM_DO_TOOLS = 'utm:tools';
 
 const GRUPOS_ORIGEM = Object.keys(ROTULOS_ORIGEM) as GrupoOrigem[];
 const APARELHOS: Aparelho[] = ['celular', 'computador'];
@@ -111,6 +116,18 @@ export default function JornadaPage() {
   const tentarFunil = () => {
     for (const q of chamadasDoFunil) void q.refetch();
   };
+
+  // medicao-de-uso RF-MU-08: o cartão "Uso do Tools" usa o mesmo período da página, em dias de Brasília.
+  const diasDoTools = diasDoPeriodo(desde, ate);
+  const toolsUsoQuery = useQuery({
+    queryKey: ['tools-uso', diasDoTools.de, diasDoTools.ate, rodada],
+    queryFn: () => toolsUsoService.resumo(diasDoTools.de, diasDoTools.ate),
+  });
+  // RF-MU-09: visitas da jornada com origem utm:tools; sem o funil (carregando ou erro), a linha some.
+  const chegaramPeloTools = useMemo(
+    () => (funilDoPeriodo ? visitasPelaOrigem(funilDoPeriodo, ORIGEM_DO_TOOLS) : undefined),
+    [funilDoPeriodo],
+  );
 
   // RF-4-19: as de teste vêm sempre; a tela filtra pelo "Mostrar visitas de teste".
   const visitasQuery = useQuery({
@@ -340,6 +357,15 @@ export default function JornadaPage() {
           {/* medicao-de-mercado RF-MM-48: ao lado dos motivos da reserva, mesmos filtros e período. */}
           <JanelaCampoACampo janela={dadosDaJanela} carregando={funilCarregando} erro={funilErro} onTentar={tentarFunil} />
         </div>
+
+        {/* medicao-de-uso RF-MU-08: mesmo período da página; os filtros de origem e aparelho não valem aqui. */}
+        <UsoDoTools
+          dados={toolsUsoQuery.data}
+          carregando={toolsUsoQuery.isPending || (toolsUsoQuery.isError && toolsUsoQuery.isFetching)}
+          erro={toolsUsoQuery.isError}
+          onTentar={() => void toolsUsoQuery.refetch()}
+          chegaramPeloTools={chegaramPeloTools}
+        />
 
         <VisitasDoPeriodo
           titulo={comFiltros('Visitas')}
