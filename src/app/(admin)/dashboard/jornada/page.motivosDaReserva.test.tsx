@@ -12,6 +12,8 @@ import type { FunilJornada } from '@/types/jornada';
 vi.mock('@/services/jornadaService', () => ({
   jornadaService: { funil: vi.fn(), visitas: vi.fn(), visitante: vi.fn() },
 }));
+// O cartão "Uso do Tools" (medicao-de-uso) tem teste próprio em page.usoDoTools.test.tsx; aqui fica sem resposta.
+vi.mock('@/services/toolsUsoService', () => ({ toolsUsoService: { resumo: vi.fn(() => new Promise(() => {})) } }));
 vi.mock('next/navigation', () => ({ useRouter: vi.fn(), usePathname: vi.fn(() => '/dashboard/jornada') }));
 
 const funil: FunilJornada = {
