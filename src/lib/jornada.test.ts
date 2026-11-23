@@ -979,6 +979,11 @@ describe('rótulos da A2: uso do editor e linha do tempo', () => {
     expect(rotuloDoEvento(ev('lp_ia_tema_aplicado', { caminho: '/configurar/preview' }))).toBe('IA: trocou as cores');
   });
 
+  it('ia-adiciona-secao (RF-AS-40) — a seção nova aplicada na revisão da IA', () => {
+    expect(rotuloDoEvento(ev('lp_ia_secao_aplicada', { caminho: '/configurar/editar' }))).toBe('IA: adicionou seção');
+    expect(rotuloDoEvento(ev('lp_ia_secao_aplicada', { caminho: '/configurar/preview' }))).toBe('IA: adicionou seção');
+  });
+
   it('§9.2 — as linhas da IA no cartão "Uso do editor", nesta ordem', () => {
     expect(LINHAS_DA_IA.map((l) => [l.evento, l.rotulo])).toEqual([
       ['lp_ia_pedido_enviado', 'IA: pediu mudança'],
