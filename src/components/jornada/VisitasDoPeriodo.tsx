@@ -11,6 +11,7 @@ import {
   formatarDiaMes,
   formatarDuracao,
   formatarHora,
+  motivosDaReserva,
   origemDaMontagem,
   progressoDaVisita,
   ROTULOS_ETAPAS_ENTRADA_COM_IA,
@@ -19,7 +20,15 @@ import {
   usouOEditor,
 } from '@/lib/jornada';
 import { EsqueletoDaSecao, ErroDaSecao } from './EstadoDaSecao';
-import { SeloAberturas, SeloEditou, SeloMontagem, SeloPagamento, SeloTeste, SeloUsouEditor } from './Selos';
+import {
+  SeloAberturas,
+  SeloEditou,
+  SeloMontagem,
+  SeloPagamento,
+  SeloSemSinalHumano,
+  SeloTeste,
+  SeloUsouEditor,
+} from './Selos';
 import { EmpresaContratante } from './EmpresaContratante';
 import { DetalheDaVisita, caminhoDoVisitante } from './DetalheDaVisita';
 import { DadosDaVisita } from './DadosDaVisita';
@@ -57,6 +66,9 @@ interface VisitasDoPeriodoProps {
   onTentar: () => void;
   mostrarTeste: boolean;
   onMostrarTeste: (valor: boolean) => void;
+  // medicao-de-mercado M3 (RF-MM-38): desmarcada (padrão), as linhas sem sinal humano ficam escondidas;
+  // marcada, aparecem com o selo.
+  incluirSemSinal?: boolean;
 }
 
 // Visitas do período (blueprint §3.4; spec-4-detalhe RF-4-23 e RF-4-24).
@@ -70,6 +82,7 @@ export function VisitasDoPeriodo({
   onTentar,
   mostrarTeste,
   onMostrarTeste,
+  incluirSemSinal = false,
 }: VisitasDoPeriodoProps) {
   // Várias linhas podem ficar abertas: um conjunto por visita (L-045).
   const [abertas, setAbertas] = useState<ReadonlySet<string>>(() => new Set());
@@ -89,6 +102,8 @@ export function VisitasDoPeriodo({
     if ((evento.target as HTMLElement).closest('a, button')) return;
     alternar(visita);
   }
+
+  const visiveis = visitas && !incluirSemSinal ? visitas.filter((v) => v.sem_sinal_humano !== true) : visitas;
 
   return (
     <section
@@ -113,9 +128,9 @@ export function VisitasDoPeriodo({
       <div className="p-4">
         {carregando ? (
           <EsqueletoDaSecao linhas={4} />
-        ) : erro || visitas === undefined ? (
+        ) : erro || visiveis === undefined ? (
           <ErroDaSecao onTentar={onTentar} />
-        ) : visitas.length === 0 ? (
+        ) : visiveis.length === 0 ? (
           <p className="py-6 text-center text-sm text-slate-500">{textoVazio}</p>
         ) : (
           <>
@@ -134,7 +149,7 @@ export function VisitasDoPeriodo({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {visitas.slice(0, limite).map((v) => {
+                  {visiveis.slice(0, limite).map((v) => {
                     const etapa = ateOndeFoi(v.etapas, v.inicio, DESDE_ENTRADA_COM_IA);
                     const pagou = v.pagou_em !== undefined || v.contratacao?.pago === true;
                     const progresso = progressoDaVisita(v.etapas, v.inicio, DESDE_ENTRADA_COM_IA, pagou);
@@ -176,6 +191,7 @@ export function VisitasDoPeriodo({
                               </Link>
                               {aberturas > 1 ? <SeloAberturas quantidade={aberturas} /> : null}
                               {v.teste ? <SeloTeste /> : null}
+                              {v.sem_sinal_humano ? <SeloSemSinalHumano /> : null}
                             </div>
                           </td>
                           <td className="px-3 py-2.5 text-slate-700">{rotuloDoAparelho(v.aparelho)}</td>
@@ -189,7 +205,7 @@ export function VisitasDoPeriodo({
                             <div className="flex flex-wrap items-center gap-2">
                               {progresso !== null ? <PontinhosDeProgresso posicao={progresso} /> : null}
                               <span>{etapa ?? '—'}</span>
-                              {montagem ? <SeloMontagem tipo={montagem} /> : null}
+                              {montagem ? <SeloMontagem tipo={montagem} motivos={motivosDaReserva(v.usos)} /> : null}
                               {editou ? <SeloEditou /> : null}
                               {usouOEditor(v.usos) ? <SeloUsouEditor /> : null}
                             </div>
@@ -233,7 +249,7 @@ export function VisitasDoPeriodo({
                 </tbody>
               </table>
             </div>
-            {visitas.length > limite ? (
+            {visiveis.length > limite ? (
               <div className="pt-4 text-center">
                 <button
                   type="button"

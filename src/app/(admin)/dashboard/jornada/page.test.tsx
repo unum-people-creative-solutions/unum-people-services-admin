@@ -809,6 +809,8 @@ describe('Página Jornada: Páginas de entrada', () => {
       'titulo-funil-jornada',
       'titulo-uso-editor',
       'titulo-paginas-entrada',
+      'titulo-motivos-reserva', // medicao-de-mercado M2 (RF-MM-2d): o cartão novo na mesma grade
+      'titulo-janela-campo-a-campo', // medicao-de-mercado M4 (RF-MM-48): o cartão ao lado
       'titulo-visitas',
     ]);
   });
