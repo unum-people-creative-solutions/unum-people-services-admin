@@ -1,0 +1,20 @@
+{
+  "de": "2026-11-20",
+  "ate": "2026-11-22",
+  "ferramentas": [
+    {"ferramenta": "home", "visita": 5, "comecou": 0, "resultado": 0, "convite": 0, "guia": 0, "planilha": 0},
+    {"ferramenta": "quanto-cobrar", "visita": 7, "comecou": 2, "resultado": 1, "convite": 1, "guia": 0, "planilha": 0},
+    {"ferramenta": "vale-anunciar", "visita": 0, "comecou": 0, "resultado": 0, "convite": 0, "guia": 0, "planilha": 0},
+    {"ferramenta": "servicos-compensam", "visita": 2, "comecou": 0, "resultado": 0, "convite": 0, "guia": 0, "planilha": 1}
+  ],
+  "dias": [
+    {"dia": "2026-11-21", "ferramenta": "home", "evento": "visita", "n": 5},
+    {"dia": "2026-11-21", "ferramenta": "quanto-cobrar", "evento": "comecou", "n": 2},
+    {"dia": "2026-11-21", "ferramenta": "quanto-cobrar", "evento": "visita", "n": 3},
+    {"dia": "2026-11-22", "ferramenta": "quanto-cobrar", "evento": "convite", "n": 1},
+    {"dia": "2026-11-22", "ferramenta": "quanto-cobrar", "evento": "resultado", "n": 1},
+    {"dia": "2026-11-22", "ferramenta": "quanto-cobrar", "evento": "visita", "n": 4},
+    {"dia": "2026-11-22", "ferramenta": "servicos-compensam", "evento": "planilha", "n": 1},
+    {"dia": "2026-11-22", "ferramenta": "servicos-compensam", "evento": "visita", "n": 2}
+  ]
+}
