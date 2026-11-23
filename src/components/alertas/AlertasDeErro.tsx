@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Bell, BellOff } from 'lucide-react';
 import { alertasService } from '@/services/alertasService';
 
-// Push de alertas de ERRO só no navegador (RF-EM-20/21): sem manifest nem
+// Push de alertas (erros do sistema e recusas da IA) só no navegador (RF-EM-20/21): sem manifest nem
 // instalação. A chave pública VAPID vem de NEXT_PUBLIC_VAPID_KEY, a mesma do CRM.
 type Estado = 'carregando' | 'sem-suporte' | 'negada' | 'inativo' | 'ativo';
 
@@ -88,7 +88,7 @@ export function AlertasDeErro() {
       setErro(
         e instanceof Error && e.message === 'chave'
           ? 'Não foi possível ativar os alertas: a chave de notificação não está configurada neste ambiente.'
-          : 'Não foi possível ativar os alertas de erro. Tente de novo em instantes.',
+          : 'Não foi possível ativar os alertas. Tente de novo em instantes.',
       );
     } finally {
       setOcupado(false);
@@ -107,7 +107,7 @@ export function AlertasDeErro() {
       }
       setEstado('inativo');
     } catch {
-      setErro('Não foi possível desativar os alertas de erro. Tente de novo em instantes.');
+      setErro('Não foi possível desativar os alertas. Tente de novo em instantes.');
     } finally {
       setOcupado(false);
     }
@@ -119,7 +119,7 @@ export function AlertasDeErro() {
     <div className="flex flex-col items-end gap-1 text-sm">
       {estado === 'sem-suporte' && (
         <p className="flex items-center gap-2 text-slate-500">
-          <BellOff size={16} /> Alertas de erro não funcionam neste navegador.
+          <BellOff size={16} /> Alertas não funcionam neste navegador.
         </p>
       )}
       {estado === 'negada' && (
@@ -136,8 +136,11 @@ export function AlertasDeErro() {
           className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
         >
           <Bell size={18} />
-          {ocupado ? 'Ativando...' : 'Ativar alertas de erro'}
+          {ocupado ? 'Ativando...' : 'Ativar alertas'}
         </button>
+      )}
+      {estado === 'inativo' && (
+        <p className="text-slate-500">Avisos no navegador sobre erros do sistema e recusas da IA.</p>
       )}
       {estado === 'ativo' && (
         <div className="flex items-center gap-3">
