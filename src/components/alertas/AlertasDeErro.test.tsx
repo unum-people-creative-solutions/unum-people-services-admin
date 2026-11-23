@@ -75,17 +75,19 @@ describe('AlertasDeErro (RF-EM-21)', () => {
     delete navigator.serviceWorker;
     render(<AlertasDeErro />);
     expect(await screen.findByText(/não funcionam neste navegador/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /ativar alertas de erro/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ativar alertas$/i })).not.toBeInTheDocument();
   });
 
-  it('sem inscrição: mostra "Ativar alertas de erro"', async () => {
+  it('sem inscrição: mostra "Ativar alertas" e o que eles avisam', async () => {
     render(<AlertasDeErro />);
-    expect(await screen.findByRole('button', { name: /ativar alertas de erro/i })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: /ativar alertas$/i })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /alertas de erro/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/erros do sistema e recusas da IA/i)).toBeInTheDocument();
   });
 
   it('ao clicar: pede permissão, registra o SW, inscreve com a VAPID pública e manda endpoint e keys à API', async () => {
     render(<AlertasDeErro />);
-    fireEvent.click(await screen.findByRole('button', { name: /ativar alertas de erro/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /ativar alertas$/i }));
 
     expect(await screen.findByText(/alertas ativos neste navegador/i)).toBeInTheDocument();
     expect(requestPermission).toHaveBeenCalled();
@@ -114,7 +116,7 @@ describe('AlertasDeErro (RF-EM-21)', () => {
     inscricaoDoNavegador = criarInscricao();
     vi.mocked(alertasService.estaInscrito).mockResolvedValue(false);
     render(<AlertasDeErro />);
-    expect(await screen.findByRole('button', { name: /ativar alertas de erro/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /ativar alertas$/i })).toBeInTheDocument();
   });
 
   it('Desativar: DELETE na API com o endpoint e unsubscribe no navegador', async () => {
@@ -125,7 +127,7 @@ describe('AlertasDeErro (RF-EM-21)', () => {
     render(<AlertasDeErro />);
     fireEvent.click(await screen.findByRole('button', { name: /desativar/i }));
 
-    expect(await screen.findByRole('button', { name: /ativar alertas de erro/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /ativar alertas$/i })).toBeInTheDocument();
     expect(alertasService.remover).toHaveBeenCalledWith(ENDPOINT);
     expect(inscricao.unsubscribe).toHaveBeenCalled();
   });
@@ -136,7 +138,7 @@ describe('AlertasDeErro (RF-EM-21)', () => {
       return permissao;
     });
     render(<AlertasDeErro />);
-    fireEvent.click(await screen.findByRole('button', { name: /ativar alertas de erro/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /ativar alertas$/i }));
 
     expect(await screen.findByText(/configurações do navegador/i)).toBeInTheDocument();
     expect(subscribe).not.toHaveBeenCalled();
@@ -147,17 +149,17 @@ describe('AlertasDeErro (RF-EM-21)', () => {
     permissao = 'denied';
     render(<AlertasDeErro />);
     expect(await screen.findByText(/configurações do navegador/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /ativar alertas de erro/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ativar alertas$/i })).not.toBeInTheDocument();
   });
 
   it('falha ao gravar a inscrição na API: avisa o operador e desfaz a inscrição do navegador', async () => {
     vi.mocked(alertasService.inscrever).mockRejectedValue(new Error('API fora do ar'));
     render(<AlertasDeErro />);
-    fireEvent.click(await screen.findByRole('button', { name: /ativar alertas de erro/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /ativar alertas$/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/não foi possível ativar/i);
     expect(inscricaoDoNavegador?.unsubscribe).toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: /ativar alertas de erro/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /ativar alertas$/i })).toBeEnabled();
     expect(screen.queryByText(/alertas ativos neste navegador/i)).not.toBeInTheDocument();
   });
 
@@ -176,7 +178,7 @@ describe('AlertasDeErro (RF-EM-21)', () => {
   it('sem NEXT_PUBLIC_VAPID_KEY: mostra erro e não tenta inscrever', async () => {
     vi.stubEnv('NEXT_PUBLIC_VAPID_KEY', '');
     render(<AlertasDeErro />);
-    fireEvent.click(await screen.findByRole('button', { name: /ativar alertas de erro/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /ativar alertas$/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/chave de notificação/i);
     expect(subscribe).not.toHaveBeenCalled();
   });
