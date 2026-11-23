@@ -130,7 +130,7 @@ describe('jornadaService com os campos da A1 (contrato real)', () => {
   const CHAVES_DA_VISITA = {
     visitante: true, visita: true, inicio: true, fim: true, aparelho: true, origem: true, campanha: true,
     grupo: true, termo: true, correspondencia: true, navegador: true, pagou_em: true,
-    paginas: true, etapas: true, usos: true, teste: true, contratacao: true,
+    paginas: true, etapas: true, usos: true, teste: true, sem_sinal_humano: true, contratacao: true,
   } satisfies Record<keyof VisitaJornada, true>;
 
   function confereChaves(visitas: VisitaJornada[]) {

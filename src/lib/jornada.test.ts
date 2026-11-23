@@ -53,6 +53,9 @@ import {
   progressoDaVisita,
   etapaDaMaiorQueda,
   usouOEditor,
+  motivosDaReserva,
+  MOTIVOS_DA_RESERVA,
+  medianaDasFaixas,
   OPCOES_MENU,
   LINHAS_DA_IA,
   eventosDaLinhaDoTempo,
@@ -528,6 +531,8 @@ const TABELA_CLIQUES_CONFIGURADOR: Record<string, string> = {
   editor_layout: 'Trocou o layout no editor',
   editor_tema: 'Trocou o tema no editor',
   editor_botao: 'Mudou o destino do botão no editor',
+  // medicao-de-mercado M4 (RF-MM-47).
+  janela_exemplo: 'Clicou em "Usar este exemplo"',
 };
 
 const TABELA_ERROS: Record<string, string> = {
@@ -602,8 +607,8 @@ const TABELA_SECOES_PREVIA: Record<string, string> = {
 };
 
 describe('rótulos do configurador (RF-4-28, CA-4-24)', () => {
-  it('tabelas completas e na ordem da spec (45 cliques com os 2 da B1, os 3 da A2 e os 3 da gaveta de jornada-fluxo-atual, 50 erros com os 8 da A2 e o 1 de ia-montagem-parcial, 13 seções, 9 rotas)', () => {
-    expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(45);
+  it('tabelas completas e na ordem da spec (46 cliques com os 2 da B1, os 3 da A2, os 3 da gaveta de jornada-fluxo-atual e o da janela de medicao-de-mercado, 50 erros com os 8 da A2 e o 1 de ia-montagem-parcial, 13 seções, 9 rotas)', () => {
+    expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(46);
     expect(Object.keys(TABELA_ERROS)).toHaveLength(50);
     expect(Object.keys(TABELA_SECOES_PREVIA)).toHaveLength(13);
     expect(Object.entries(ROTULOS_CLIQUE_CONFIGURADOR)).toEqual(Object.entries(TABELA_CLIQUES_CONFIGURADOR));
@@ -1379,5 +1384,85 @@ describe('etapaDaMaiorQueda (RF-JT-42)', () => {
     expect(etapaDaMaiorQueda([])).toBeNull();
     expect(etapaDaMaiorQueda([7])).toBeNull();
     expect(etapaDaMaiorQueda([5, 5, 5])).toBeNull();
+  });
+});
+
+// medicao-de-mercado M2 (RF-MM-2a, RF-MM-2b, RF-MM-2c; T17, T18, T19).
+describe('motivo da reserva (medicao-de-mercado M2)', () => {
+  const NOVOS = [
+    'lp_erro_montagem_prazo_token',
+    'lp_erro_montagem_prazo_ia',
+    'lp_erro_montagem_rede',
+    'lp_erro_montagem_resposta_ilegivel',
+    'lp_erro_montagem_indisponivel',
+  ];
+
+  it('T17: os cinco nomes na linha do tempo, com e sem segundos', () => {
+    expect(rotuloDoEvento(ev('lp_erro_montagem_prazo_ia', { segundos: 27 }))).toBe('Erro: IA passou do prazo (27 s)');
+    expect(rotuloDoEvento(ev('lp_erro_montagem_rede', { segundos: 3 }))).toBe('Erro: falha de rede na montagem (3 s)');
+    expect(rotuloDoEvento(ev('lp_erro_montagem_resposta_ilegivel', { segundos: 12 }))).toBe(
+      'Erro: resposta ilegível na montagem (12 s)',
+    );
+    expect(rotuloDoEvento(ev('lp_erro_montagem_indisponivel', { segundos: 1 }))).toBe(
+      'Erro: IA indisponível na montagem (1 s)',
+    );
+    // o token não leva segundos: nome sem sufixo
+    expect(rotuloDoEvento(ev('lp_erro_montagem_prazo_token'))).toBe('Erro: token anti-robô não chegou em 30 s');
+    // sem segundos nos que o têm: o rótulo, sem sufixo
+    expect(rotuloDoEvento(ev('lp_erro_montagem_rede'))).toBe('Erro: falha de rede na montagem');
+    // os antigos não mudam
+    expect(rotuloDoEvento(ev('lp_erro_montagem_prazo'))).toBe('Erro: montagem passou do prazo');
+    expect(rotuloDoEvento(ev('lp_erro_montagem_falhou'))).toBe('Erro: montagem falhou');
+  });
+
+  it('T18: usouOEditor ignora os usos novos e volta a valer com um uso do editor', () => {
+    expect(usouOEditor(NOVOS)).toBe(false);
+    expect(usouOEditor(['lp_erro_montagem_teto', 'lp_erro_montagem_verificacao', 'lp_erro_montagem_falhou', 'lp_erro_montagem_prazo'])).toBe(false);
+    expect(usouOEditor(['lp_verificacao_token_s_5', 'lp_verificacao_token_s_mais'])).toBe(false);
+    expect(usouOEditor(['lp_campo_janela_nome_preenchido', 'lp_campo_janela_cidade_vazio', 'lp_clique_janela_exemplo'])).toBe(false);
+    expect(usouOEditor([...NOVOS, 'lp_verificacao_token_s_5', 'lp_menu_ia'])).toBe(true);
+    // o que já era do editor continua
+    expect(usouOEditor(['lp_menu_tema'])).toBe(true);
+  });
+
+  it('T19: motivosDaReserva na ordem da tabela, separados dos usos que não são motivo', () => {
+    expect(MOTIVOS_DA_RESERVA.map((m) => m.evento)).toEqual([
+      ...NOVOS,
+      'lp_erro_montagem_teto',
+      'lp_erro_montagem_verificacao',
+      'lp_erro_montagem_falhou',
+      'lp_erro_montagem_prazo',
+    ]);
+    expect(motivosDaReserva(['lp_site_montado_reserva', 'lp_erro_montagem_resposta_ilegivel', 'lp_erro_montagem_rede'])).toEqual([
+      'falha de rede',
+      'resposta ilegível',
+    ]);
+    expect(motivosDaReserva(['lp_erro_montagem_prazo_ia', 'lp_erro_montagem_prazo_token'])).toEqual([
+      'token não chegou em 30 s',
+      'IA passou de 27 s',
+    ]);
+    expect(
+      motivosDaReserva([
+        'lp_erro_montagem_prazo',
+        'lp_erro_montagem_falhou',
+        'lp_erro_montagem_verificacao',
+        'lp_erro_montagem_teto',
+        'lp_erro_montagem_indisponivel',
+      ]),
+    ).toEqual(['IA indisponível', 'limite de uso', 'anti-robô falhou', 'falha da IA', 'prazo estourado']);
+    // não são motivo: entrada e fora do escopo
+    expect(motivosDaReserva(['lp_erro_montagem_entrada', 'lp_erro_montagem_fora_do_escopo', 'lp_menu_ia'])).toEqual([]);
+    expect(motivosDaReserva([])).toEqual([]);
+  });
+
+  it('T20: medianaDasFaixas pelo prefixo; medianaDaMontagem segue igual', () => {
+    const token = { lp_verificacao_token_s_3: 1, lp_verificacao_token_s_5: 2, lp_verificacao_token_s_mais: 1 };
+    expect(medianaDasFaixas(token, 'lp_verificacao_token_s_')).toBe(5);
+    expect(medianaDasFaixas({ lp_verificacao_token_s_mais: 2 }, 'lp_verificacao_token_s_')).toBe('mais de 30');
+    expect(medianaDasFaixas({}, 'lp_verificacao_token_s_')).toBeNull();
+    // um prefixo não lê as faixas do outro
+    expect(medianaDasFaixas({ lp_site_montado_s_14: 1 }, 'lp_verificacao_token_s_')).toBeNull();
+    expect(medianaDaMontagem({ lp_site_montado_s_14: 1, lp_site_montado_s_mais: 1 })).toBe(14);
+    expect(medianaDaMontagem({ lp_verificacao_token_s_5: 1 })).toBeNull();
   });
 });

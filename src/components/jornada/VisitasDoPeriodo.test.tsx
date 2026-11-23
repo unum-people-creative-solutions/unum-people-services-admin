@@ -281,6 +281,41 @@ describe('VisitasDoPeriodo: "Até onde foi" na série nova (RF-JF-44)', () => {
     // Na série antiga o texto principal já é "Editou": o selo "Editou" não duplica.
     expect(within(linhas[3]).getAllByText('Editou')).toHaveLength(1);
   });
+
+  // medicao-de-mercado M2 (RF-MM-2b, RF-MM-2c; T18, T19).
+  test('T19 — selo "Reserva: <motivos>" na ordem da tabela; sem motivo, "Reserva (falha IA)"; IA e Modelo pronto intactos', () => {
+    const linhas = renderizar([
+      { ...base, visita: 'um', etapas: [1, 10, 11, 12], usos: ['lp_site_montado_reserva', 'lp_erro_montagem_prazo_ia'] },
+      {
+        ...base,
+        visita: 'dois',
+        etapas: [1, 10, 11, 12],
+        usos: ['lp_site_montado_reserva', 'lp_erro_montagem_resposta_ilegivel', 'lp_erro_montagem_rede'],
+      },
+      { ...base, visita: 'antiga', etapas: [1, 10, 11, 12], usos: ['lp_site_montado_reserva'] },
+      { ...base, visita: 'ia', etapas: [1, 10, 11, 12], usos: ['lp_site_montado_ia'] },
+      { ...base, visita: 'modelo', etapas: [1, 10, 11, 12], usos: ['lp_site_montado_modelo_pronto'] },
+    ]);
+    expect(within(linhas[0]).getByText('Reserva: IA passou de 27 s')).toBeInTheDocument();
+    expect(within(linhas[1]).getByText('Reserva: falha de rede + resposta ilegível')).toBeInTheDocument();
+    expect(within(linhas[2]).getByText('Reserva (falha IA)')).toBeInTheDocument();
+    expect(within(linhas[3]).getByText('IA')).toBeInTheDocument();
+    expect(within(linhas[4]).getByText('Modelo pronto')).toBeInTheDocument();
+  });
+
+  test('T18 — só marcas de medição (motivo, faixa do token, janela) não acendem "Usou o editor"', () => {
+    const linhas = renderizar([
+      {
+        ...base,
+        visita: 'so-medicao',
+        etapas: [1, 10, 11, 12],
+        usos: ['lp_site_montado_reserva', 'lp_erro_montagem_rede', 'lp_verificacao_token_s_5', 'lp_campo_janela_nome_vazio', 'lp_clique_janela_exemplo'],
+      },
+      { ...base, visita: 'com-menu', etapas: [1, 10, 11, 12], usos: ['lp_erro_montagem_rede', 'lp_menu_ia'] },
+    ]);
+    expect(within(linhas[0]).queryByText('Usou o editor')).toBeNull();
+    expect(within(linhas[1]).getByText('Usou o editor')).toBeInTheDocument();
+  });
 });
 
 // jornada-trajetoria T07 (RF-JT-30, RF-JT-31): a coluna "Páginas" vira "Tempo" (duração total da visita).

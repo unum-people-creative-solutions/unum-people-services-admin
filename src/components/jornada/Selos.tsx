@@ -27,6 +27,15 @@ export function SeloTeste() {
   );
 }
 
+// medicao-de-mercado M3 (RF-MM-38): a visita só chegou; a API decidiu, a tela só mostra.
+export function SeloSemSinalHumano() {
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+      Sem sinal humano
+    </span>
+  );
+}
+
 export function SeloUsouEditor() {
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
@@ -41,8 +50,11 @@ const ROTULO_MONTAGEM: Record<OrigemDaMontagem, { texto: string; classe: string 
   modelo_pronto: { texto: 'Modelo pronto', classe: 'bg-slate-100 text-slate-700' },
 };
 
-export function SeloMontagem({ tipo }: { tipo: OrigemDaMontagem }) {
-  const { texto, classe } = ROTULO_MONTAGEM[tipo];
+// medicao-de-mercado RF-MM-2c: na reserva, o selo traz os motivos (na ordem da tabela, separados por " + ");
+// sem motivo (visitas antigas), o texto de sempre.
+export function SeloMontagem({ tipo, motivos = [] }: { tipo: OrigemDaMontagem; motivos?: readonly string[] }) {
+  const { classe } = ROTULO_MONTAGEM[tipo];
+  const texto = tipo === 'reserva' && motivos.length > 0 ? `Reserva: ${motivos.join(' + ')}` : ROTULO_MONTAGEM[tipo].texto;
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${classe}`}>
       {texto}

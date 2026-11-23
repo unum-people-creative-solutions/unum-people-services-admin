@@ -3,11 +3,17 @@ import type { FunilJornada, InstanteMs, VisitaJornada, VisitanteJornada } from '
 
 // spec-4-detalhe RF-4-20: o funil aceita a janela em ms (página Jornada) e,
 // pelo formato antigo, os dias AAAA-MM-DD do cartão do funil em /dashboard.
-function funil(desde: InstanteMs, ate: InstanteMs): Promise<FunilJornada>;
+// medicao-de-mercado M3 (RF-MM-36): a API exclui por padrão as sessões sem sinal humano da janela;
+// incluirSemSinal acrescenta &sem_sinal=incluir. O formato por dia não muda.
+export interface OpcoesDoFunil {
+  incluirSemSinal?: boolean;
+}
+
+function funil(desde: InstanteMs, ate: InstanteMs, opcoes?: OpcoesDoFunil): Promise<FunilJornada>;
 function funil(de: string, ate: string): Promise<FunilJornada>;
-function funil(de: InstanteMs | string, ate: InstanteMs | string): Promise<FunilJornada> {
+function funil(de: InstanteMs | string, ate: InstanteMs | string, opcoes?: OpcoesDoFunil): Promise<FunilJornada> {
   return typeof de === 'number'
-    ? api.get(`/admin/dashboard/jornada/funil?desde=${de}&ate=${ate}`)
+    ? api.get(`/admin/dashboard/jornada/funil?desde=${de}&ate=${ate}${opcoes?.incluirSemSinal ? '&sem_sinal=incluir' : ''}`)
     : api.get(`/admin/dashboard/jornada/funil?de=${de}&ate=${ate}`);
 }
 

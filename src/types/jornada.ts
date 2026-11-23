@@ -47,6 +47,14 @@ export interface LinhaLeitura {
   visitas: number;
 }
 
+// medicao-de-mercado M3 (RF-MM-36): sessões "sem sinal humano" (só a chegada) que o funil por janela
+// deixou de fora, por aparelho e origem.
+export interface LinhaSemSinal {
+  aparelho: Aparelho;
+  origem: OrigemCrua;
+  visitas: number;
+}
+
 // GET /admin/dashboard/jornada/funil?desde=<ms>&ate=<ms> (spec-4-detalhe RF-4-18)
 // ou ?de=AAAA-MM-DD&ate=AAAA-MM-DD (formato antigo); a resposta é a mesma.
 export interface FunilJornada {
@@ -55,6 +63,9 @@ export interface FunilJornada {
   pagou: LinhaPagou[];
   // RF-3-11: lista vazia é [], nunca null.
   leitura: LinhaLeitura[];
+  // medicao-de-mercado M3: só no formato de janela e só quando alguma sessão sem sinal humano ficou de fora
+  // (a chave é omitida com &sem_sinal=incluir e no formato por dia).
+  sem_sinal_humano?: LinhaSemSinal[];
 }
 
 // RF-2-02/03: contratação ligada ao visitante.
@@ -91,6 +102,8 @@ export interface VisitaJornada {
   etapas: number[];
   usos: string[];
   teste: boolean;
+  // medicao-de-mercado M3 (RF-MM-34): só a chegada (critério da abertura, calculado na API); a chave só vem quando true.
+  sem_sinal_humano?: boolean;
   contratacao?: ContratacaoJornada;
 }
 
