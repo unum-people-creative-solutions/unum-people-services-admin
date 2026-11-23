@@ -6,6 +6,8 @@ import { RefreshCw } from 'lucide-react';
 import { jornadaService } from '@/services/jornadaService';
 import { FunilEmSeries, FunilVitrine, type SeriesDoFunil } from '@/components/jornada/FunilVitrine';
 import { UsoDoEditor } from '@/components/jornada/UsoDoEditor';
+import { MotivosDaReserva } from '@/components/jornada/MotivosDaReserva';
+import { JanelaCampoACampo } from '@/components/jornada/JanelaCampoACampo';
 import { PaginasDeEntrada } from '@/components/jornada/PaginasDeEntrada';
 import { VisitasDoPeriodo } from '@/components/jornada/VisitasDoPeriodo';
 import {
@@ -15,6 +17,7 @@ import {
   calcularFunil,
   calcularLeitura,
   calcularUso,
+  calcularJanela,
   consolidarVisitas,
   dividirPelaEntradaComIa,
   filtrarVisitas,
@@ -42,7 +45,16 @@ function somarFunis(funis: FunilJornada[]): FunilJornada {
     uso: funis.flatMap((f) => f.uso),
     pagou: funis.flatMap((f) => f.pagou),
     leitura: funis.flatMap((f) => f.leitura),
+    // medicao-de-mercado M3 (RF-MM-37): soma o que cada série deixou de fora (a chave some com sem_sinal=incluir).
+    sem_sinal_humano: funis.flatMap((f) => f.sem_sinal_humano ?? []),
   };
+}
+
+// "N visitas sem sinal humano ficaram de fora" (RF-MM-37), com o singular e o zero.
+function textoDoSemSinal(n: number): string {
+  if (n === 0) return 'Nenhuma visita sem sinal humano ficou de fora';
+  if (n === 1) return '1 visita sem sinal humano ficou de fora';
+  return `${n} visitas sem sinal humano ficaram de fora`;
 }
 
 const classeSelect =
@@ -56,6 +68,9 @@ export default function JornadaPage() {
   // A origem começa no anúncio do Google (pedido de 06/11/2026); "Todas" segue no menu.
   const [filtro, setFiltro] = useState<FiltroJornada>({ origem: 'google', aparelho: 'todos' });
   const [mostrarTeste, setMostrarTeste] = useState(false);
+  // medicao-de-mercado M3 (RF-MM-37): desmarcada, a API exclui as sessões sem sinal humano do funil e a
+  // tela mostra quantas ficaram de fora. Estado local, sem persistência.
+  const [incluirSemSinal, setIncluirSemSinal] = useState(false);
 
   const { periodo, rodada } = consulta;
   const { desde, ate } = janela(periodo.ms, consulta.agora);
@@ -63,14 +78,17 @@ export default function JornadaPage() {
   // configurador-com-ia (blueprint §9.1): uma chamada por série. Com DESDE_ENTRADA_COM_IA null, a
   // série antiga é a janela inteira (a chamada de sempre); quando o período cruza a data, duas.
   const partes = dividirPelaEntradaComIa(desde, ate, DESDE_ENTRADA_COM_IA);
+  // Só pede o parâmetro novo quando a caixa está marcada; desmarcada, a chamada é a de sempre.
+  const buscarFunil = (de: number, ate: number) =>
+    incluirSemSinal ? jornadaService.funil(de, ate, { incluirSemSinal: true }) : jornadaService.funil(de, ate);
   const funilQuery = useQuery({
-    queryKey: ['jornada-funil', partes.antiga?.desde, partes.antiga?.ate, rodada],
-    queryFn: () => jornadaService.funil(partes.antiga!.desde, partes.antiga!.ate),
+    queryKey: ['jornada-funil', partes.antiga?.desde, partes.antiga?.ate, rodada, incluirSemSinal],
+    queryFn: () => buscarFunil(partes.antiga!.desde, partes.antiga!.ate),
     enabled: partes.antiga !== null,
   });
   const funilNovoQuery = useQuery({
-    queryKey: ['jornada-funil-entrada-com-ia', partes.nova?.desde, partes.nova?.ate, rodada],
-    queryFn: () => jornadaService.funil(partes.nova!.desde, partes.nova!.ate),
+    queryKey: ['jornada-funil-entrada-com-ia', partes.nova?.desde, partes.nova?.ate, rodada, incluirSemSinal],
+    queryFn: () => buscarFunil(partes.nova!.desde, partes.nova!.ate),
     enabled: partes.nova !== null,
   });
   // As chamadas que este período usa (uma ou duas).
@@ -138,9 +156,22 @@ export default function JornadaPage() {
     () => (funilDoPeriodo ? calcularUso(funilDoPeriodo, filtro) : undefined),
     [funilDoPeriodo, filtro],
   );
+  const dadosDaJanela = useMemo(
+    () => (funilDoPeriodo ? calcularJanela(funilDoPeriodo, filtro) : undefined),
+    [funilDoPeriodo, filtro],
+  );
   const leitura = useMemo(
     () => (funilDoPeriodo ? calcularLeitura(funilDoPeriodo, filtro) : undefined),
     [funilDoPeriodo, filtro],
+  );
+
+  // O que a API deixou de fora, com os filtros de origem e aparelho aplicados; sem texto com a caixa marcada.
+  const semSinalDeFora = useMemo(
+    () =>
+      funilDoPeriodo && !incluirSemSinal
+        ? filtrarVisitas(funilDoPeriodo.sem_sinal_humano ?? [], filtro).reduce((total, l) => total + l.visitas, 0)
+        : undefined,
+    [funilDoPeriodo, incluirSemSinal, filtro],
   );
 
   // Período e filtros no título das seções que os obedecem (blueprint §3.2; leitura §7.1).
@@ -224,6 +255,20 @@ export default function JornadaPage() {
                 ))}
               </select>
             </label>
+            <div className="flex flex-col gap-1">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={incluirSemSinal}
+                  onChange={(e) => setIncluirSemSinal(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-primary-600"
+                />
+                Incluir visitas sem sinal humano
+              </label>
+              <p aria-live="polite" className="text-sm text-slate-500 text-balance">
+                {semSinalDeFora !== undefined ? textoDoSemSinal(semSinalDeFora) : ''}
+              </p>
+            </div>
             <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
               <button
                 type="button"
@@ -288,6 +333,12 @@ export default function JornadaPage() {
             erro={funilErro}
             onTentar={tentarFunil}
           />
+
+          {/* medicao-de-mercado RF-MM-2d: mesma grade, mesmos filtros e período. */}
+          <MotivosDaReserva uso={uso} carregando={funilCarregando} erro={funilErro} onTentar={tentarFunil} />
+
+          {/* medicao-de-mercado RF-MM-48: ao lado dos motivos da reserva, mesmos filtros e período. */}
+          <JanelaCampoACampo janela={dadosDaJanela} carregando={funilCarregando} erro={funilErro} onTentar={tentarFunil} />
         </div>
 
         <VisitasDoPeriodo
@@ -304,6 +355,7 @@ export default function JornadaPage() {
           onTentar={() => void visitasQuery.refetch()}
           mostrarTeste={mostrarTeste}
           onMostrarTeste={setMostrarTeste}
+          incluirSemSinal={incluirSemSinal}
         />
       </div>
     </div>

@@ -55,7 +55,11 @@
       8
     ],
     "usos": [
-      "lp_menu_ia"
+      "lp_menu_ia",
+      "lp_erro_montagem_rede",
+      "lp_verificacao_token_s_5",
+      "lp_campo_janela_nome_preenchido",
+      "lp_clique_janela_exemplo"
     ],
     "teste": false,
     "contratacao": {
@@ -111,6 +115,7 @@
       1
     ],
     "usos": [],
-    "teste": false
+    "teste": false,
+    "sem_sinal_humano": true
   }
 ]

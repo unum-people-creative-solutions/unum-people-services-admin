@@ -272,6 +272,8 @@ export const ROTULOS_CLIQUE_CONFIGURADOR: Record<string, string> = {
   editor_layout: 'Trocou o layout no editor',
   editor_tema: 'Trocou o tema no editor',
   editor_botao: 'Mudou o destino do botão no editor',
+  // medicao-de-mercado M4 (RF-MM-47): o botão "Usar este exemplo" da janela "Vamos montar seu site".
+  janela_exemplo: 'Clicou em "Usar este exemplo"',
 };
 
 // TECH-DESIGN §4.5: nome do erro (sem "lp_erro_") → rótulo no painel. A prévia repete os do editor.
@@ -364,7 +366,27 @@ const ROTULOS_CAMPO_CONTRATAR: Record<string, string> = {
   complemento: 'Complemento',
 };
 
+// medicao-de-mercado M2 (RF-MM-2a): o motivo fino da reserva. Tabela própria, fora de ROTULOS_ERRO, que o teste da
+// fase 4 fixa por inteiro (mesma razão de DD-MM-01); `classificar` consulta as duas.
+export const ROTULOS_ERRO_DA_RESERVA: Record<string, string> = {
+  montagem_prazo_token: 'token anti-robô não chegou em 30 s',
+  montagem_prazo_ia: 'IA passou do prazo',
+  montagem_rede: 'falha de rede na montagem',
+  montagem_resposta_ilegivel: 'resposta ilegível na montagem',
+  montagem_indisponivel: 'IA indisponível na montagem',
+};
+
+// medicao-de-mercado M4 (RF-MM-47): campo da janela "Vamos montar seu site" (sem o prefixo) → rótulo do campo.
+const ROTULOS_CAMPO_DA_JANELA: Record<string, string> = {
+  nome: 'Nome do negócio',
+  descricao: 'O que o negócio faz',
+  cidade: 'Cidade',
+};
+const ESTADOS_DO_CAMPO_DA_JANELA: Record<string, string> = { preenchido: 'saiu preenchido', vazio: 'saiu vazio' };
+
 const PREFIXO_CAMPO_CONTRATAR = 'lp_campo_contratar_';
+const PREFIXO_CAMPO_DA_JANELA = 'lp_campo_janela_';
+const PREFIXO_ERRO_DA_MONTAGEM = 'lp_erro_montagem_';
 
 const ROTULOS_PLANO_ENVIO: Record<string, string> = {
   pagina: 'Página',
@@ -443,6 +465,7 @@ function classificar(nome: string): { tipo: TipoDoEvento; rotulo: string } | nul
     ['clique', 'lp_clique_', ROTULOS_CLIQUE],
     ['clique_configurador', 'lp_clique_', ROTULOS_CLIQUE_CONFIGURADOR],
     ['erro', 'lp_erro_', ROTULOS_ERRO],
+    ['erro', 'lp_erro_', ROTULOS_ERRO_DA_RESERVA],
   ];
   for (const [tipo, prefixo, rotulos] of prefixados) {
     const rotulo = rotuloPorPrefixo(nome, prefixo, rotulos);
@@ -473,6 +496,19 @@ export function rotuloDoEvento(evento: EventoJornada): string | null {
   if (campo !== null) {
     return evento.segundos === undefined ? null : `Ficou ${formatarDuracao(evento.segundos)} no campo ${campo}`;
   }
+  // medicao-de-mercado RF-MM-47: lp_campo_janela_<campo>_<estado>, com o tempo no campo.
+  if (nome.startsWith(PREFIXO_CAMPO_DA_JANELA)) {
+    const corpo = nome.slice(PREFIXO_CAMPO_DA_JANELA.length);
+    const corte = corpo.lastIndexOf('_');
+    const campoDaJanela = corte < 0 ? undefined : ROTULOS_CAMPO_DA_JANELA[corpo.slice(0, corte)];
+    const estado = corte < 0 ? undefined : ESTADOS_DO_CAMPO_DA_JANELA[corpo.slice(corte + 1)];
+    if (campoDaJanela === undefined || estado === undefined || !Object.hasOwn(ROTULOS_CAMPO_DA_JANELA, corpo.slice(0, corte))) {
+      return null;
+    }
+    return evento.segundos === undefined
+      ? null
+      : `Ficou ${formatarDuracao(evento.segundos)} no campo ${campoDaJanela} e ${estado}`;
+  }
   if (Object.hasOwn(SITE_MONTADO, nome)) {
     return evento.segundos === undefined ? null : `${SITE_MONTADO[nome]} (${evento.segundos} s)`;
   }
@@ -483,7 +519,13 @@ export function rotuloDoEvento(evento: EventoJornada): string | null {
   if (nome === 'lp_page_view') return ROTULOS_EVENTOS[nome];
   if (Object.hasOwn(ROTULOS_LEITURA, nome)) return ROTULOS_LEITURA[nome];
   const classificado = classificar(nome);
-  return classificado ? `${PREFIXO_NA_LINHA_DO_TEMPO[classificado.tipo]}${classificado.rotulo}` : null;
+  if (!classificado) return null;
+  const rotulo = `${PREFIXO_NA_LINHA_DO_TEMPO[classificado.tipo]}${classificado.rotulo}`;
+  // medicao-de-mercado RF-MM-2a: o motivo da reserva leva o tempo até a falha, quando vem.
+  if (classificado.tipo === 'erro' && nome.startsWith(PREFIXO_ERRO_DA_MONTAGEM) && evento.segundos !== undefined) {
+    return `${rotulo} (${evento.segundos} s)`;
+  }
+  return rotulo;
 }
 
 // jornada-fluxo-atual RF-JF-47: o que "logo depois" quer dizer. Depois de lp_editor_opened, o próximo evento que não seja
@@ -766,17 +808,19 @@ export function calcularAoLadoEntradaComIa(funil: FunilJornada, filtro: FiltroJo
 // D-C-03: faixas de 1 s somadas como uso pela API (lp_site_montado_s_1 … _30 e _mais).
 const PREFIXO_FAIXA_DA_MONTAGEM = 'lp_site_montado_s_';
 const ULTIMA_FAIXA_DA_MONTAGEM = 30;
+// medicao-de-mercado DD-MM-08: a mesma régua para o tempo do token anti-robô.
+export const PREFIXO_FAIXA_DO_TOKEN = 'lp_verificacao_token_s_';
 
 export type MedianaDaMontagem = number | 'mais de 30';
 
 // spec §3.7 (D-C-28): a faixa em que a soma acumulada alcança metade do total (arredondada para cima).
-// null sem nenhuma faixa: a parte "· tempo mediano" some.
-export function medianaDaMontagem(uso: Record<string, number>): MedianaDaMontagem | null {
+// null sem nenhuma faixa: a parte "· tempo mediano" some. O prefixo diz de quais faixas (montagem ou token).
+export function medianaDasFaixas(uso: Record<string, number>, prefixo: string): MedianaDaMontagem | null {
   const faixas: Array<{ faixa: MedianaDaMontagem; visitas: number }> = [];
   for (let s = 1; s <= ULTIMA_FAIXA_DA_MONTAGEM; s++) {
-    faixas.push({ faixa: s, visitas: uso[`${PREFIXO_FAIXA_DA_MONTAGEM}${s}`] ?? 0 });
+    faixas.push({ faixa: s, visitas: uso[`${prefixo}${s}`] ?? 0 });
   }
-  faixas.push({ faixa: 'mais de 30', visitas: uso[`${PREFIXO_FAIXA_DA_MONTAGEM}mais`] ?? 0 });
+  faixas.push({ faixa: 'mais de 30', visitas: uso[`${prefixo}mais`] ?? 0 });
   const total = faixas.reduce((soma, f) => soma + f.visitas, 0);
   if (total <= 0) return null;
   const metade = Math.ceil(total / 2);
@@ -786,6 +830,10 @@ export function medianaDaMontagem(uso: Record<string, number>): MedianaDaMontage
     if (acumulado >= metade) return faixa;
   }
   return null;
+}
+
+export function medianaDaMontagem(uso: Record<string, number>): MedianaDaMontagem | null {
+  return medianaDasFaixas(uso, PREFIXO_FAIXA_DA_MONTAGEM);
 }
 
 // Blueprint §9.1, bloco de comparação: só as etapas que existem nas duas séries com o mesmo sentido.
@@ -857,6 +905,32 @@ export function calcularLeitura(
     pagina[linha.evento] = (pagina[linha.evento] ?? 0) + linha.visitas;
   }
   return leitura;
+}
+
+// medicao-de-mercado M4 (RF-MM-48): o campo a campo da janela "Vamos montar seu site". `viram` é a etapa 10 e
+// `enviaram` a 11 (visitas); `exemplo` e cada coluna vêm das marcas de uso. Uma visita pode estar nas duas colunas.
+export interface DadosDaJanela {
+  viram: number;
+  enviaram: number;
+  exemplo: number;
+  campos: Array<{ campo: 'nome' | 'descricao' | 'cidade'; rotulo: string; preenchido: number; vazio: number }>;
+}
+
+export function calcularJanela(funil: FunilJornada, filtro: FiltroJornada): DadosDaJanela {
+  const uso = calcularUso(funil, filtro);
+  const daEtapa = (etapa: number) =>
+    funil.etapas.reduce((soma, l) => (l.etapa === etapa && passa(l, filtro) ? soma + l.visitas : soma), 0);
+  return {
+    viram: daEtapa(10),
+    enviaram: daEtapa(11),
+    exemplo: uso['lp_clique_janela_exemplo'] ?? 0,
+    campos: (['nome', 'descricao', 'cidade'] as const).map((campo) => ({
+      campo,
+      rotulo: ROTULOS_CAMPO_DA_JANELA[campo],
+      preenchido: uso[`${PREFIXO_CAMPO_DA_JANELA}${campo}_preenchido`] ?? 0,
+      vazio: uso[`${PREFIXO_CAMPO_DA_JANELA}${campo}_vazio`] ?? 0,
+    })),
+  };
 }
 
 export function taxa(valor: number, base: number): number | null {
@@ -959,8 +1033,38 @@ const USOS_QUE_NAO_SAO_DO_EDITOR = new Set([
   'lp_site_montado_modelo_pronto',
 ]);
 
+// medicao-de-mercado RF-MM-2b: as marcas de medição (motivo da reserva, faixa do token, campo a campo da janela e o
+// clique do exemplo; os da janela entram já na M2, para a ordem de publicação não acender o selo errado).
+const PREFIXOS_DE_USO_QUE_NAO_SAO_DO_EDITOR = [
+  PREFIXO_FAIXA_DA_MONTAGEM,
+  PREFIXO_ERRO_DA_MONTAGEM,
+  PREFIXO_FAIXA_DO_TOKEN,
+  'lp_campo_janela_',
+  'lp_clique_janela_exemplo',
+];
+
 export function usouOEditor(usos: readonly string[]): boolean {
-  return usos.some((u) => !USOS_QUE_NAO_SAO_DO_EDITOR.has(u) && !u.startsWith(PREFIXO_FAIXA_DA_MONTAGEM));
+  return usos.some(
+    (u) => !USOS_QUE_NAO_SAO_DO_EDITOR.has(u) && !PREFIXOS_DE_USO_QUE_NAO_SAO_DO_EDITOR.some((p) => u.startsWith(p)),
+  );
+}
+
+// medicao-de-mercado RF-MM-2c: os nove motivos da reserva, na ordem da tabela de rótulos.
+export const MOTIVOS_DA_RESERVA: ReadonlyArray<{ evento: string; rotulo: string }> = [
+  { evento: 'lp_erro_montagem_prazo_token', rotulo: 'token não chegou em 30 s' },
+  { evento: 'lp_erro_montagem_prazo_ia', rotulo: 'IA passou de 27 s' },
+  { evento: 'lp_erro_montagem_rede', rotulo: 'falha de rede' },
+  { evento: 'lp_erro_montagem_resposta_ilegivel', rotulo: 'resposta ilegível' },
+  { evento: 'lp_erro_montagem_indisponivel', rotulo: 'IA indisponível' },
+  { evento: 'lp_erro_montagem_teto', rotulo: 'limite de uso' },
+  { evento: 'lp_erro_montagem_verificacao', rotulo: 'anti-robô falhou' },
+  { evento: 'lp_erro_montagem_falhou', rotulo: 'falha da IA' },
+  { evento: 'lp_erro_montagem_prazo', rotulo: 'prazo estourado' },
+];
+
+// Os rótulos dos motivos que a visita tem, na ordem da tabela; vazio nas visitas antigas (sem motivo gravado).
+export function motivosDaReserva(usos: readonly string[]): string[] {
+  return MOTIVOS_DA_RESERVA.filter((m) => usos.includes(m.evento)).map((m) => m.rotulo);
 }
 
 // jornada-higiene-e-qualidade (RF-JH-20, RF-JH-23, RF-JH-24).
@@ -983,6 +1087,14 @@ export function editouAPagina(etapas: readonly number[]): boolean {
 
 function fimEfetivo(visita: Pick<VisitaJornada, 'inicio' | 'fim'>): InstanteMs {
   return visita.fim > visita.inicio ? visita.fim : visita.inicio;
+}
+
+// medicao-de-mercado M3 (RF-MM-38): a linha consolidada é "sem sinal humano" só se TODAS as aberturas
+// agrupadas são (a regra do RF-MM-31 da API; o critério em si nunca é recalculado aqui).
+function fecharSemSinal(linha: VisitaConsolidada, todasSemSinal: boolean): VisitaConsolidada {
+  if (todasSemSinal) linha.sem_sinal_humano = true;
+  else delete linha.sem_sinal_humano;
+  return linha;
 }
 
 // Funde aberturas consecutivas do mesmo visitante (separando teste de real) cujo
@@ -1009,6 +1121,7 @@ export function consolidarVisitas(
       usos: [...new Set(lista[0].usos)],
       visitasAgrupadas: [lista[0].visita],
     };
+    let todasSemSinal = lista[0].sem_sinal_humano === true;
 
     for (let i = 1; i < lista.length; i += 1) {
       const prox = lista[i];
@@ -1030,8 +1143,9 @@ export function consolidarVisitas(
           atual.contratacao = prox.contratacao;
         }
         atual.visitasAgrupadas.push(prox.visita);
+        todasSemSinal = todasSemSinal && prox.sem_sinal_humano === true;
       } else {
-        consolidadas.push(atual);
+        consolidadas.push(fecharSemSinal(atual, todasSemSinal));
         atual = {
           ...prox,
           fim: fimProx,
@@ -1039,9 +1153,10 @@ export function consolidarVisitas(
           usos: [...new Set(prox.usos)],
           visitasAgrupadas: [prox.visita],
         };
+        todasSemSinal = prox.sem_sinal_humano === true;
       }
     }
-    consolidadas.push(atual);
+    consolidadas.push(fecharSemSinal(atual, todasSemSinal));
   }
 
   consolidadas.sort((a, b) => (a.inicio !== b.inicio ? b.inicio - a.inicio : a.visita.localeCompare(b.visita)));

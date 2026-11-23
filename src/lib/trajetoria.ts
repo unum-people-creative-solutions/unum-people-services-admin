@@ -70,6 +70,7 @@ const PREFIXOS_PASSIVOS = [
   'lp_secao_',
   'lp_previa_secao_',
   'lp_campo_contratar_',
+  'lp_campo_janela_',
   'lp_verificacao_token',
 ];
 const MINIATURA_ROLAGEM = /^lp_mini_.+_rolagem_/;
@@ -81,7 +82,7 @@ function ehMedicaoPassiva(nome: string): boolean {
 // RF-JT-13 (conferência visual, 21/11): só as medições mandadas ao sair da página ou do campo chegam atrasadas e
 // voltam para o nó de onde vieram. Rolagem, seções, miniatura e token acontecem com a pessoa na página.
 function ehMedicaoDeSaida(nome: string): boolean {
-  return nome === 'lp_tempo_na_pagina' || nome.startsWith('lp_campo_contratar_');
+  return nome === 'lp_tempo_na_pagina' || nome.startsWith('lp_campo_contratar_') || nome.startsWith('lp_campo_janela_');
 }
 
 function tipoDoEvento(nome: string): EventoDoNo['tipo'] {
