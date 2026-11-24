@@ -53,6 +53,8 @@ const ROTULOS_EVENTOS: Record<string, string> = {
   // configurador-com-ia blueprint §9.2: "Editar com IA" e, nas quatro de copiar e colar, o sufixo.
   lp_menu_ia: 'Menu: Editar com IA',
   lp_menu_guia: 'Menu: Como editar',
+  // opiniao-e-modelos RF-OM-07: troca de tema pelo menu de cores (um evento por troca efetiva).
+  lp_tema_trocado: 'Trocou as cores',
   lp_ia_pedido_enviado: 'IA: pediu mudança',
   lp_ia_mudancas_vistas: 'IA: viu as mudanças',
   lp_ia_sem_mudancas: 'IA: resposta sem mudança',
