@@ -19,6 +19,7 @@ vi.mock('@/services/jornadaService', () => ({
 // O cartão "Uso do Tools" (medicao-de-uso) tem teste próprio em page.usoDoTools.test.tsx; aqui fica sem resposta.
 vi.mock('@/services/toolsUsoService', () => ({ toolsUsoService: { resumo: vi.fn(() => new Promise(() => {})) } }));
 vi.mock('@/services/jornadaModelosService', () => ({ jornadaModelosService: { resumo: vi.fn(() => new Promise(() => {})) } }));
+vi.mock('@/services/jornadaOpinioesService', () => ({ jornadaOpinioesService: { resumo: vi.fn(() => new Promise(() => {})) } }));
 vi.mock('next/navigation', () => ({ useRouter: vi.fn(), usePathname: vi.fn(() => '/dashboard/jornada') }));
 
 const funil: FunilJornada = {
@@ -817,6 +818,7 @@ describe('Página Jornada: Páginas de entrada', () => {
       'titulo-uso-do-tools', // medicao-de-uso RF-MU-08: depois da grade, antes das visitas
       'titulo-modelos-da-jornada', // opiniao-e-modelos RF-OM-08: depois do Tools, antes das visitas
       'titulo-cores-da-jornada',
+      'titulo-opinioes-da-jornada',
       'titulo-visitas',
     ]);
   });

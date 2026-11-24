@@ -1,0 +1,43 @@
+{
+  "de": "2026-11-23",
+  "ate": "2026-11-24",
+  "media": 3.67,
+  "total": 3,
+  "por_nota": {
+    "1": 0,
+    "2": 1,
+    "3": 0,
+    "4": 1,
+    "5": 1
+  },
+  "opinioes": [
+    {
+      "em": 1795532400000,
+      "nota": 4,
+      "texto": "Achei fácil de montar, mas queria mais opções de cores.",
+      "modelo": "l11",
+      "tema": "t7",
+      "porta": "publica",
+      "visitante": "3f2b8c1e-9d4a-4b7e-8a6f-1c2d3e4f5a6b",
+      "visita": "7a1c9e2d-5b3f-4c8a-9d6e-0f1a2b3c4d5e"
+    },
+    {
+      "em": 1795453200000,
+      "nota": 5,
+      "modelo": "l1",
+      "tema": "t1",
+      "porta": "logada",
+      "tenant": "t-1"
+    },
+    {
+      "em": 1795449600000,
+      "nota": 2,
+      "texto": "Não achei onde trocar a foto.",
+      "modelo": "l3",
+      "tema": "t3",
+      "porta": "publica",
+      "visitante": "11111111-2222-4333-8444-555555555555",
+      "visita": "66666666-7777-4888-9999-000000000000"
+    }
+  ]
+}
