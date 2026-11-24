@@ -1134,6 +1134,9 @@ describe('rótulos dos eventos novos (RF-JF-43)', () => {
 
   it.each([
     ['lp_clique_editor_layout', 'Trocou o layout no editor'],
+    // opiniao-e-modelos RF-OM-07: o evento novo da troca de cores e o do modelo, que voltou a ser emitido.
+    ['lp_tema_trocado', 'Trocou as cores'],
+    ['lp_clique_editor_layout_confirmar', 'Confirmou a troca de layout'],
     ['lp_clique_editor_tema', 'Trocou o tema no editor'],
     ['lp_clique_editor_botao', 'Mudou o destino do botão no editor'],
     ['lp_site_montado_modelo_pronto', 'Viu o site montado com um modelo pronto'],
