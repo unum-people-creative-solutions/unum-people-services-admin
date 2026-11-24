@@ -6,10 +6,12 @@ import { RefreshCw } from 'lucide-react';
 import { jornadaService } from '@/services/jornadaService';
 import { toolsUsoService } from '@/services/toolsUsoService';
 import { jornadaModelosService } from '@/services/jornadaModelosService';
+import { jornadaOpinioesService } from '@/services/jornadaOpinioesService';
 import { FunilEmSeries, FunilVitrine, type SeriesDoFunil } from '@/components/jornada/FunilVitrine';
 import { UsoDoEditor } from '@/components/jornada/UsoDoEditor';
 import { UsoDoTools } from '@/components/jornada/UsoDoTools';
 import { ModelosDaJornada } from '@/components/jornada/ModelosDaJornada';
+import { OpinioesDaJornada } from '@/components/jornada/OpinioesDaJornada';
 import { MotivosDaReserva } from '@/components/jornada/MotivosDaReserva';
 import { JanelaCampoACampo } from '@/components/jornada/JanelaCampoACampo';
 import { PaginasDeEntrada } from '@/components/jornada/PaginasDeEntrada';
@@ -130,6 +132,16 @@ export default function JornadaPage() {
     queryKey: ['jornada-modelos', diasDoTools.de, diasDoTools.ate, rodada],
     queryFn: () => jornadaModelosService.resumo(diasDoTools.de, diasDoTools.ate),
   });
+  // opiniao-e-modelos RF-OM-19: o cartão "Opiniões" usa o mesmo período, em dias de Brasília.
+  const opinioesQuery = useQuery({
+    queryKey: ['jornada-opinioes', diasDoTools.de, diasDoTools.ate, rodada],
+    queryFn: () => jornadaOpinioesService.resumo(diasDoTools.de, diasDoTools.ate),
+  });
+  // id do modelo -> rótulo, do cartão "Modelos"; sem ele (carregando ou erro), as opiniões mostram o id.
+  const rotulosDeModelo = useMemo(
+    () => (modelosQuery.data ? Object.fromEntries(modelosQuery.data.modelos.map((m) => [m.id, m.rotulo])) : undefined),
+    [modelosQuery.data],
+  );
   // RF-MU-09: visitas da jornada com origem utm:tools; sem o funil (carregando ou erro), a linha some.
   const chegaramPeloTools = useMemo(
     () => (funilDoPeriodo ? visitasPelaOrigem(funilDoPeriodo, ORIGEM_DO_TOOLS) : undefined),
@@ -390,6 +402,15 @@ export default function JornadaPage() {
           carregando={modelosQuery.isPending || (modelosQuery.isError && modelosQuery.isFetching)}
           erro={modelosQuery.isError}
           onTentar={() => void modelosQuery.refetch()}
+        />
+
+        {/* opiniao-e-modelos RF-OM-19: mesmo período da página; os filtros de origem e aparelho não valem aqui. */}
+        <OpinioesDaJornada
+          dados={opinioesQuery.data}
+          rotulosDeModelo={rotulosDeModelo}
+          carregando={opinioesQuery.isPending || (opinioesQuery.isError && opinioesQuery.isFetching)}
+          erro={opinioesQuery.isError}
+          onTentar={() => void opinioesQuery.refetch()}
         />
 
         <VisitasDoPeriodo
