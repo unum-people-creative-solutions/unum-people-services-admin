@@ -35,15 +35,27 @@ function renderizar(
 const itens = (secao: HTMLElement) => within(within(secao).getByRole('list', { name: 'Opiniões do período' })).getAllByRole('listitem');
 
 describe('OpinioesDaJornada', () => {
-  it('média com uma casa e vírgula, a partir de media (3.67 vira "3,7")', () => {
+  it('média com uma casa e vírgula, calculada de por_nota (contrato: 11/3 = 3,67 vira "3,7")', () => {
     const secao = renderizar();
     expect(within(secao).getByText('Média: 3,7 de 5')).toBeInTheDocument();
   });
 
-  it('média que já tem uma casa ("4.2" vira "4,2") e inteira ("5" vira "5,0")', () => {
-    expect(within(renderizar({ dados: { ...resumo, media: 4.2 } })).getByText('Média: 4,2 de 5')).toBeInTheDocument();
+  it('arredonda uma vez só: 849/200 = 4,245 vira "4,2" (media 4.25 do JSON arredondaria para "4,3")', () => {
+    const dados: ResumoDeOpinioes = {
+      ...resumo,
+      media: 4.25,
+      total: 200,
+      por_nota: { '1': 0, '2': 0, '3': 0, '4': 151, '5': 49 },
+    };
+    expect(within(renderizar({ dados })).getByText('Média: 4,2 de 5')).toBeInTheDocument();
+  });
+
+  it('média inteira ("5") vira "5,0" e a que já tem uma casa (4,2) fica "4,2"', () => {
+    const todasCinco: ResumoDeOpinioes = { ...resumo, media: 5, total: 3, por_nota: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 3 } };
+    expect(within(renderizar({ dados: todasCinco })).getByText('Média: 5,0 de 5')).toBeInTheDocument();
     cleanup();
-    expect(within(renderizar({ dados: { ...resumo, media: 5 } })).getByText('Média: 5,0 de 5')).toBeInTheDocument();
+    const quatroVirgulaDois: ResumoDeOpinioes = { ...resumo, media: 4.2, total: 5, por_nota: { '1': 0, '2': 0, '3': 0, '4': 4, '5': 1 } };
+    expect(within(renderizar({ dados: quatroVirgulaDois })).getByText('Média: 4,2 de 5')).toBeInTheDocument();
   });
 
   it('total no plural e no singular', () => {

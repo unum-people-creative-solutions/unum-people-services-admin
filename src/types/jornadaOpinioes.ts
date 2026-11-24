@@ -25,7 +25,7 @@ export interface OpiniaoDoEditor {
 export interface ResumoDeOpinioes {
   de: string;
   ate: string;
-  // Média com até 2 casas; a tela mostra 1.
+  // Média com até 2 casas; a tela não a usa (já arredondada): calcula de por_nota e arredonda uma vez, a 1 casa.
   media: number;
   total: number;
   por_nota: Record<NotaDaOpiniao, number>;

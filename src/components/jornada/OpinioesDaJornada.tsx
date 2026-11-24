@@ -39,9 +39,11 @@ function dataEHora(em: number): string {
   return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`;
 }
 
-// "4,2": uma casa e vírgula.
-function mediaComVirgula(media: number): string {
-  return media.toFixed(1).replace('.', ',');
+// "4,2": uma casa e vírgula. Calculada de por_nota (todas as opiniões do período) e arredondada uma vez só:
+// a `media` da API já vem arredondada a 2 casas, e arredondar de novo daria 4,245 -> 4.25 -> "4,3".
+function mediaComVirgula(porNota: Readonly<Record<NotaDaOpiniao, number>>, total: number): string {
+  const soma = NOTAS.reduce((acc, { nota }) => acc + Number(nota) * porNota[nota], 0);
+  return (soma / total).toFixed(1).replace('.', ',');
 }
 
 function totalEmTexto(total: number): string {
@@ -85,7 +87,7 @@ export function OpinioesDaJornada({ dados, rotulosDeModelo, carregando, erro, on
           <div className="flex flex-col gap-6 min-w-0">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
               <div>
-                <p className="text-2xl font-bold text-slate-900">{`Média: ${mediaComVirgula(dados.media)} de 5`}</p>
+                <p className="text-2xl font-bold text-slate-900">{`Média: ${mediaComVirgula(dados.por_nota, dados.total)} de 5`}</p>
                 <p className="text-sm text-slate-600">{totalEmTexto(dados.total)}</p>
               </div>
               <ul aria-label="Opiniões por nota" className="flex min-w-0 flex-1 flex-col gap-1.5 text-sm">
