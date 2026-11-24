@@ -1,0 +1,508 @@
+{
+  "de": "2026-11-01",
+  "ate": "2026-11-02",
+  "modelos": [
+    {
+      "id": "l11",
+      "rotulo": "Refúgio",
+      "ia": 6,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 3,
+      "entrou": 1,
+      "contratados": 3
+    },
+    {
+      "id": "l1",
+      "rotulo": "Átrio",
+      "ia": 0,
+      "pessoa": 4,
+      "reserva": 0,
+      "saiu": 1,
+      "entrou": 2,
+      "contratados": 1
+    },
+    {
+      "id": "l2",
+      "rotulo": "Praça",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "l3",
+      "rotulo": "Bancada",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 1,
+      "saiu": 0,
+      "entrou": 1,
+      "contratados": 0
+    },
+    {
+      "id": "l4",
+      "rotulo": "Vitrine",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "l5",
+      "rotulo": "Galeria",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "l6",
+      "rotulo": "Salão",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "l7",
+      "rotulo": "Palco",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "l8",
+      "rotulo": "Tribuna",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "l9",
+      "rotulo": "Balcão",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "l10",
+      "rotulo": "Arena",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    }
+  ],
+  "temas": [
+    {
+      "id": "t1",
+      "rotulo": "Azul acinzentado claro",
+      "ia": 0,
+      "pessoa": 4,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 2,
+      "contratados": 1
+    },
+    {
+      "id": "t2",
+      "rotulo": "Azul acinzentado escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t3",
+      "rotulo": "Azul acinzentado alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 1,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t4",
+      "rotulo": "Azul claro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t5",
+      "rotulo": "Azul escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t6",
+      "rotulo": "Azul alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t7",
+      "rotulo": "Verde claro",
+      "ia": 5,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 2,
+      "entrou": 0,
+      "contratados": 3
+    },
+    {
+      "id": "t8",
+      "rotulo": "Verde escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t9",
+      "rotulo": "Verde alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t10",
+      "rotulo": "Terracota claro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t11",
+      "rotulo": "Terracota escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t12",
+      "rotulo": "Terracota alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t13",
+      "rotulo": "Bege claro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t14",
+      "rotulo": "Bege escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t15",
+      "rotulo": "Bege alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t16",
+      "rotulo": "Vinho claro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t17",
+      "rotulo": "Vinho escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t18",
+      "rotulo": "Vinho alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t19",
+      "rotulo": "Laranja queimado claro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t20",
+      "rotulo": "Laranja queimado escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t21",
+      "rotulo": "Laranja queimado alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t22",
+      "rotulo": "Azul-esverdeado claro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t23",
+      "rotulo": "Azul-esverdeado escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t24",
+      "rotulo": "Azul-esverdeado alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t25",
+      "rotulo": "Cinza e preto claro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t26",
+      "rotulo": "Cinza e preto escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t27",
+      "rotulo": "Cinza e preto alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t28",
+      "rotulo": "Vermelho-coral claro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t29",
+      "rotulo": "Vermelho-coral escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t30",
+      "rotulo": "Vermelho-coral alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t31",
+      "rotulo": "Verde-limão claro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t32",
+      "rotulo": "Verde-limão escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t33",
+      "rotulo": "Verde-limão alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t34",
+      "rotulo": "Roxo claro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t35",
+      "rotulo": "Roxo escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t36",
+      "rotulo": "Roxo alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t37",
+      "rotulo": "Amarelo claro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t38",
+      "rotulo": "Amarelo escuro",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    },
+    {
+      "id": "t39",
+      "rotulo": "Amarelo alto contraste",
+      "ia": 0,
+      "pessoa": 0,
+      "reserva": 0,
+      "saiu": 0,
+      "entrou": 0,
+      "contratados": 0
+    }
+  ]
+}

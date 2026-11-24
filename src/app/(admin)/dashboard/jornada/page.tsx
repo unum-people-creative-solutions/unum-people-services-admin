@@ -5,9 +5,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { jornadaService } from '@/services/jornadaService';
 import { toolsUsoService } from '@/services/toolsUsoService';
+import { jornadaModelosService } from '@/services/jornadaModelosService';
 import { FunilEmSeries, FunilVitrine, type SeriesDoFunil } from '@/components/jornada/FunilVitrine';
 import { UsoDoEditor } from '@/components/jornada/UsoDoEditor';
 import { UsoDoTools } from '@/components/jornada/UsoDoTools';
+import { ModelosDaJornada } from '@/components/jornada/ModelosDaJornada';
 import { MotivosDaReserva } from '@/components/jornada/MotivosDaReserva';
 import { JanelaCampoACampo } from '@/components/jornada/JanelaCampoACampo';
 import { PaginasDeEntrada } from '@/components/jornada/PaginasDeEntrada';
@@ -122,6 +124,11 @@ export default function JornadaPage() {
   const toolsUsoQuery = useQuery({
     queryKey: ['tools-uso', diasDoTools.de, diasDoTools.ate, rodada],
     queryFn: () => toolsUsoService.resumo(diasDoTools.de, diasDoTools.ate),
+  });
+  // opiniao-e-modelos RF-OM-08: os cartões "Modelos" e "Cores" vêm de uma só chamada, com o mesmo período.
+  const modelosQuery = useQuery({
+    queryKey: ['jornada-modelos', diasDoTools.de, diasDoTools.ate, rodada],
+    queryFn: () => jornadaModelosService.resumo(diasDoTools.de, diasDoTools.ate),
   });
   // RF-MU-09: visitas da jornada com origem utm:tools; sem o funil (carregando ou erro), a linha some.
   const chegaramPeloTools = useMemo(
@@ -365,6 +372,24 @@ export default function JornadaPage() {
           erro={toolsUsoQuery.isError}
           onTentar={() => void toolsUsoQuery.refetch()}
           chegaramPeloTools={chegaramPeloTools}
+        />
+
+        {/* opiniao-e-modelos RF-OM-08: mesmo período da página; os filtros de origem e aparelho não valem aqui. */}
+        <ModelosDaJornada
+          titulo="Modelos"
+          colunaRotulo="Modelo"
+          linhas={modelosQuery.data?.modelos}
+          carregando={modelosQuery.isPending || (modelosQuery.isError && modelosQuery.isFetching)}
+          erro={modelosQuery.isError}
+          onTentar={() => void modelosQuery.refetch()}
+        />
+        <ModelosDaJornada
+          titulo="Cores"
+          colunaRotulo="Cores"
+          linhas={modelosQuery.data?.temas}
+          carregando={modelosQuery.isPending || (modelosQuery.isError && modelosQuery.isFetching)}
+          erro={modelosQuery.isError}
+          onTentar={() => void modelosQuery.refetch()}
         />
 
         <VisitasDoPeriodo
