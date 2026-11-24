@@ -18,6 +18,7 @@ vi.mock('@/services/jornadaService', () => ({
   jornadaService: { funil: vi.fn(), visitas: vi.fn(), visitante: vi.fn() },
 }));
 vi.mock('@/services/toolsUsoService', () => ({ toolsUsoService: { resumo: vi.fn() } }));
+vi.mock('@/services/jornadaModelosService', () => ({ jornadaModelosService: { resumo: vi.fn(() => new Promise(() => {})) } }));
 vi.mock('next/navigation', () => ({ useRouter: vi.fn(), usePathname: vi.fn(() => '/dashboard/jornada') }));
 
 const funil: FunilJornada = {
