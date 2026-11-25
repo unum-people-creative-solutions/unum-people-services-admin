@@ -24,7 +24,7 @@ export function diasDoPeriodo(desde: InstanteMs, ate: InstanteMs): { de: string;
 // Estado vazio: nenhum número do período é maior que zero.
 export function semUsoDoTools(resumo: ResumoToolsUso): boolean {
   return resumo.ferramentas.every(
-    (f) => f.visita + f.comecou + f.resultado + f.convite + f.guia + f.planilha === 0,
+    (f) => f.visita + f.comecou + f.resultado + f.convite + f.guia + f.planilha + f.baixou === 0,
   );
 }
 

@@ -30,10 +30,10 @@ describe('toolsUsoService.resumo', () => {
     expect(resumo).toEqual(fixtureToolsUso);
     expect(Object.keys(resumo)).toEqual(['de', 'ate', 'ferramentas', 'dias']);
     expect(Object.keys(resumo.ferramentas[0])).toEqual([
-      'ferramenta', 'visita', 'comecou', 'resultado', 'convite', 'guia', 'planilha',
+      'ferramenta', 'visita', 'comecou', 'resultado', 'convite', 'guia', 'planilha', 'baixou',
     ]);
     expect(resumo.ferramentas.map((f) => f.ferramenta)).toEqual([
-      'home', 'quanto-cobrar', 'vale-anunciar', 'servicos-compensam',
+      'home', 'quanto-cobrar', 'vale-anunciar', 'servicos-compensam', 'qr-code',
     ]);
     expect(Object.keys(resumo.dias[0])).toEqual(['dia', 'ferramenta', 'evento', 'n']);
   });

@@ -17,10 +17,14 @@ const ROTULOS_FERRAMENTA: Record<FerramentaTools, string> = {
   'quanto-cobrar': 'Quanto cobrar pelo serviço',
   'vale-anunciar': 'Vale a pena anunciar?',
   'servicos-compensam': 'Quais serviços compensam',
+  'qr-code': 'Gerador de QR code',
 };
 
 // A planilha só existe na ferramenta de serviços.
 const COM_PLANILHA: ReadonlySet<FerramentaTools> = new Set<FerramentaTools>(['servicos-compensam']);
+
+// O "baixou" só existe no gerador de QR code.
+const COM_BAIXOU: ReadonlySet<FerramentaTools> = new Set<FerramentaTools>(['qr-code']);
 
 const COLUNAS: ReadonlyArray<{ rotulo: string; valor: (f: TotaisDaFerramenta) => number }> = [
   { rotulo: 'Visitas', valor: (f) => f.visita },
@@ -31,6 +35,7 @@ const COLUNAS: ReadonlyArray<{ rotulo: string; valor: (f: TotaisDaFerramenta) =>
 ];
 
 const COLUNA_PLANILHA = 'Baixaram a planilha';
+const COLUNA_BAIXOU = 'Baixaram o QR code';
 
 function textoDasVisitas(n: number): string {
   return `Chegaram ao unumpeople.app pelo Tools: ${n} ${n === 1 ? 'visita' : 'visitas'}`;
@@ -61,7 +66,7 @@ export function UsoDoTools({ dados, carregando, erro, onTentar, chegaramPeloTool
               <p className="py-2 text-center text-slate-500">Ainda não há uso do Tools neste período.</p>
             ) : (
               <div role="region" aria-label="Tabela do uso do Tools" tabIndex={0} className="overflow-x-auto">
-                <table className="w-full min-w-[40rem] text-left">
+                <table className="w-full min-w-[46rem] text-left">
                   <thead>
                     <tr className="border-b border-slate-200 text-slate-600">
                       <th scope="col" className="py-2 pr-3 font-semibold">
@@ -72,8 +77,11 @@ export function UsoDoTools({ dados, carregando, erro, onTentar, chegaramPeloTool
                           {c.rotulo}
                         </th>
                       ))}
-                      <th scope="col" className="pl-2 py-2 text-right font-semibold">
+                      <th scope="col" className="px-2 py-2 text-right font-semibold">
                         {COLUNA_PLANILHA}
+                      </th>
+                      <th scope="col" className="pl-2 py-2 text-right font-semibold">
+                        {COLUNA_BAIXOU}
                       </th>
                     </tr>
                   </thead>
@@ -88,8 +96,11 @@ export function UsoDoTools({ dados, carregando, erro, onTentar, chegaramPeloTool
                             {c.valor(f)}
                           </td>
                         ))}
-                        <td className="pl-2 py-2 text-right font-semibold text-slate-900 tabular-nums">
+                        <td className="px-2 py-2 text-right font-semibold text-slate-900 tabular-nums">
                           {COM_PLANILHA.has(f.ferramenta) ? f.planilha : '—'}
+                        </td>
+                        <td className="pl-2 py-2 text-right font-semibold text-slate-900 tabular-nums">
+                          {COM_BAIXOU.has(f.ferramenta) ? f.baixou : '—'}
                         </td>
                       </tr>
                     ))}

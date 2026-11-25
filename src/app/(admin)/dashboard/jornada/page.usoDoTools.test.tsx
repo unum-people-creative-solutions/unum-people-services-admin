@@ -55,7 +55,7 @@ describe('Jornada: Uso do Tools', () => {
     renderizar();
     const cartao = await screen.findByRole('region', { name: 'Uso do Tools' });
     const quantoCobrar = await within(cartao).findByRole('row', { name: /^Quanto cobrar pelo serviço/ });
-    expect(within(quantoCobrar).getAllByRole('cell').map((c) => c.textContent)).toEqual(['7', '2', '1', '1', '0', '—']);
+    expect(within(quantoCobrar).getAllByRole('cell').map((c) => c.textContent)).toEqual(['7', '2', '1', '1', '0', '—', '—']);
     // O filtro de origem da página começa em "Anúncio do Google"; a linha do Tools soma utm:tools mesmo assim.
     expect(await within(cartao).findByText('Chegaram ao unumpeople.app pelo Tools: 8 visitas')).toBeInTheDocument();
   });
@@ -104,7 +104,7 @@ describe('Jornada: Uso do Tools', () => {
     vi.mocked(toolsUsoService.resumo).mockResolvedValue({
       ...(fixtureToolsUso as ResumoToolsUso),
       ferramentas: (fixtureToolsUso as ResumoToolsUso).ferramentas.map((f) => ({
-        ...f, visita: 0, comecou: 0, resultado: 0, convite: 0, guia: 0, planilha: 0,
+        ...f, visita: 0, comecou: 0, resultado: 0, convite: 0, guia: 0, planilha: 0, baixou: 0,
       })),
       dias: [],
     });
