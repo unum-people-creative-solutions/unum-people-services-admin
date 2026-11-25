@@ -38,25 +38,26 @@ function celulas(linha: HTMLElement) {
 }
 
 describe('UsoDoTools', () => {
-  it('mostra as quatro ferramentas com os rótulos literais e as colunas da spec', () => {
+  it('mostra as cinco ferramentas com os rótulos literais e as colunas da spec', () => {
     const secao = renderizar();
     const tabela = within(secao).getByRole('table');
     expect(within(tabela).getAllByRole('columnheader').map((c) => c.textContent)).toEqual([
-      'Ferramenta', 'Visitas', 'Começaram', 'Viram o resultado', 'Clicaram no convite', 'Abriram o guia', 'Baixaram a planilha',
+      'Ferramenta', 'Visitas', 'Começaram', 'Viram o resultado', 'Clicaram no convite', 'Abriram o guia', 'Baixaram a planilha', 'Baixaram o QR code',
     ]);
     const linhas = within(tabela).getAllByRole('row').slice(1);
     expect(linhas.map((l) => within(l).getByRole('rowheader').textContent)).toEqual([
-      'Home', 'Quanto cobrar pelo serviço', 'Vale a pena anunciar?', 'Quais serviços compensam',
+      'Home', 'Quanto cobrar pelo serviço', 'Vale a pena anunciar?', 'Quais serviços compensam', 'Gerador de QR code',
     ]);
   });
 
-  it('cada linha traz os números da resposta real; a planilha só existe em serviços', () => {
+  it('cada linha traz os números da resposta real; a planilha só existe em serviços e o QR code só no gerador', () => {
     const secao = renderizar();
     const linha = (nome: string) => within(secao).getByRole('row', { name: new RegExp(`^${nome.replace('?', '\\?')}`) });
-    expect(celulas(linha('Home'))).toEqual(['5', '0', '0', '0', '0', '—']);
-    expect(celulas(linha('Quanto cobrar pelo serviço'))).toEqual(['7', '2', '1', '1', '0', '—']);
-    expect(celulas(linha('Vale a pena anunciar?'))).toEqual(['0', '0', '0', '0', '0', '—']);
-    expect(celulas(linha('Quais serviços compensam'))).toEqual(['2', '0', '0', '0', '0', '1']);
+    expect(celulas(linha('Home'))).toEqual(['5', '0', '0', '0', '0', '—', '—']);
+    expect(celulas(linha('Quanto cobrar pelo serviço'))).toEqual(['7', '2', '1', '1', '0', '—', '—']);
+    expect(celulas(linha('Vale a pena anunciar?'))).toEqual(['0', '0', '0', '0', '0', '—', '—']);
+    expect(celulas(linha('Quais serviços compensam'))).toEqual(['2', '0', '0', '0', '0', '1', '—']);
+    expect(celulas(linha('Gerador de QR code'))).toEqual(['0', '0', '0', '0', '0', '—', '5']);
   });
 
   it('com a tabela dentro de uma área rolável no celular', () => {
@@ -70,7 +71,7 @@ describe('UsoDoTools', () => {
     const zerado: ResumoToolsUso = {
       ...resumo,
       ferramentas: resumo.ferramentas.map((f) => ({
-        ...f, visita: 0, comecou: 0, resultado: 0, convite: 0, guia: 0, planilha: 0,
+        ...f, visita: 0, comecou: 0, resultado: 0, convite: 0, guia: 0, planilha: 0, baixou: 0,
       })),
       dias: [],
     };

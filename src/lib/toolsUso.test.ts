@@ -28,7 +28,7 @@ describe('semUsoDoTools', () => {
       de: '2026-11-20',
       ate: '2026-11-22',
       ferramentas: (fixtureToolsUso as ResumoToolsUso).ferramentas.map((f) => ({
-        ...f, visita: 0, comecou: 0, resultado: 0, convite: 0, guia: 0, planilha: 0,
+        ...f, visita: 0, comecou: 0, resultado: 0, convite: 0, guia: 0, planilha: 0, baixou: 0,
       })),
       dias: [],
     };
@@ -38,6 +38,11 @@ describe('semUsoDoTools', () => {
       ferramentas: zerado.ferramentas.map((f) => (f.ferramenta === 'vale-anunciar' ? { ...f, guia: 1 } : f)),
     };
     expect(semUsoDoTools(comUm)).toBe(false);
+    const soBaixou: ResumoToolsUso = {
+      ...zerado,
+      ferramentas: zerado.ferramentas.map((f) => (f.ferramenta === 'qr-code' ? { ...f, baixou: 1 } : f)),
+    };
+    expect(semUsoDoTools(soBaixou)).toBe(false);
   });
 });
 
