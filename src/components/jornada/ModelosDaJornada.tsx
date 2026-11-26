@@ -1,5 +1,5 @@
 import type { MontagensDoModelo } from '@/types/jornadaModelos';
-import { semMontagens } from '@/lib/jornadaModelos';
+import { principaisDoPeriodo, semMontagens } from '@/lib/jornadaModelos';
 import { EsqueletoDaSecao, ErroDaSecao } from './EstadoDaSecao';
 
 interface ModelosDaJornadaProps {
@@ -46,42 +46,45 @@ export function ModelosDaJornada({ titulo, colunaRotulo, linhas, carregando, err
           <p className="py-2 text-center text-sm text-slate-500">Ainda não há montagens neste período.</p>
         ) : (
           // A tabela rola dentro do cartão; a página não ganha rolagem lateral no celular.
-          <div
-            role="region"
-            aria-label={`Tabela de ${titulo}`}
-            tabIndex={0}
-            style={{ overflowX: 'auto' }}
-            className="text-sm"
-          >
-            <table className="w-full min-w-[44rem] text-left">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-600">
-                  <th scope="col" className="py-2 pr-3 font-semibold">
-                    {colunaRotulo}
-                  </th>
-                  {COLUNAS.map((c) => (
-                    <th key={c.rotulo} scope="col" className="px-2 py-2 text-right font-semibold">
-                      {c.rotulo}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {linhas.map((l) => (
-                  <tr key={l.id} className="border-b border-slate-100 last:border-0">
-                    <th scope="row" className="py-2 pr-3 font-medium text-slate-700">
-                      {l.rotulo}
+          <>
+            <div
+              role="region"
+              aria-label={`Tabela de ${titulo}`}
+              tabIndex={0}
+              style={{ overflowX: 'auto' }}
+              className="text-sm"
+            >
+              <table className="w-full min-w-[44rem] text-left">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-600">
+                    <th scope="col" className="py-2 pr-3 font-semibold">
+                      {colunaRotulo}
                     </th>
                     {COLUNAS.map((c) => (
-                      <td key={c.rotulo} className="px-2 py-2 text-right font-semibold text-slate-900 tabular-nums">
-                        {c.valor(l)}
-                      </td>
+                      <th key={c.rotulo} scope="col" className="px-2 py-2 text-right font-semibold">
+                        {c.rotulo}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {principaisDoPeriodo(linhas).map((l) => (
+                    <tr key={l.id} className="border-b border-slate-100 last:border-0">
+                      <th scope="row" className="py-2 pr-3 font-medium text-slate-700">
+                        {l.rotulo}
+                      </th>
+                      {COLUNAS.map((c) => (
+                        <td key={c.rotulo} className="px-2 py-2 text-right font-semibold text-slate-900 tabular-nums">
+                          {c.valor(l)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-3 text-xs text-slate-500">Os 5 com mais movimento no período.</p>
+          </>
         )}
       </div>
     </section>

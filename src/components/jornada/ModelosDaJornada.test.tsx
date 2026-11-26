@@ -60,13 +60,64 @@ describe('ModelosDaJornada', () => {
     expect(within(tabela).getAllByRole('columnheader').map((c) => c.textContent)).toEqual(COLUNAS_ESPERADAS('Cores'));
   });
 
-  it('linhas com o rótulo da resposta, na ordem da resposta, todas do catálogo (zeros incluídos)', () => {
-    const secao = renderizar();
-    const linhas = within(within(secao).getByRole('table')).getAllByRole('row').slice(1);
-    expect(linhas.map((l) => within(l).getByRole('rowheader').textContent)).toEqual(resumo.modelos.map((m) => m.rotulo));
-    expect(linhas.map((l) => within(l).getByRole('rowheader').textContent).slice(0, 4)).toEqual([
-      'Refúgio', 'Átrio', 'Praça', 'Bancada',
+  it('T01: no máximo 5 linhas, do maior movimento para o menor (soma das 6 colunas)', () => {
+    // Cópia da resposta real com contagens trocadas: 7 linhas com movimento, fora da ordem de movimento.
+    const contagens = [1, 9, 4, 7, 2, 5, 3];
+    const linhas = resumo.modelos.map((l, i) =>
+      i < contagens.length ? { ...zerar(l), ia: contagens[i] } : zerar(l),
+    );
+    const secao = renderizar({ linhas });
+    const exibidas = within(within(secao).getByRole('table')).getAllByRole('row').slice(1);
+    expect(exibidas.map((l) => within(l).getByRole('rowheader').textContent)).toEqual([
+      linhas[1].rotulo, // 9
+      linhas[3].rotulo, // 7
+      linhas[5].rotulo, // 5
+      linhas[2].rotulo, // 4
+      linhas[6].rotulo, // 3
     ]);
+  });
+
+  it('T01: a soma usa as 6 colunas (a linha de uma coluna só ganha da linha com várias menores)', () => {
+    const [a, b, c] = resumo.modelos;
+    const linhas = [{ ...zerar(a), ia: 1, pessoa: 1, reserva: 1 }, { ...zerar(b), contratados: 4 }, zerar(c)];
+    const secao = renderizar({ linhas });
+    const exibidas = within(within(secao).getByRole('table')).getAllByRole('row').slice(1);
+    expect(exibidas.map((l) => within(l).getByRole('rowheader').textContent)).toEqual([b.rotulo, a.rotulo]);
+  });
+
+  it('T01: com a resposta real, "Modelos" mostra só as linhas com movimento, na ordem do movimento', () => {
+    const secao = renderizar();
+    const exibidas = within(within(secao).getByRole('table')).getAllByRole('row').slice(1);
+    expect(exibidas.map((l) => within(l).getByRole('rowheader').textContent)).toEqual(['Refúgio', 'Átrio', 'Bancada']);
+    expect(within(secao).queryByRole('row', { name: /^Praça/ })).toBeNull();
+  });
+
+  it('T01: com a resposta real, "Cores" mostra só os 3 temas com movimento, do maior para o menor', () => {
+    const secao = renderizar({ titulo: 'Cores', colunaRotulo: 'Cores', linhas: resumo.temas });
+    const exibidas = within(within(secao).getByRole('table')).getAllByRole('row').slice(1);
+    expect(exibidas.map((l) => within(l).getByRole('rowheader').textContent)).toEqual([
+      'Verde claro', 'Azul acinzentado claro', 'Azul acinzentado alto contraste',
+    ]);
+  });
+
+  it('T02: empate de movimento segue a ordem da resposta', () => {
+    const [a, b, c, d] = resumo.modelos;
+    const linhas = [{ ...zerar(a), ia: 2 }, { ...zerar(b), pessoa: 5 }, { ...zerar(c), saiu: 2 }, { ...zerar(d), entrou: 5 }];
+    const secao = renderizar({ linhas });
+    const exibidas = within(within(secao).getByRole('table')).getAllByRole('row').slice(1);
+    expect(exibidas.map((l) => within(l).getByRole('rowheader').textContent)).toEqual([
+      b.rotulo, d.rotulo, a.rotulo, c.rotulo,
+    ]);
+  });
+
+  it('T03: movimento 0 não aparece; uma única coluna diferente de 0 já é movimento', () => {
+    const [a, b, c, d] = resumo.modelos;
+    const linhas = [zerar(a), { ...zerar(b), entrou: 1 }, zerar(c), { ...zerar(d), ia: 3 }];
+    const secao = renderizar({ linhas });
+    const exibidas = within(within(secao).getByRole('table')).getAllByRole('row').slice(1);
+    expect(exibidas.map((l) => within(l).getByRole('rowheader').textContent)).toEqual([d.rotulo, b.rotulo]);
+    expect(within(secao).queryByText(a.rotulo)).toBeNull();
+    expect(within(secao).queryByText(c.rotulo)).toBeNull();
   });
 
   it('nunca mostra o id no lugar do rótulo', () => {
@@ -82,7 +133,6 @@ describe('ModelosDaJornada', () => {
     expect(celulas(linha('Refúgio'))).toEqual(['6', '0', '0', '3', '1', '3']);
     expect(celulas(linha('Átrio'))).toEqual(['0', '4', '0', '1', '2', '1']);
     expect(celulas(linha('Bancada'))).toEqual(['0', '0', '1', '0', '1', '0']);
-    expect(celulas(linha('Praça'))).toEqual(['0', '0', '0', '0', '0', '0']);
   });
 
   it('cartão "Cores" mostra os números dos temas', () => {
@@ -99,6 +149,27 @@ describe('ModelosDaJornada', () => {
     expect(area).toContainElement(within(secao).getByRole('table'));
     expect(area).toHaveAttribute('tabindex', '0');
     expect(area).toHaveStyle({ overflowX: 'auto' });
+  });
+
+  it('T04: com dados, o texto literal fica abaixo da tabela, fora da área rolável', () => {
+    const secao = renderizar();
+    const texto = within(secao).getByText('Os 5 com mais movimento no período.');
+    const area = within(secao).getByRole('region', { name: 'Tabela de Modelos' });
+    const tabela = within(secao).getByRole('table');
+    expect(area).not.toContainElement(texto);
+    expect(tabela.compareDocumentPosition(texto) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('T04: no estado vazio, no carregando e no erro o texto não aparece', () => {
+    const textoLiteral = 'Os 5 com mais movimento no período.';
+    let secao = renderizar({ linhas: resumo.modelos.map(zerar) });
+    expect(within(secao).queryByText(textoLiteral)).toBeNull();
+    cleanup();
+    secao = renderizar({ linhas: undefined, carregando: true });
+    expect(within(secao).queryByText(textoLiteral)).toBeNull();
+    cleanup();
+    secao = renderizar({ linhas: undefined, erro: true });
+    expect(within(secao).queryByText(textoLiteral)).toBeNull();
   });
 
   it('estado vazio literal quando todas as contagens são zero, sem tabela', () => {
