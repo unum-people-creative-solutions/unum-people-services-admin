@@ -33,7 +33,7 @@ describe('toolsUsoService.resumo', () => {
       'ferramenta', 'visita', 'comecou', 'resultado', 'convite', 'guia', 'planilha', 'baixou',
     ]);
     expect(resumo.ferramentas.map((f) => f.ferramenta)).toEqual([
-      'home', 'quanto-cobrar', 'vale-anunciar', 'servicos-compensam', 'qr-code',
+      'home', 'quanto-cobrar', 'vale-anunciar', 'servicos-compensam', 'qr-code', 'link-whatsapp',
     ]);
     expect(Object.keys(resumo.dias[0])).toEqual(['dia', 'ferramenta', 'evento', 'n']);
   });
