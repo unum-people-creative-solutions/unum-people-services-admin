@@ -18,13 +18,14 @@ const ROTULOS_FERRAMENTA: Record<FerramentaTools, string> = {
   'vale-anunciar': 'Vale a pena anunciar?',
   'servicos-compensam': 'Quais serviços compensam',
   'qr-code': 'Gerador de QR code',
+  'link-whatsapp': 'Gerador de link do WhatsApp',
 };
 
 // A planilha só existe na ferramenta de serviços.
 const COM_PLANILHA: ReadonlySet<FerramentaTools> = new Set<FerramentaTools>(['servicos-compensam']);
 
-// O "baixou" só existe no gerador de QR code.
-const COM_BAIXOU: ReadonlySet<FerramentaTools> = new Set<FerramentaTools>(['qr-code']);
+// O "baixou" só existe nos geradores de QR code e de link do WhatsApp.
+const COM_BAIXOU: ReadonlySet<FerramentaTools> = new Set<FerramentaTools>(['qr-code', 'link-whatsapp']);
 
 const COLUNAS: ReadonlyArray<{ rotulo: string; valor: (f: TotaisDaFerramenta) => number }> = [
   { rotulo: 'Visitas', valor: (f) => f.visita },
@@ -35,7 +36,7 @@ const COLUNAS: ReadonlyArray<{ rotulo: string; valor: (f: TotaisDaFerramenta) =>
 ];
 
 const COLUNA_PLANILHA = 'Baixaram a planilha';
-const COLUNA_BAIXOU = 'Baixaram o QR code';
+const COLUNA_BAIXOU = 'Copiaram ou baixaram';
 
 function textoDasVisitas(n: number): string {
   return `Chegaram ao unumpeople.app pelo Tools: ${n} ${n === 1 ? 'visita' : 'visitas'}`;

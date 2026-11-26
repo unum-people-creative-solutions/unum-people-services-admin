@@ -2,7 +2,7 @@
 // Lambda admin, GlobalAdmin). Espelha, campo a campo, internal/handler/testdata/tools-uso-resposta.json
 // e medicao-de-uso RF-MU-06 / DT-MU-08. Sem dados, `dias` chega como [] (nunca null).
 
-export type FerramentaTools = 'home' | 'quanto-cobrar' | 'vale-anunciar' | 'servicos-compensam' | 'qr-code';
+export type FerramentaTools = 'home' | 'quanto-cobrar' | 'vale-anunciar' | 'servicos-compensam' | 'qr-code' | 'link-whatsapp';
 
 export type EventoTools = 'visita' | 'comecou' | 'resultado' | 'convite' | 'guia' | 'planilha' | 'baixou';
 
