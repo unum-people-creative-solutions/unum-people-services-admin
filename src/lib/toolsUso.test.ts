@@ -43,6 +43,11 @@ describe('semUsoDoTools', () => {
       ferramentas: zerado.ferramentas.map((f) => (f.ferramenta === 'qr-code' ? { ...f, baixou: 1 } : f)),
     };
     expect(semUsoDoTools(soBaixou)).toBe(false);
+    const soCopiou: ResumoToolsUso = {
+      ...zerado,
+      ferramentas: zerado.ferramentas.map((f) => (f.ferramenta === 'link-whatsapp' ? { ...f, baixou: 1 } : f)),
+    };
+    expect(semUsoDoTools(soCopiou)).toBe(false);
   });
 });
 
