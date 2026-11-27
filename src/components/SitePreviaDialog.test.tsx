@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SitePreviaDialog } from './SitePreviaDialog';
+import { SitePreviaDialog, fatorDeEscala } from './SitePreviaDialog';
 import { tenantService } from '@/services/tenantService';
 import type { SitePrevia } from '@/types/tenant';
 
@@ -370,6 +370,94 @@ describe('SitePreviaDialog — estados de carregando e erro (RF-AP-63)', () => {
     receberMensagem(ORIGEM_DO_LP_BUILDER, { tipo: 'lp-visor-operador-pronto' });
     act(() => { vi.advanceTimersByTime(15_000); });
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('fatorDeEscala — a página de 1280 px entra escalada na largura disponível', () => {
+  test.each([
+    [976, 1280, 0.7625],
+    [640, 1280, 0.5],
+    [1280, 1280, 1],
+    [2000, 1280, 1], // nunca amplia
+    [976, 390, 1], // o celular já cabe
+    [0, 1280, 1], // sem medida (ainda não renderizou): não escala
+    [-10, 1280, 1],
+    [Number.NaN, 1280, 1],
+  ])('largura disponível %s, largura lógica %s → %s', (disponivel, logica, esperado) => {
+    expect(fatorDeEscala(disponivel, logica)).toBeCloseTo(esperado, 6);
+  });
+});
+
+describe('SitePreviaDialog — Computador escalado para caber (nada cortado na horizontal)', () => {
+  const OriginalResizeObserver = globalThis.ResizeObserver;
+
+  // O jsdom não tem layout nem ResizeObserver: o stub informa uma largura disponível fixa.
+  function instalarLarguraDisponivel(largura: number) {
+    globalThis.ResizeObserver = class {
+      constructor(private aoMedir: ResizeObserverCallback) {}
+      observe(alvo: Element) {
+        this.aoMedir([{ target: alvo, contentRect: { width: largura } } as ResizeObserverEntry], this as unknown as ResizeObserver);
+      }
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(tenantService.getSitePrevia).mockResolvedValue(PREVIA_COM_RASCUNHO);
+  });
+
+  afterEach(() => {
+    globalThis.ResizeObserver = OriginalResizeObserver;
+  });
+
+  test('T21o - Computador mantém 1280 de largura lógica e aplica scale(largura disponível / 1280) com origem no topo à esquerda', async () => {
+    instalarLarguraDisponivel(976);
+    renderDialog();
+    await screen.findByRole('dialog');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Computador' }));
+
+    const iframe = iframeDoVisor();
+    expect(iframe).toHaveAttribute('width', '1280');
+    expect(iframe.style.transform).toBe('scale(0.7625)');
+    expect(iframe.style.transformOrigin).toMatch(/^(top left|0% 0%|left top)/);
+  });
+
+  test('T21p - o contêiner do iframe ocupa a largura e a altura escaladas', async () => {
+    instalarLarguraDisponivel(976);
+    renderDialog();
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Computador' }));
+
+    const contenedor = iframeDoVisor().parentElement as HTMLElement;
+    expect(contenedor.style.width).toBe('976px');
+    expect(contenedor.style.height).toBe(`${Number(iframeDoVisor().getAttribute('height')) * 0.7625}px`);
+  });
+
+  test('T21q - Celular (390) cabe sem escala', async () => {
+    instalarLarguraDisponivel(976);
+    renderDialog();
+    await screen.findByRole('dialog');
+
+    const iframe = iframeDoVisor();
+    expect(iframe).toHaveAttribute('width', '390');
+    expect(iframe.style.transform).toBe('scale(1)');
+    expect((iframe.parentElement as HTMLElement).style.width).toBe('390px');
+  });
+
+  test('T21r - o config segue chegando ao visor com a escala aplicada (targetOrigin exato)', async () => {
+    instalarLarguraDisponivel(976);
+    renderDialog();
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Computador' }));
+    const espia = espiarPostMessage();
+    await waitFor(() => expect(tenantService.getSitePrevia).toHaveBeenCalled());
+
+    receberMensagem(ORIGEM_DO_LP_BUILDER, { tipo: 'lp-visor-operador-pronto' });
+
+    await waitFor(() => expect(espia).toHaveBeenCalledWith({ tipo: 'lp-visor-operador', config: PUBLICADA }, ORIGEM_DO_LP_BUILDER));
   });
 });
 

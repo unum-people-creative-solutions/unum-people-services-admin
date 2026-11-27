@@ -19,6 +19,13 @@ const ALTURA_DO_VISOR = 720;
 // RF-AP-63: o iframe tem 10 s para avisar que está pronto.
 const PRAZO_DO_PRONTO_MS = 10_000;
 
+// A página entra na largura lógica do aparelho e é escalada para caber na largura disponível.
+// Nunca amplia; sem medida (0, negativa ou NaN) não escala.
+export function fatorDeEscala(larguraDisponivel: number, larguraLogica: number): number {
+  if (!(larguraDisponivel > 0) || !(larguraLogica > 0)) return 1;
+  return Math.min(1, larguraDisponivel / larguraLogica);
+}
+
 // Mesma variável de ModoTesteSecao.tsx.
 function visorDoLpBuilder(): { src: string; origem: string } {
   const base = process.env.NEXT_PUBLIC_CONFIGURADOR_URL || 'https://unumpeople.app';
@@ -75,6 +82,8 @@ function CorpoDaPrevia({ data, erroDaApi, buscarDeNovo, status }: CorpoDaPreviaP
   // Muda a cada "Tentar de novo": recria o iframe, que avisa "pronto" outra vez.
   const [tentativa, setTentativa] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const medidaRef = useRef<HTMLDivElement>(null);
+  const [larguraDisponivel, setLarguraDisponivel] = useState(0);
   const visor = visorDoLpBuilder();
 
   const statusEfetivo = data?.status ?? status;
@@ -114,6 +123,18 @@ function CorpoDaPrevia({ data, erroDaApi, buscarDeNovo, status }: CorpoDaPreviaP
     return () => clearTimeout(relogio);
   }, [pronto, tentativa]);
 
+  // Mede a largura que o diálogo dá ao visor; o observador também avisa quando o contêiner
+  // deixa de estar oculto ou a janela muda de tamanho.
+  useEffect(() => {
+    const alvo = medidaRef.current;
+    if (!alvo || typeof ResizeObserver === 'undefined') return;
+    const observador = new ResizeObserver((entradas) => {
+      setLarguraDisponivel(entradas[entradas.length - 1].contentRect.width);
+    });
+    observador.observe(alvo);
+    return () => observador.disconnect();
+  }, []);
+
   function tentarDeNovo() {
     setPronto(false);
     setPrazoEstourou(false);
@@ -122,6 +143,8 @@ function CorpoDaPrevia({ data, erroDaApi, buscarDeNovo, status }: CorpoDaPreviaP
   }
 
   const comErro = erroDaApi || prazoEstourou;
+  const larguraLogica = LARGURAS[aparelho];
+  const escala = fatorDeEscala(larguraDisponivel, larguraLogica);
 
   return (
     <>
@@ -182,16 +205,24 @@ function CorpoDaPrevia({ data, erroDaApi, buscarDeNovo, status }: CorpoDaPreviaP
         </div>
       ) : null}
 
-      <div className={`p-6 overflow-auto bg-slate-100 flex justify-center ${desenhado && !comErro ? '' : 'hidden'}`}>
-        <iframe
-          key={tentativa}
-          ref={iframeRef}
-          title="Visor da prévia"
-          src={visor.src}
-          width={LARGURAS[aparelho]}
-          height={ALTURA_DO_VISOR}
-          className="bg-white border border-slate-200 shrink-0"
-        />
+      <div className={`p-6 overflow-y-auto bg-slate-100 ${desenhado && !comErro ? '' : 'hidden'}`}>
+        <div ref={medidaRef} className="w-full">
+          <div
+            className="mx-auto overflow-hidden"
+            style={{ width: larguraLogica * escala, height: ALTURA_DO_VISOR * escala }}
+          >
+            <iframe
+              key={tentativa}
+              ref={iframeRef}
+              title="Visor da prévia"
+              src={visor.src}
+              width={larguraLogica}
+              height={ALTURA_DO_VISOR}
+              style={{ transform: `scale(${escala})`, transformOrigin: 'top left', maxWidth: 'none' }}
+              className="block bg-white border-0"
+            />
+          </div>
+        </div>
       </div>
     </>
   );
