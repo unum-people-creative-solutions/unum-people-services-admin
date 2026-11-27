@@ -533,6 +533,9 @@ const TABELA_CLIQUES_CONFIGURADOR: Record<string, string> = {
   editor_botao: 'Mudou o destino do botão no editor',
   // medicao-de-mercado M4 (RF-MM-47).
   janela_exemplo: 'Clicou em "Usar este exemplo"',
+  // contratar-link-quebrado-e-volta RF-LQ-12.
+  contratar_botao_corrigir: 'Foi corrigir o link do botão',
+  contratar_botao_seguir: 'Contratou com o link quebrado',
 };
 
 const TABELA_ERROS: Record<string, string> = {
@@ -588,6 +591,8 @@ const TABELA_ERROS: Record<string, string> = {
   editor_ia_falhou: 'Editar com IA falhou',
   // ia-montagem-parcial (spec §5, RF-MP-35).
   montagem_fora_do_escopo: 'descrição recusada pela IA (voltou à janela)',
+  // contratar-link-quebrado-e-volta RF-LQ-12.
+  contratar_link_botao: 'Link do botão quebrado na contratação',
 };
 
 const TABELA_SECOES_PREVIA: Record<string, string> = {
@@ -607,9 +612,9 @@ const TABELA_SECOES_PREVIA: Record<string, string> = {
 };
 
 describe('rótulos do configurador (RF-4-28, CA-4-24)', () => {
-  it('tabelas completas e na ordem da spec (46 cliques com os 2 da B1, os 3 da A2, os 3 da gaveta de jornada-fluxo-atual e o da janela de medicao-de-mercado, 50 erros com os 8 da A2 e o 1 de ia-montagem-parcial, 13 seções, 9 rotas)', () => {
-    expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(46);
-    expect(Object.keys(TABELA_ERROS)).toHaveLength(50);
+  it('tabelas completas e na ordem da spec (48 cliques com os 2 da B1, os 3 da A2, os 3 da gaveta de jornada-fluxo-atual, o da janela de medicao-de-mercado e os 2 do link quebrado, 51 erros com os 8 da A2, o 1 de ia-montagem-parcial e o do link quebrado, 13 seções, 9 rotas)', () => {
+    expect(Object.keys(TABELA_CLIQUES_CONFIGURADOR)).toHaveLength(48);
+    expect(Object.keys(TABELA_ERROS)).toHaveLength(51);
     expect(Object.keys(TABELA_SECOES_PREVIA)).toHaveLength(13);
     expect(Object.entries(ROTULOS_CLIQUE_CONFIGURADOR)).toEqual(Object.entries(TABELA_CLIQUES_CONFIGURADOR));
     expect(Object.entries(ROTULOS_ERRO)).toEqual(Object.entries(TABELA_ERROS));
@@ -634,6 +639,13 @@ describe('rótulos do configurador (RF-4-28, CA-4-24)', () => {
     }
     expect(rotuloDoEvento(ev('lp_erro_editor_imagem_grande'))).toBe('Erro: Imagem grande demais');
     expect(rotuloDoEvento(ev('lp_erro_contratar_documento'))).toBe('Erro: Campo CPF ou CNPJ');
+  });
+
+  // contratar-link-quebrado-e-volta RF-LQ-12 (T17).
+  it('rotula os três eventos do link do botão quebrado na contratação', () => {
+    expect(rotuloDoEvento(ev('lp_erro_contratar_link_botao'))).toBe('Erro: Link do botão quebrado na contratação');
+    expect(rotuloDoEvento(ev('lp_clique_contratar_botao_corrigir'))).toBe('Foi corrigir o link do botão');
+    expect(rotuloDoEvento(ev('lp_clique_contratar_botao_seguir'))).toBe('Contratou com o link quebrado');
   });
 
   it('cada seção da prévia vira "Viu na prévia: <rótulo>"', () => {
