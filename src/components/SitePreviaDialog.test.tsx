@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, expectTypeOf, test, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SitePreviaDialog, fatorDeEscala } from './SitePreviaDialog';
 import { tenantService } from '@/services/tenantService';
@@ -11,11 +11,13 @@ vi.mock('@/services/tenantService', () => ({
   },
 }));
 
-// FIXTURE DO CONTRATO DA SPEC, não de uma resposta capturada da API:
-// escrita a partir de RF-AP-60 (spec.md, acesso-antes-do-pagamento):
+// FIXTURES DO CONTRATO, não de uma resposta capturada da API: escritas a partir de RF-AP-60
+// (spec.md, acesso-antes-do-pagamento) e do handler da API (sitePreviaConfig em
+// internal/handler/admin_handler.go):
 //   200: { "status": <SiteStatusForTenant>, "publicada": Config, "rascunho": Config | null }
-//   Config = schema_version, layout_id, theme_id, content, contact,
-//            hidden_sections, section_order e cta.
+//   Config = schema_version, layout_id, theme_id, content (objeto, nunca nulo), contact (objeto),
+//            hidden_sections (sempre array), e section_order e cta SÓ quando não vazios.
+//   rascunho é o literal null quando não há rascunho.
 const PUBLICADA: SitePrevia['publicada'] = {
   schema_version: 1,
   layout_id: 'l1',
@@ -30,6 +32,16 @@ const PUBLICADA: SitePrevia['publicada'] = {
 const RASCUNHO: NonNullable<SitePrevia['rascunho']> = {
   ...PUBLICADA,
   content: { 'header.business_name': { kind: 'text', value: 'Doces da Ana (rascunho)' } },
+};
+
+// Página sem ordem de seções nem CTA: a API omite as duas chaves (não manda [] nem {}).
+const CONFIG_ENXUTA: SitePrevia['publicada'] = {
+  schema_version: 1,
+  layout_id: 'l1',
+  theme_id: 't1',
+  content: {},
+  contact: {},
+  hidden_sections: [],
 };
 
 const PREVIA_COM_RASCUNHO: SitePrevia = {
@@ -458,6 +470,33 @@ describe('SitePreviaDialog — Computador escalado para caber (nada cortado na h
     receberMensagem(ORIGEM_DO_LP_BUILDER, { tipo: 'lp-visor-operador-pronto' });
 
     await waitFor(() => expect(espia).toHaveBeenCalledWith({ tipo: 'lp-visor-operador', config: PUBLICADA }, ORIGEM_DO_LP_BUILDER));
+  });
+});
+
+describe('SitePrevia — tipo fiel ao contrato da API (RF-AP-60)', () => {
+  test('T21s - content, contact e hidden_sections são obrigatórios; section_order e cta, opcionais; rascunho é null literal', () => {
+    expectTypeOf<SitePrevia['publicada']['content']>().toEqualTypeOf<Record<string, unknown>>();
+    expectTypeOf<SitePrevia['publicada']['contact']>().toEqualTypeOf<Record<string, unknown>>();
+    expectTypeOf<SitePrevia['publicada']['hidden_sections']>().toEqualTypeOf<string[]>();
+    expectTypeOf<SitePrevia['publicada']['section_order']>().toEqualTypeOf<string[] | undefined>();
+    expectTypeOf<SitePrevia['publicada']['cta']>().toEqualTypeOf<Record<string, unknown> | undefined>();
+    expectTypeOf<SitePrevia['rascunho']>().toEqualTypeOf<SitePrevia['publicada'] | null>();
+    expect(CONFIG_ENXUTA).not.toHaveProperty('cta');
+  });
+
+  test('T21t - config sem section_order e cta (como a API manda) é enviado ao visor do jeito que veio', async () => {
+    vi.mocked(tenantService.getSitePrevia).mockResolvedValue({ status: 'no_ar', publicada: CONFIG_ENXUTA, rascunho: null });
+    renderDialog();
+    await screen.findByRole('dialog');
+    const espia = espiarPostMessage();
+    await waitFor(() => expect(tenantService.getSitePrevia).toHaveBeenCalled());
+
+    receberMensagem(ORIGEM_DO_LP_BUILDER, { tipo: 'lp-visor-operador-pronto' });
+
+    await waitFor(() => expect(espia).toHaveBeenCalledWith({ tipo: 'lp-visor-operador', config: CONFIG_ENXUTA }, ORIGEM_DO_LP_BUILDER));
+    const config = espia.mock.calls[0][0] as { config: object };
+    expect(config.config).not.toHaveProperty('section_order');
+    expect(config.config).not.toHaveProperty('cta');
   });
 });
 

@@ -633,10 +633,10 @@ describe('tenantService.getSitePrevia', () => {
   })
 
   it('faz GET em /sites/{site_id}/previa e devolve o corpo do contrato', async () => {
-    // Corpo escrito a partir de RF-AP-60 (spec), não capturado da API.
+    // Corpo escrito a partir de RF-AP-60 (spec) e do handler da API, não capturado: section_order e cta só quando não vazios.
     const corpo = {
       status: 'no_ar',
-      publicada: { schema_version: 1, layout_id: 'l1', theme_id: 't1', content: {}, contact: {}, hidden_sections: [], section_order: [], cta: {} },
+      publicada: { schema_version: 1, layout_id: 'l1', theme_id: 't1', content: {}, contact: {}, hidden_sections: [] },
       rascunho: null,
     }
     mockFetch.mockResolvedValue({ ok: true, json: async () => corpo, text: async () => JSON.stringify(corpo) })

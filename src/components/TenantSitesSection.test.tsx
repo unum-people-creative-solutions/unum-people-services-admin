@@ -166,10 +166,10 @@ describe('TenantSitesSection Component', () => {
         theme_id: 't1',
       },
     ] as Site[]);
-    // Forma da resposta definida em RF-AP-60 (spec acesso-antes-do-pagamento).
+    // Forma da resposta definida em RF-AP-60 (spec) e no handler da API: sem section_order/cta quando vazios.
     vi.mocked(tenantService.getSitePrevia).mockResolvedValue({
       status: 'aguardando_ativacao',
-      publicada: { schema_version: 1, layout_id: 'l1', theme_id: 't1', content: {}, contact: {}, hidden_sections: [], section_order: [], cta: {} },
+      publicada: { schema_version: 1, layout_id: 'l1', theme_id: 't1', content: {}, contact: {}, hidden_sections: [] },
       rascunho: null,
     });
 
