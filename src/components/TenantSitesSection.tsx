@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import * as Dialog from '@radix-ui/react-dialog';
 import { tenantService } from '@/services/tenantService';
 import { Site } from '@/types/tenant';
-import { Loader2, ExternalLink, Code2, X } from 'lucide-react';
+import { SitePreviaDialog } from '@/components/SitePreviaDialog';
+import { Loader2, ExternalLink, Code2, Eye, X } from 'lucide-react';
 
 interface TenantSitesSectionProps {
   tenantId: string;
@@ -41,6 +42,7 @@ export function TenantSitesSection({ tenantId }: TenantSitesSectionProps) {
     queryFn: () => tenantService.listSites(tenantId),
   });
   const [openSiteId, setOpenSiteId] = useState<string | null>(null);
+  const [previaSite, setPreviaSite] = useState<Pick<Site, 'site_id' | 'status'> | null>(null);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -102,6 +104,13 @@ export function TenantSitesSection({ tenantId }: TenantSitesSectionProps) {
                         >
                           <Code2 size={16} />Ver config
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => setPreviaSite({ site_id: site.site_id, status: site.status })}
+                          className="text-slate-600 hover:text-slate-900 font-medium flex items-center gap-1 transition-colors"
+                        >
+                          <Eye size={16} />Ver prévia
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -116,6 +125,12 @@ export function TenantSitesSection({ tenantId }: TenantSitesSectionProps) {
         tenantId={tenantId}
         siteId={openSiteId}
         onClose={() => setOpenSiteId(null)}
+      />
+      <SitePreviaDialog
+        tenantId={tenantId}
+        siteId={previaSite?.site_id ?? null}
+        status={previaSite?.status ?? ''}
+        onClose={() => setPreviaSite(null)}
       />
     </div>
   );

@@ -9,6 +9,7 @@ vi.mock('@/services/tenantService', () => ({
   tenantService: {
     listSites: vi.fn(),
     getSite: vi.fn(),
+    getSitePrevia: vi.fn(),
   },
 }));
 
@@ -152,5 +153,36 @@ describe('TenantSitesSection Component', () => {
     expect(await screen.findByText(/header\.business_name/)).toBeDefined();
     expect(screen.getByText(/41999998888/)).toBeDefined();
     expect(tenantService.getSite).toHaveBeenCalledWith(mockTenantId, 'lp_t1');
+  });
+
+  test('T21 - "Ver prévia" fica depois de "Ver config" e abre o diálogo da prévia do site', async () => {
+    vi.mocked(tenantService.listSites).mockResolvedValue([
+      {
+        site_id: 'lp_t1',
+        slug: 'estudio-foto',
+        status: 'aguardando_ativacao',
+        url: 'https://estudio-foto.unumpeople.app',
+        layout_id: 'l1',
+        theme_id: 't1',
+      },
+    ] as Site[]);
+    // Forma da resposta definida em RF-AP-60 (spec) e no handler da API: sem section_order/cta quando vazios.
+    vi.mocked(tenantService.getSitePrevia).mockResolvedValue({
+      status: 'aguardando_ativacao',
+      publicada: { schema_version: 1, layout_id: 'l1', theme_id: 't1', content: {}, contact: {}, hidden_sections: [] },
+      rascunho: null,
+    });
+
+    renderSection();
+
+    const linha = (await screen.findByText('estudio-foto')).closest('tr') as HTMLElement;
+    const botoes = within(linha).getAllByRole('button').map((b) => b.textContent?.trim());
+    expect(botoes).toEqual(['Ver config', 'Ver prévia']);
+
+    fireEvent.click(within(linha).getByRole('button', { name: /Ver prévia/i }));
+
+    const dialogo = await screen.findByRole('dialog');
+    expect(within(dialogo).getByRole('heading', { name: 'Prévia da página · só a equipe Unum vê · ainda não está no ar' })).toBeDefined();
+    expect(tenantService.getSitePrevia).toHaveBeenCalledWith(mockTenantId, 'lp_t1');
   });
 });

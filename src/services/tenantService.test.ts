@@ -606,6 +606,7 @@ describe('tenantService — ID do tenant no caminho', () => {
     ['listInvoices', () => tenantService.listInvoices(id)],
     ['listSites', () => tenantService.listSites(id)],
     ['getSite', () => tenantService.getSite(id, 'site-1')],
+    ['getSitePrevia', () => tenantService.getSitePrevia(id, 'site-1')],
   ]
 
   it.each(chamadas)('%s codifica o ID', async (_nome, chamar) => {
@@ -614,5 +615,37 @@ describe('tenantService — ID do tenant no caminho', () => {
     const url = String(mockFetch.mock.calls[0][0])
     expect(url).toContain(caminho)
     expect(url).not.toContain('#')
+  })
+})
+
+// Rota de RF-AP-60: GET /admin/tenants/{id}/sites/{site_id}/previa
+describe('tenantService.getSitePrevia', () => {
+  beforeEach(() => {
+    mockFetch.mockReset()
+    useAuthStore.setState({
+      user: { email: 'admin@test.com', groups: ['GlobalAdmin'] },
+      token: 'valid-access-token',
+      refreshToken: 'valid-refresh-token',
+      isAuthenticated: true,
+      isAdmin: true,
+      hasHydrated: true,
+    })
+  })
+
+  it('faz GET em /sites/{site_id}/previa e devolve o corpo do contrato', async () => {
+    // Corpo escrito a partir de RF-AP-60 (spec) e do handler da API, não capturado: section_order e cta só quando não vazios.
+    const corpo = {
+      status: 'no_ar',
+      publicada: { schema_version: 1, layout_id: 'l1', theme_id: 't1', content: {}, contact: {}, hidden_sections: [] },
+      rascunho: null,
+    }
+    mockFetch.mockResolvedValue({ ok: true, json: async () => corpo, text: async () => JSON.stringify(corpo) })
+
+    const resposta = await tenantService.getSitePrevia('tenant-1', 'lp_site-1')
+
+    const [url, opcoes] = mockFetch.mock.calls[0]
+    expect(String(url)).toMatch(/\/admin\/tenants\/tenant-1\/sites\/lp_site-1\/previa$/)
+    expect(opcoes.method).toBe('GET')
+    expect(resposta).toEqual(corpo)
   })
 })

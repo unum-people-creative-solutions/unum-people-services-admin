@@ -2,7 +2,7 @@ import { CognitoUser, CognitoRefreshToken } from 'amazon-cognito-identity-js';
 import { useAuthStore } from "@/store/useAuthStore";
 import { userPool } from "@/lib/cognito";
 import { ApiError } from "@/lib/apiError";
-import { Tenant, CreateTenantInput, TenantUser, AddTenantUserInput, ChangePlanInput, Invoice, Site, SiteDetail } from "@/types/tenant";
+import { Tenant, CreateTenantInput, TenantUser, AddTenantUserInput, ChangePlanInput, Invoice, Site, SiteDetail, SitePrevia } from "@/types/tenant";
 import { DashboardStats, AuditRecord, SystemErrorLog } from "@/types/dashboard";
 import type { MudancasDeAcesso } from "@/types/acesso";
 
@@ -238,4 +238,7 @@ export const tenantService = {
 
   getSite: (tenantId: string, siteId: string): Promise<SiteDetail> =>
     fetchWithAuth(`${tenantPath(tenantId)}/sites/${siteId}`, { method: 'GET' }),
+
+  getSitePrevia: (tenantId: string, siteId: string): Promise<SitePrevia> =>
+    fetchWithAuth(`${tenantPath(tenantId)}/sites/${siteId}/previa`, { method: 'GET' }),
 };
