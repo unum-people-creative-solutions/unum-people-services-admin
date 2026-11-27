@@ -96,6 +96,10 @@ Desde as métricas de visitas (frente E), o formulário tem o checkbox **Contar 
 - **Detalhe do tenant (`/tenants/[id]`, card "Dados Institucionais"):** exibe o CPF/CNPJ formatado como texto somente leitura, o rótulo "E-mail de cobrança e login do primeiro administrador", o campo editável de Celular e o bloco `EnderecoFields` (CEP com autopreenchimento via ViaCEP em `src/lib/viaCep.ts`, Rua, Número, Complemento, Bairro, Cidade e UF). Quando `endereco_pendente` é verdadeiro, mostra o selo **"Sem endereço: a nota fiscal não sai"** ao lado do status. Erros `422` (`asaas_recusou`, com o detalhe textual do Asaas) e `503` (`asaas_indisponivel`) são exibidos como alerta no próprio card.
 - **Criar tenant (`/tenants/new`):** inclui Celular e `EnderecoFields`. Para planos `PAGO` e `PERSONALIZADO`, o endereço completo é obrigatório antes do envio (e também validado pela API com `400 endereco_obrigatorio`); para o plano `LIVRE`, o endereço continua opcional.
 
+## Prévia da página do cliente (`acesso-antes-do-pagamento`, 27/11)
+
+Na conta (Gestão de Tenants), a seção "Sites (LP Builder)" tem **Ver prévia** depois de **Ver config**. Ela abre um diálogo (`SitePreviaDialog.tsx`) com a página desenhada pelo lp-builder, inclusive antes do pagamento ("· ainda não está no ar"): Celular (390) e Computador (1280, escalado para caber), Publicada e Rascunho. A página vem de `GET /admin/tenants/{id}/sites/{site_id}/previa` (só operador) e vai ao iframe `{NEXT_PUBLIC_CONFIGURADOR_URL || 'https://unumpeople.app'}/visor-operador` por `postMessage`, com `targetOrigin` exato e só depois do `lp-visor-operador-pronto` dessa origem. Erro da API ou visor sem resposta em 10 s: "Não foi possível abrir a prévia. Tente de novo." O lp-builder precisa ter a origem do admin em `NEXT_PUBLIC_ORIGENS_DO_OPERADOR`.
+
 ## Getting Started
 
 First, run the development server:
