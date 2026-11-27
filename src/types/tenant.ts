@@ -98,6 +98,27 @@ export interface SiteDetail extends Site {
   hidden_sections?: string[];
 }
 
+// RF-AP-60 (spec acesso-antes-do-pagamento): config de uma página, como a API a entrega
+// na prévia do operador. Os campos com omitempty no Go (content, contact, hidden_sections,
+// section_order e cta) podem faltar no JSON; o visor trata a ausência.
+export interface SitePreviaConfig {
+  schema_version: number;
+  layout_id: string;
+  theme_id: string;
+  content?: Record<string, unknown>;
+  contact?: Record<string, unknown>;
+  hidden_sections?: string[];
+  section_order?: string[];
+  cta?: Record<string, unknown>;
+}
+
+// RF-AP-60: GET /admin/tenants/{id}/sites/{site_id}/previa
+export interface SitePrevia {
+  status: Site['status'];
+  publicada: SitePreviaConfig;
+  rascunho: SitePreviaConfig | null;
+}
+
 export interface ServiceAgreementStatus {
   tenant_id: string;
   term_id: string;
