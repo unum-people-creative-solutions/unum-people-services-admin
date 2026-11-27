@@ -16,6 +16,8 @@ type Aparelho = keyof typeof LARGURAS;
 type Versao = 'publicada' | 'rascunho';
 
 const ALTURA_DO_VISOR = 720;
+// RF-AP-63: o iframe tem 10 s para avisar que está pronto.
+const PRAZO_DO_PRONTO_MS = 10_000;
 
 // Mesma variável de ModoTesteSecao.tsx.
 function visorDoLpBuilder(): { src: string; origem: string } {
@@ -35,7 +37,7 @@ interface SitePreviaDialogProps {
 }
 
 export function SitePreviaDialog({ tenantId, siteId, status, onClose }: SitePreviaDialogProps) {
-  const { data } = useQuery<SitePrevia>({
+  const { data, isError, refetch } = useQuery<SitePrevia>({
     queryKey: ['tenant-site-previa', tenantId, siteId],
     queryFn: () => tenantService.getSitePrevia(tenantId, siteId as string),
     enabled: !!siteId,
@@ -51,17 +53,27 @@ export function SitePreviaDialog({ tenantId, siteId, status, onClose }: SitePrev
           className="fixed left-[50%] top-[50%] z-[100] w-full max-w-5xl max-h-[90vh] translate-x-[-50%] translate-y-[-50%] bg-white rounded-2xl shadow-lg flex flex-col outline-none"
           aria-describedby={undefined}
         >
-          <CorpoDaPrevia data={data} status={status} />
+          <CorpoDaPrevia data={data} erroDaApi={isError} buscarDeNovo={() => void refetch()} status={status} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
   );
 }
 
-function CorpoDaPrevia({ data, status }: { data: SitePrevia | undefined; status: string }) {
+interface CorpoDaPreviaProps {
+  data: SitePrevia | undefined;
+  erroDaApi: boolean;
+  buscarDeNovo: () => void;
+  status: string;
+}
+
+function CorpoDaPrevia({ data, erroDaApi, buscarDeNovo, status }: CorpoDaPreviaProps) {
   const [aparelho, setAparelho] = useState<Aparelho>('celular');
   const [versao, setVersao] = useState<Versao>('publicada');
   const [pronto, setPronto] = useState(false);
+  const [prazoEstourou, setPrazoEstourou] = useState(false);
+  // Muda a cada "Tentar de novo": recria o iframe, que avisa "pronto" outra vez.
+  const [tentativa, setTentativa] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const visor = visorDoLpBuilder();
 
@@ -88,10 +100,28 @@ function CorpoDaPrevia({ data, status }: { data: SitePrevia | undefined; status:
   const temRascunho = !!data?.rascunho;
   const config = data ? (versao === 'rascunho' && data.rascunho ? data.rascunho : data.publicada) : null;
 
+  // O config sai no mesmo efeito em que "pronto" e os dados se encontram.
+  const desenhado = pronto && !!config;
+
   useEffect(() => {
     if (!pronto || !config) return;
     iframeRef.current?.contentWindow?.postMessage({ tipo: TIPO_CONFIG, config }, visor.origem);
   }, [pronto, config, visor.origem]);
+
+  useEffect(() => {
+    if (pronto) return;
+    const relogio = setTimeout(() => setPrazoEstourou(true), PRAZO_DO_PRONTO_MS);
+    return () => clearTimeout(relogio);
+  }, [pronto, tentativa]);
+
+  function tentarDeNovo() {
+    setPronto(false);
+    setPrazoEstourou(false);
+    setTentativa((n) => n + 1);
+    buscarDeNovo();
+  }
+
+  const comErro = erroDaApi || prazoEstourou;
 
   return (
     <>
@@ -135,8 +165,26 @@ function CorpoDaPrevia({ data, status }: { data: SitePrevia | undefined; status:
         )}
       </div>
 
-      <div className="p-6 overflow-auto bg-slate-100 flex justify-center">
+      {comErro ? (
+        <div role="alert" className="px-6 py-4 text-sm text-red-600 flex items-center gap-4">
+          <span>Não foi possível abrir a prévia. Tente de novo.</span>
+          <button
+            type="button"
+            onClick={tentarDeNovo}
+            className="px-3 py-1 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
+          >
+            Tentar de novo
+          </button>
+        </div>
+      ) : !desenhado ? (
+        <div role="status" className="px-6 py-4 text-sm text-slate-500">
+          Carregando a prévia…
+        </div>
+      ) : null}
+
+      <div className={`p-6 overflow-auto bg-slate-100 flex justify-center ${desenhado && !comErro ? '' : 'hidden'}`}>
         <iframe
+          key={tentativa}
           ref={iframeRef}
           title="Visor da prévia"
           src={visor.src}

@@ -258,3 +258,118 @@ describe('SitePreviaDialog — diálogo da prévia do operador', () => {
     expect(tenantService.getSitePrevia).not.toHaveBeenCalled();
   });
 });
+
+const MENSAGEM_DE_ERRO = 'Não foi possível abrir a prévia. Tente de novo.';
+
+describe('SitePreviaDialog — estados de carregando e erro (RF-AP-63)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(tenantService.getSitePrevia).mockResolvedValue(PREVIA_COM_RASCUNHO);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test('T22a - "Carregando a prévia…" até o visor desenhar; some quando o config é enviado', async () => {
+    renderDialog();
+    await screen.findByRole('dialog');
+    const espia = espiarPostMessage();
+
+    expect(screen.getByRole('status')).toHaveTextContent('Carregando a prévia…');
+    await waitFor(() => expect(tenantService.getSitePrevia).toHaveBeenCalled());
+    // dados chegaram, mas o visor ainda não avisou "pronto"
+    expect(screen.getByRole('status')).toHaveTextContent('Carregando a prévia…');
+
+    receberMensagem(ORIGEM_DO_LP_BUILDER, { tipo: 'lp-visor-operador-pronto' });
+
+    await waitFor(() => expect(espia).toHaveBeenCalled());
+    expect(screen.queryByText('Carregando a prévia…')).toBeNull();
+    expect(screen.queryByText(MENSAGEM_DE_ERRO)).toBeNull();
+  });
+
+  test('T22b - erro da API mostra a mensagem e "Tentar de novo"', async () => {
+    vi.mocked(tenantService.getSitePrevia).mockRejectedValue(new Error('500'));
+    renderDialog();
+
+    const alerta = await screen.findByRole('alert');
+    expect(alerta).toHaveTextContent(MENSAGEM_DE_ERRO);
+    expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeDefined();
+    expect(screen.queryByText('Carregando a prévia…')).toBeNull();
+  });
+
+  test('T22c - "Tentar de novo" busca de novo e, dando certo, a mensagem some e o config é enviado', async () => {
+    vi.mocked(tenantService.getSitePrevia).mockRejectedValueOnce(new Error('500'));
+    renderDialog();
+    await screen.findByRole('alert');
+    expect(tenantService.getSitePrevia).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }));
+
+    await waitFor(() => expect(tenantService.getSitePrevia).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    const espia = espiarPostMessage();
+    receberMensagem(ORIGEM_DO_LP_BUILDER, { tipo: 'lp-visor-operador-pronto' });
+    await waitFor(() => expect(espia).toHaveBeenCalledWith({ tipo: 'lp-visor-operador', config: PUBLICADA }, ORIGEM_DO_LP_BUILDER));
+  });
+
+  test('T22d - iframe sem "pronto" em 10 s mostra a mensagem e "Tentar de novo"', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderDialog();
+    await screen.findByRole('dialog');
+    await waitFor(() => expect(tenantService.getSitePrevia).toHaveBeenCalled());
+
+    act(() => { vi.advanceTimersByTime(9_900); });
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    act(() => { vi.advanceTimersByTime(200); });
+
+    expect(screen.getByRole('alert')).toHaveTextContent(MENSAGEM_DE_ERRO);
+    expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeDefined();
+  });
+
+  test('T22e - com "pronto" a tempo, passados 10 s não há erro', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderDialog();
+    await screen.findByRole('dialog');
+    await waitFor(() => expect(tenantService.getSitePrevia).toHaveBeenCalled());
+
+    receberMensagem(ORIGEM_DO_LP_BUILDER, { tipo: 'lp-visor-operador-pronto' });
+    act(() => { vi.advanceTimersByTime(15_000); });
+
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  test('T22f - "pronto" de outra origem não evita o timeout de 10 s', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderDialog();
+    await screen.findByRole('dialog');
+    await waitFor(() => expect(tenantService.getSitePrevia).toHaveBeenCalled());
+
+    receberMensagem('https://evil.example.com', { tipo: 'lp-visor-operador-pronto' });
+    act(() => { vi.advanceTimersByTime(10_100); });
+
+    expect(screen.getByRole('alert')).toHaveTextContent(MENSAGEM_DE_ERRO);
+  });
+
+  test('T22g - "Tentar de novo" depois do timeout busca de novo, volta a "Carregando" e reinicia o relógio', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderDialog();
+    await screen.findByRole('dialog');
+    await waitFor(() => expect(tenantService.getSitePrevia).toHaveBeenCalledTimes(1));
+    act(() => { vi.advanceTimersByTime(10_100); });
+    expect(screen.getByRole('alert')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }));
+
+    await waitFor(() => expect(tenantService.getSitePrevia).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('status')).toHaveTextContent('Carregando a prévia…');
+
+    // o iframe novo manda "pronto": sem erro depois dos 10 s
+    receberMensagem(ORIGEM_DO_LP_BUILDER, { tipo: 'lp-visor-operador-pronto' });
+    act(() => { vi.advanceTimersByTime(15_000); });
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
