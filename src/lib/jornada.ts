@@ -276,6 +276,9 @@ export const ROTULOS_CLIQUE_CONFIGURADOR: Record<string, string> = {
   editor_botao: 'Mudou o destino do botão no editor',
   // medicao-de-mercado M4 (RF-MM-47): o botão "Usar este exemplo" da janela "Vamos montar seu site".
   janela_exemplo: 'Clicou em "Usar este exemplo"',
+  // contratar-link-quebrado-e-volta RF-LQ-12: o aviso do link do botão na contratação.
+  contratar_botao_corrigir: 'Foi corrigir o link do botão',
+  contratar_botao_seguir: 'Contratou com o link quebrado',
 };
 
 // TECH-DESIGN §4.5: nome do erro (sem "lp_erro_") → rótulo no painel. A prévia repete os do editor.
@@ -332,6 +335,8 @@ export const ROTULOS_ERRO: Record<string, string> = {
   editor_ia_falhou: 'Editar com IA falhou',
   // ia-montagem-parcial (spec §5, RF-MP-35, D-MP-26): a IA recusou a descrição inteira e a pessoa voltou à janela.
   montagem_fora_do_escopo: 'descrição recusada pela IA (voltou à janela)',
+  // contratar-link-quebrado-e-volta RF-LQ-12.
+  contratar_link_botao: 'Link do botão quebrado na contratação',
 };
 
 // spec-4-detalhe RF-4-28: seções da prévia (sem "lp_previa_secao_"), na ordem da tabela de seções.
